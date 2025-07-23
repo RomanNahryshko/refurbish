@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mobile Phone Refurbishment & Inventory Management System
+
+An internal ERP system for managing the complete lifecycle of phone refurbishment operations.
+
+## Overview
+
+This system digitizes and streamlines the entire workflow for used phone refurbishment, tracking each phone from receipt through repair, grading, and shipping. It provides operational visibility for managers and clear, role-based interfaces for employees.
+
+## Tech Stack
+
+- **Frontend**: Next.js 15 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4 with shadcn/ui
+- **Backend & Database**: Supabase (PostgreSQL, Auth, RLS)
+- **Package Manager**: npm
+
+## Features
+
+- **Batch Intake**: Track incoming phone batches from suppliers
+- **Quality Control**: Systematic QC process tracking
+- **Repair Management**: Assign and track repair jobs
+- **Inventory Control**: Manage spare parts inventory
+- **Shipping**: Generate shipping manifests
+- **Role-Based Access**: Different interfaces for different user roles
+
+## User Roles
+
+1. **data_entry** - Data entry personnel
+2. **qc_controller** - Quality control staff
+3. **technician** - Repair technicians
+4. **ops_manager** - Operations managers
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ 
+- npm 9+
+- Supabase account
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone [repository-url]
+cd remobile-refurbish
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables:
+```bash
+cp .env.local.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Configure your Supabase credentials in `.env.local`
 
-## Learn More
+5. Run the development server:
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Development
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+├── app/              # Next.js app router pages
+├── components/       # React components
+│   ├── ui/          # shadcn/ui components
+│   ├── layout/      # Layout components
+│   └── common/      # Shared components
+├── lib/             # Utility functions and types
+└── types/           # TypeScript type definitions
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+This is an internal company system. Please follow the established coding standards and ensure all files remain under 700 lines for maintainability.
+
+## License
+
+Proprietary - Internal Use Only
