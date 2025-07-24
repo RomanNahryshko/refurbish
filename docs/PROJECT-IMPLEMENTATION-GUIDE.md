@@ -345,4 +345,33 @@ The following Schema is a first version and definetely will be correctly re-crea
 
 ---
 
-Last Updated: July 23, 2025 - Setup Phase Completed 
+Last Updated: December 27, 2024 - Core Components Completed, Supabase Error Handling Added 
+
+### Development Guidelines
+
+#### File Size Limits
+**CRITICAL**: No file should exceed 700 lines. Ideal range: 300-500 lines.
+- Split large components into smaller, reusable parts
+- Extract shared logic into utility functions
+- Use composition over monolithic components
+
+#### Definition of Done
+For each module/feature implementation:
+- [ ] **Core Functionality**: Feature works as specified
+- [ ] **Dependency Check**:
+  - Review modules that depend on this one
+  - Test integration points
+  - Update affected modules if needed
+  - Document any breaking changes
+- [ ] **Code Quality**: Follows project standards, properly typed
+- [ ] **File Size**: No file exceeds 700 lines
+- [ ] **Documentation**: Comments and README updated
+- [ ] **Testing**: Manual testing completed
+- [ ] **Task Status**: Mark as [x] in this guide
+
+#### Dependency Check Process
+Before marking any task as complete:
+1. Ask: "What other modules use this functionality?"
+2. Check: Test those modules still work correctly
+3. Update: Modify dependent modules if needed
+4. Document: Note any changes in commit message 
