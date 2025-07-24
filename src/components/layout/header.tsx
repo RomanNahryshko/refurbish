@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { logout } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -122,11 +123,7 @@ export function Header() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <form action={async () => {
-                  'use server'
-                  const { logout } = await import('@/lib/actions/auth')
-                  await logout()
-                }}>
+                <form action={logout}>
                   <button type="submit" className="w-full text-left">
                     Log out
                   </button>

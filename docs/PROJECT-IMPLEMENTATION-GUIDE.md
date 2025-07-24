@@ -238,9 +238,9 @@ The following Schema is a first version and definetely will be correctly re-crea
 #### 13. Common Components
 - [x] Loading spinner component
 - [x] Theme light/dark mode toggle/selector (using next-themes)
-- [ ] Error boundary component
-- [ ] Toast/notification component
-- [ ] Confirmation dialog component
+- [x] Error boundary component
+- [x] Toast/notification component
+- [x] Confirmation dialog component
 
 ### Phase 7: TypeScript & Type Safety (Mostly Complete)
 
