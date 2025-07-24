@@ -195,23 +195,23 @@ The following Schema is a first version and definetely will be correctly re-crea
 ### Phase 5: Authentication & Authorization
 
 #### 10. Authentication Setup
-- [ ] Create authentication middleware (`middleware.ts`)
-- [ ] Implement route protection
-- [ ] Create login page with:
-  - [ ] Email/password form
-  - [ ] Supabase Auth integration
-  - [ ] Error handling
-- [ ] Create signup page with:
-  - [ ] Registration form
-  - [ ] Role selection
-  - [ ] Profile creation
-- [ ] Implement logout functionality
-- [ ] Add session management
+- [x] Create authentication middleware (`middleware.ts`)
+- [x] Implement route protection
+- [x] Create login page with:
+  - [x] Email/password form
+  - [x] Supabase Auth integration
+  - [x] Error handling
+- [x] Create signup page with:
+  - [x] Registration form
+  - [x] Role selection
+  - [x] Profile creation
+- [x] Implement logout functionality
+- [x] Add session management
 
 #### 11. Role-Based Access Control (RBAC)
 - [ ] Create RLS policies for each table
-- [ ] Implement role checking utilities
-- [ ] Create role-based route guards
+- [x] Implement role checking utilities
+- [x] Create role-based route guards
 - [ ] Test access control for each role:
   - [ ] data_entry access
   - [ ] qc_controller access

@@ -121,8 +121,16 @@ export function Header() {
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                Log out
+              <DropdownMenuItem asChild>
+                <form action={async () => {
+                  'use server'
+                  const { logout } = await import('@/lib/actions/auth')
+                  await logout()
+                }}>
+                  <button type="submit" className="w-full text-left">
+                    Log out
+                  </button>
+                </form>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
