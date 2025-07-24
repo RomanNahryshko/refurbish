@@ -218,7 +218,7 @@ The following Schema is a first version and definetely will be correctly re-crea
   - [ ] technician access
   - [ ] ops_manager access
 
-### Phase 6: Core Components Development (Mostly Complete)
+### Phase 6: Core Components Development ✅
 
 #### 12. Layout Components
 - [x] Header component:

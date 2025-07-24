@@ -1,9 +1,16 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { type NextRequest, NextResponse } from 'next/server'
 
-import { supabaseUrl, supabaseAnonKey } from '../supabase'
+import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '../supabase'
 
 export async function updateSession(request: NextRequest) {
+  // Skip authentication if Supabase is not configured
+  if (!hasValidSupabaseConfig) {
+    return NextResponse.next({
+      request,
+    })
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })

@@ -9,6 +9,10 @@ import { USER_ROLES } from '@/lib/constants'
 
 export async function login(formData: LoginFormData) {
   const supabase = await createClient()
+  
+  if (!supabase) {
+    return { error: 'Supabase is not configured. Please set up your environment variables.' }
+  }
 
   const { error } = await supabase.auth.signInWithPassword({
     email: formData.email,
@@ -25,6 +29,10 @@ export async function login(formData: LoginFormData) {
 
 export async function signup(formData: SignupFormData) {
   const supabase = await createClient()
+  
+  if (!supabase) {
+    return { error: 'Supabase is not configured. Please set up your environment variables.' }
+  }
 
   // Sign up the user
   const { data: authData, error: signUpError } = await supabase.auth.signUp({
@@ -65,6 +73,11 @@ export async function signup(formData: SignupFormData) {
 
 export async function logout() {
   const supabase = await createClient()
+  
+  if (!supabase) {
+    redirect('/login')
+    return
+  }
 
   const { error } = await supabase.auth.signOut()
 
@@ -78,6 +91,10 @@ export async function logout() {
 
 export async function getCurrentUser() {
   const supabase = await createClient()
+  
+  if (!supabase) {
+    return null
+  }
   
   const { data: { user } } = await supabase.auth.getUser()
   

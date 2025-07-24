@@ -1,11 +1,29 @@
 // Supabase environment configuration
-export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Missing Supabase environment variables. Please check your .env.local file.'
+// Validate Supabase URL format
+const isValidSupabaseUrl = (url: string): boolean => {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'https:' && url.includes('supabase.co')
+  } catch {
+    return false
+  }
+}
+
+// Check if we have valid Supabase configuration
+export const hasValidSupabaseConfig = 
+  isValidSupabaseUrl(supabaseUrl) && 
+  supabaseAnonKey.length > 0 &&
+  !supabaseUrl.includes('your-project-ref')
+
+if (!hasValidSupabaseConfig) {
+  console.warn(
+    '⚠️  Supabase configuration is missing or invalid. Authentication features will not work.\n' +
+    'Please set up a Supabase project and update your .env.local file with:\n' +
+    '- NEXT_PUBLIC_SUPABASE_URL\n' +
+    '- NEXT_PUBLIC_SUPABASE_ANON_KEY'
   )
 }
 
