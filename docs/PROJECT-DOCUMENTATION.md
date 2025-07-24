@@ -11,6 +11,7 @@
 5. [Module Dependencies & Development Order](#module-dependencies--development-order)
 6. [Business Constraints & Requirements](#business-constraints--requirements)
 7. [Reporting & KPIs](#reporting--kpis)
+8. [Remaining Questions](#remaining-questions)
 
 ---
 
@@ -71,29 +72,59 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - Individual phones are registered within batches using IMEI
 - **Important**: Batches cannot be modified after creation
 
-#### Data Import Process
+#### Data Import Process (Dr. Phone Integration)
 1. **Individual Phone Scanning**: Each phone's IMEI is captured via Dr. Phone software when connected
-2. **Bulk Export/Import**: Dr. Phone results are exported in bulk (Excel/CSV) and imported into the system
+2. **Bulk Export/Import**: Dr. Phone results (IMEI, phone model/brand, QC results) are exported in bulk (Excel/CSV) and imported into the system
 3. **No Manual Entry**: Data entry is automated through bulk import, not manual typing
+4. **Import Frequency**: Daily or per batch basis (flexible timing)
+5. **Error Handling**: Basic validation and error reporting
+6. **Data Immutability**: No updates/corrections after import
 
 #### Quality Control Process
-- Initial QC during intake (manual + Dr. Phone software)
-- Final QC after repairs to verify quality
-- Grade assignment based on condition
-- **Standardized Process**: Same QC process applies to all phone models
+**QC Stages:**
+1. **Initial QC** (during Intake & Triage)
+   - Software diagnostics via Dr. Phone (detects faults like camera issues)
+   - Manual visual inspection for physical damage/scratches
+   - Touchscreen functionality verification
+   - General functionality testing
+   - IMEI linked to QC results
+
+2. **Final QC** (after repairs)
+   - Complete re-run of all QC tests
+   - Verify repair quality
+   - Grade assignment (Ungraded, A, B, C)
+   - If fails, loops back to Repair phase
+
+**Decision Making:**
+- Manual grading by QC person (human judgment for MVP)
+- Operations Manager can override QC decisions
+- No automated pass/fail criteria
 
 #### Repair Job Management
+**Job Creation & Tracking:**
 - Jobs created based on initial QC findings
-- Assigned to technicians by skill level (L1, L2, L3)
-- Parts tracked per repair job
-- No time estimates required - focus on completion tracking
+- Multiple repairs per phone supported (battery + screen, etc.)
+- Each repair tracked separately
+- Can be handled by same or different technicians
+
+**Work Assignment Process:**
+- Queue-based system: Repairs available in general queue
+- Self-selection: Technicians pick their own work from available repairs
+- No direct assignments from Operations Manager
+- No priority system (first-come, first-served for MVP)
+- Simple reassignment capability if repair can't be completed
 
 #### Inventory Management
+**Parts Tracking:**
 - Bulk tracking of spare parts (batteries, housing, glass)
 - Parts usage recorded per repair
-- Supplier tracking for both phones and parts
-- Flexible system to support multiple manufacturers (Apple, Samsung, etc.)
-- Optional model specification per part
+- Supplier tracking (separate for phones and parts)
+
+**Parts Compatibility:**
+- Optional model/brand specification per part
+- Phone model/brand captured from Dr. Phone export
+- Manual selection by technicians (no automated matching)
+- System supports multiple manufacturers (Apple, Samsung, etc.)
 
 ---
 
@@ -112,19 +143,23 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 **Workflow Management:**
 - Decides necessary actions for phones that fail QA
 - Assigns tasks to Technicians and Quality Control
+- Can reassign repairs between technicians
 
 ### Quality Control (QC)
 - Conducts post-repair quality control
 - Performs manual visual inspection and touchscreen checks
 - Runs software-based diagnostics
 - Determines and assigns final grades (Ungraded, A, B, C)
+- Makes pass/fail decisions based on manual assessment
 
 ### Technicians
-**L1 Technician**: Housing change
-**L2 Technician**: Glass change
-**L3 Technician**: Battery and all other repairs
+**L1 Technician**: Housing change only
+**L2 Technician**: Glass change only
+**L3 Technician**: Battery and all other repairs only
 - Perform physical repairs on devices
-- Log and track assigned tasks in the system
+- Pick available repairs from queue (no direct assignment)
+- Log and track repair completion
+- **Cannot perform repairs outside their level**
 
 ---
 
@@ -133,11 +168,9 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 ### 4.1 Batch Intake Module
 **Purpose**: Manage incoming phone batches and initial registration
 **Key Features**: 
-- Batch creation with supplier info (immutable after creation)
-- IMEI scanning and phone registration
-- Initial QC recording
-- Status assignment
-- Bulk data import from Dr. Phone (CSV/Excel)
+- Batch creation and management (see Batch Intake Process)
+- Dr. Phone data import functionality
+- Initial phone status assignment
 
 ### 4.2 Phone Tracking Module
 **Purpose**: Central tracking of phone status throughout lifecycle
@@ -147,25 +180,21 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - Search and filtering
 - QC results recording
 - Grade management (Ungraded, A, B, C)
+- Multiple repair tracking per phone
 
 ### 4.3 Repair Jobs Module
 **Purpose**: Manage repair task creation and assignment
 **Key Features**: 
-- Job creation based on QC findings
-- Technician assignment by level
-- Parts allocation
-- Progress tracking
-- Repair type tracking (Housing, Battery, Glass, Other with text input)
+- Queue-based repair management (see Repair Job Management)
+- Parts allocation tracking
+- Repair types: Housing (L1), Glass (L2), Battery (L3), Other with text input
 
 ### 4.4 Inventory Module
 **Purpose**: Track spare parts and usage
 **Key Features**: 
-- Bulk parts management
+- Parts and supplier management (see Inventory Management)
+- Stock monitoring (no minimum alerts for MVP)
 - Usage tracking per repair
-- Stock level monitoring (no minimum levels for MVP)
-- Supplier management (separate for phones and parts)
-- Multi-manufacturer support
-- Optional model specification per part
 
 ### 4.5 Admin Module
 **Purpose**: System administration and reporting
@@ -234,6 +263,8 @@ When implementing each module, check impacts on:
 - **Cost Tracking**: No batch cost tracking in MVP
 - **Time Estimates**: No repair time estimates needed
 - **Stock Levels**: No minimum stock level alerts in MVP
+- **Data Retention**: Keep all records indefinitely
+- **Dr. Phone Updates**: No updates/corrections after import (assumption)
 
 ### Supplier Management
 - **Dual Supplier Types**: 
@@ -269,12 +300,45 @@ The system tracks operational KPIs focused on volume and workflow efficiency:
 - On-demand report viewing (no scheduled reports)
 - Users access reports as needed
 - Focus on real-time operational visibility
+- No automated alerts or notifications
+
+---
+
+## 8. Remaining Questions
+
+### Critical for Database Design
+1. **Physical Device Tracking**
+   - How are devices physically labeled/identified?
+   - Storage organization system?
+   - Physical handoff process between stations?
+
+### Failed Device Handling
+2. **Failed QC Scenarios**
+   - What happens to phones that fail initial QC but aren't worth repairing?
+   - How many times can a phone fail final QC before it's scrapped?
+   - Is there a "parts phone" or "scrap" status needed?
+   - How are irreparable phones handled?
+
+### Dr. Phone Export
+3. **Data Structure**
+   - What specific fields does Dr. Phone export?
+   - Sample export file needed for database design
+
+---
+
+## Future Enhancements (Post-MVP)
+- **Security & Tracking**: Lost/stolen phone tracking, audit trails
+- **Business Extensions**: Warranty/guarantee management, customer returns handling
+- **Operational Features**: Multi-location support, batch reconciliation
+- **Automation**: Automated notifications, minimum stock alerts, SLA/deadline tracking
+- **Advanced Analytics**: Historical trend analysis, historical reporting
+- **Technical Features**: Different repair procedures per model
 
 ---
 
 ## Next Steps
-1. ✅ Document roles and workflow phases
-2. ✅ Clarify remaining business questions
+1. ⏳ Get answers for remaining critical questions (physical tracking, failed device handling)
+2. ⏳ Obtain Dr. Phone sample export file
 3. ⏳ Finalize database design based on requirements
 4. ⏳ Resume implementation per PROJECT-IMPLEMENTATION-GUIDE.md
 
@@ -283,4 +347,5 @@ The system tracks operational KPIs focused on volume and workflow efficiency:
 ## Change Log
 - 2024-01-24: Initial documentation structure created
 - 2024-01-24: Updated roles, added workflow phases and grading system
-- 2024-01-24: Added business constraints, KPIs, and data import process based on client feedback 
+- 2024-01-24: Added business constraints, KPIs, and data import process based on client feedback
+- 2024-01-24: Added assumptions, clarifications, and remaining questions based on detailed Q&A 
