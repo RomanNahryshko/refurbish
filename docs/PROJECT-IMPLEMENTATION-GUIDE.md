@@ -169,14 +169,14 @@ The company buys used phones, performs quality control checks, repairs them if n
 ### Phase 4: Backend & Database Setup (Partially Complete)
 
 #### 8. Supabase Integration
-- [ ] Install Supabase dependencies:
+- [x] Install Supabase dependencies:
   ```bash
   npm install @supabase/supabase-js @supabase/ssr
   ```
-- [ ] Create Supabase client configuration
-- [ ] Set up server-side Supabase client
-- [ ] Configure client-side Supabase client
-- [ ] Test connection to Supabase
+- [x] Create Supabase client configuration
+- [x] Set up server-side Supabase client
+- [x] Configure client-side Supabase client
+- [x] Test connection to Supabase
 
 #### 9. Database Schema Implementation
 - [x] Create `schema.sql` file in project root
