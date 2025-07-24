@@ -9,7 +9,8 @@
 3. [User Roles & Permissions](#user-roles--permissions)
 4. [Module Specifications](#module-specifications)
 5. [Module Dependencies & Development Order](#module-dependencies--development-order)
-6. [Questions for Client](#questions-for-client)
+6. [Business Constraints & Requirements](#business-constraints--requirements)
+7. [Reporting & KPIs](#reporting--kpis)
 
 ---
 
@@ -55,12 +56,12 @@ ReMobile Refurbish is an internal ERP system designed to manage the complete lif
 
 ### 2.2 Grading System
 Phones are assigned grades during the Final Quality Control & Grading phase:
+- **Ungraded (UG)** - Initial state or phones not yet graded
 - **A grade** (the best grade)
 - **B grade**
 - **C grade**
-- **Ungraded (UG)**
 
-*Note: Initially, stock might come in different grades like A-plus or ungraded (UG). Grades are assigned by the QC person using Dr. Phone software.*
+*Note: Initially, stock might come in different grades like A-plus or ungraded (UG). Grades are assigned by the QC person using Dr. Phone software. The QC process is standardized across all phone models.*
 
 ### 2.3 Key Business Processes
 
@@ -68,21 +69,31 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - Phones arrive in batches from suppliers
 - Each batch is recorded with supplier information
 - Individual phones are registered within batches using IMEI
+- **Important**: Batches cannot be modified after creation
+
+#### Data Import Process
+1. **Individual Phone Scanning**: Each phone's IMEI is captured via Dr. Phone software when connected
+2. **Bulk Export/Import**: Dr. Phone results are exported in bulk (Excel/CSV) and imported into the system
+3. **No Manual Entry**: Data entry is automated through bulk import, not manual typing
 
 #### Quality Control Process
 - Initial QC during intake (manual + Dr. Phone software)
 - Final QC after repairs to verify quality
 - Grade assignment based on condition
+- **Standardized Process**: Same QC process applies to all phone models
 
 #### Repair Job Management
 - Jobs created based on initial QC findings
 - Assigned to technicians by skill level (L1, L2, L3)
 - Parts tracked per repair job
+- No time estimates required - focus on completion tracking
 
 #### Inventory Management
 - Bulk tracking of spare parts (batteries, housing, glass)
 - Parts usage recorded per repair
-- Managed by General Manager
+- Supplier tracking for both phones and parts
+- Flexible system to support multiple manufacturers (Apple, Samsung, etc.)
+- Optional model specification per part
 
 ---
 
@@ -98,7 +109,7 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - Inputs data for all newly received phones
 - Performs initial quality control (manual + Dr. Phone software)
 - Records IMEI and initial QC results
-- **Workflow Management:**
+**Workflow Management:**
 - Decides necessary actions for phones that fail QA
 - Assigns tasks to Technicians and Quality Control
 
@@ -106,7 +117,7 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - Conducts post-repair quality control
 - Performs manual visual inspection and touchscreen checks
 - Runs software-based diagnostics
-- Determines and assigns final grades (A, B, C)
+- Determines and assigns final grades (Ungraded, A, B, C)
 
 ### Technicians
 **L1 Technician**: Housing change
@@ -122,10 +133,11 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 ### 4.1 Batch Intake Module
 **Purpose**: Manage incoming phone batches and initial registration
 **Key Features**: 
-- Batch creation with supplier info
+- Batch creation with supplier info (immutable after creation)
 - IMEI scanning and phone registration
 - Initial QC recording
 - Status assignment
+- Bulk data import from Dr. Phone (CSV/Excel)
 
 ### 4.2 Phone Tracking Module
 **Purpose**: Central tracking of phone status throughout lifecycle
@@ -134,6 +146,7 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - History tracking
 - Search and filtering
 - QC results recording
+- Grade management (Ungraded, A, B, C)
 
 ### 4.3 Repair Jobs Module
 **Purpose**: Manage repair task creation and assignment
@@ -142,14 +155,17 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - Technician assignment by level
 - Parts allocation
 - Progress tracking
+- Repair type tracking (Housing, Battery, Glass, Other with text input)
 
 ### 4.4 Inventory Module
 **Purpose**: Track spare parts and usage
 **Key Features**: 
 - Bulk parts management
 - Usage tracking per repair
-- Stock level monitoring
-- Reorder alerts
+- Stock level monitoring (no minimum levels for MVP)
+- Supplier management (separate for phones and parts)
+- Multi-manufacturer support
+- Optional model specification per part
 
 ### 4.5 Admin Module
 **Purpose**: System administration and reporting
@@ -158,6 +174,7 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - Role assignment
 - Metrics dashboard
 - Report generation
+- KPI tracking
 
 ---
 
@@ -195,7 +212,7 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 
 ### 5.3 Cross-Module Impacts
 
-! Important!
+**! Important!**
 When implementing each module, check impacts on:
 - **Database**: Schema changes affecting other modules
 - **Status Workflow**: Changes to phone status flow
@@ -204,72 +221,60 @@ When implementing each module, check impacts on:
 
 ---
 
-## 6. Questions for Client
+## 6. Business Constraints & Requirements
 
-### Critical Business Logic:
-1. **Batch Management**
-   - Can batches be modified after creation?
-No. But this shall be explicitly mentioned in the docs.
+### System Constraints
+- **Language**: English only (no multi-language support needed)
+- **Currency**: Single currency system
+- **Locations**: Single location operation
+- **Integrations**: No external accounting system integration required
 
-   - How are batch costs tracked?
-answer: no need to track for now.
+### Data Management
+- **Batch Immutability**: Batches cannot be modified after creation
+- **Cost Tracking**: No batch cost tracking in MVP
+- **Time Estimates**: No repair time estimates needed
+- **Stock Levels**: No minimum stock level alerts in MVP
 
-2. **Repair Process**
-   - Are there standard repair time estimates?
-answer: no. estimates doesn't matter. The system should have a dashboard that will show statistics (overall how many refurbished, per employee.. etc etc)
-   - How is parts compatibility determined?
-answer: no need to think about this just now. but the inventory system should be flexible enough to support several (or all?) manuactureres (apple, samsung etc) and also ability to specify one or several model oer each part (optional thought)
+### Supplier Management
+- **Dual Supplier Types**: 
+  - Phone suppliers (for batches)
+  - Parts suppliers (for spare parts)
+- **Flexible Part System**: Support for multiple manufacturers and models
 
-3. **Quality Standards**
-   - Specific criteria for each grade (A, B, C)?
-answer: 4 grades shall be - Ungraded, A, B, C
+---
 
-   - Different QC processes for different models?
-answer: Let's assume it will be one single process for all the models and refurbishment, but please explicitly say this in documentation.
+## 7. Reporting & KPIs
 
-4. **Inventory**
-   - Minimum stock levels for parts?
-answer: no min levels for now (to be considered after MVP development)
-   - Preferred suppliers for parts?
-answer: No preferred supplier for now, just ability to specify a supplier for battery, for stock, of course, and for batches, like from which supplier phones are coming. Maybe there should be two different supplier types, what do you think, like two different tables for data sources, like suppliers of parts and suppliers of phones, what do you think, just implement the correct way, but don't overcomplicate.
+### Key Performance Indicators
+The system tracks operational KPIs focused on volume and workflow efficiency:
 
-5. **Reporting Needs**
-   - Key KPIs to track?
-The long answer below (please elaborate this information into the correct section of the documentation):
-The key performance indicators (KPIs) to track in the mobile device refurbishment process are primarily operational, focusing on volume and flow, not profit or stock value.
-Here are the main KPIs:
-• Number of Housing Changes
-• Number of Battery Changes
-• Number of Glass Changes
-• Number of Other Hardware Changes (marked as "Others"? with a specific/manual text input i think)
-• Total Phones Fixed/Refurbished
-• Phones Packed / Ready for Dispatch
-• Batch Progress and Status: This includes understanding what happens with incoming shipments (e.g., A-plus grade, ungraded stock) and the proportion needing various changes.
-These KPIs help management understand operational flow, identify bottlenecks, and inform decisions about staffing and shipping. They are like a dashboard of a factory floor, showing exactly how many items are being produced, what types of work are being done, and how many are ready to leave the facility.
+#### Repair Metrics
+- **Number of Housing Changes**: Track L1 technician work
+- **Number of Battery Changes**: Track L3 technician work
+- **Number of Glass Changes**: Track L2 technician work
+- **Number of Other Hardware Changes**: Track other repairs with text description
 
-   - Daily/weekly/monthly reports needed?
-I think now people will just manually, randomly, go to the system and check all the reports one by one. Or check the reports on the... that reports that they will need at the moment.
+#### Production Metrics
+- **Total Phones Fixed/Refurbished**: Overall output
+- **Phones Packed/Ready for Dispatch**: Completion rate
+- **Batch Progress and Status**: Track incoming stock processing
 
-### Additional Considerations:
-- Multi-location support needed?
-answer: no, just english
-- Integration with accounting system?
-answer: no need.
-- Barcode/QR scanning requirements?
-Long answer: i don't know whether needed / I think not needed.
-But also I have the followng input from client (I think it's not full. Use this info and fill a correct part in the documentaion, and also add questions or assumptions so I'll show to the client and finally  get the full understanding):
-- For batch entry, phones arrive in a physical "batch" or "new shipment". The process then focuses on tracking individual phones within that batch.
-- 1. Individual Phone Scanning: Each phone's IMEI number is scanned to create a record. This occurs during the "Intake & Triage" phase, where the Operations Manager, Imran, "inputs data for all newly received phones into the system" and determines/records the IMEI. The IMEI determination happens via the Dr. Phone software when the phone is connected.
-- 2. Bulk Export/Import: The results from Dr. Phone, which are linked to the IMEI numbers, are stored within that software. While there's no API connection, it is possible to export these results in bulk (e.g., as Excel or CSV) from Dr. Phone. This exported file would then be imported into your new system. This means the data entry isn't "one by one manually" by typing, but rather individual scans by Dr. Phone, followed by a bulk transfer of that data.
-- Regarding Barcode/QR scanning requirements: The primary requirement is IMEI scanning to identify each phone. The Dr. Phone software handles this by taking the IMEI number when the phone is connected. There are no explicit mentions of additional barcode or QR code scanning requirements beyond this IMEI-based identification process in the provided sources.
-- In essence, the "batch" is a conceptual grouping for incoming stock, but individual phones within it are digitized into the system one by one via IMEI capture through Dr. Phone, with the aggregate data then being transferred in bulk. 
+#### Dashboard Features
+- Real-time operational flow visualization
+- Bottleneck identification
+- Staff performance metrics (repairs per employee)
+- Factory floor style dashboard showing production status
 
+### Reporting Access
+- On-demand report viewing (no scheduled reports)
+- Users access reports as needed
+- Focus on real-time operational visibility
 
 ---
 
 ## Next Steps
 1. ✅ Document roles and workflow phases
-2. ⏳ Clarify remaining business questions
+2. ✅ Clarify remaining business questions
 3. ⏳ Finalize database design based on requirements
 4. ⏳ Resume implementation per PROJECT-IMPLEMENTATION-GUIDE.md
 
@@ -277,4 +282,5 @@ But also I have the followng input from client (I think it's not full. Use this 
 
 ## Change Log
 - 2024-01-24: Initial documentation structure created
-- 2024-01-24: Updated roles, added workflow phases and grading system 
+- 2024-01-24: Updated roles, added workflow phases and grading system
+- 2024-01-24: Added business constraints, KPIs, and data import process based on client feedback 
