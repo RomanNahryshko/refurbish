@@ -1,0 +1,12 @@
+{
+  "label": "Development Resources",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "title": "Development Resources",
+    "description": "Technical guides, processes, and references for developers working on the ReMobile Refurbish system.",
+    "slug": "/for-development"
+  },
+  "collapsible": true,
+  "collapsed": false
+} 

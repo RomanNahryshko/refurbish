@@ -1,0 +1,12 @@
+{
+  "label": "Future Enhancements",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "title": "Future Enhancements",
+    "description": "Features and enhancements planned for post-MVP phases. NOT included in current scope.",
+    "slug": "/tech-docs-future"
+  },
+  "collapsible": true,
+  "collapsed": true
+} 

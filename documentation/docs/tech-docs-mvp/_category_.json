@@ -1,0 +1,12 @@
+{
+  "label": "MVP Documentation",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "title": "MVP Documentation",
+    "description": "Complete documentation for all features included in the MVP release.",
+    "slug": "/tech-docs-mvp"
+  },
+  "collapsible": true,
+  "collapsed": false
+} 

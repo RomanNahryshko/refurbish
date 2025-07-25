@@ -1,0 +1,10 @@
+{
+  "label": "Tutorial",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "title": "Docusaurus Tutorial",
+    "description": "Learn how to use Docusaurus with these example tutorials.",
+    "slug": "/tutorial"
+  }
+} 

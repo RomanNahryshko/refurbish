@@ -4,6 +4,17 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
+/**
+ * TODO: Update these configuration items:
+ * 1. url: Update to your actual documentation URL when deployed
+ * 2. ✅ organizationName: Updated to vladimirterehoff
+ * 3. ✅ editUrl: Updated to correct GitHub repo
+ * 4. ✅ GitHub href: Updated all GitHub links
+ * 5. Footer links: Update placeholder (#) links with actual URLs
+ * 6. Create img/remobile-social-card.jpg for social media previews
+ * 7. Replace img/logo.svg with your actual logo
+ */
+
 const config: Config = {
   title: 'ReMobile Refurbish Documentation',
   tagline: 'Internal ERP System for Phone Refurbishment Operations',
@@ -15,15 +26,15 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
+  url: 'https://remobile-refurbish-docs.netlify.app', // Update this when you deploy
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'remobile', // Usually your GitHub org/user name.
-  projectName: 'remobile-refurbish', // Usually your repo name.
+  organizationName: 'vladimirterehoff', // Your GitHub username
+  projectName: 'remobile-refurbish', // Your repo name
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -42,10 +53,9 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
+          // This enables "Edit this page" links on each doc page
           editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/vladimirterehoff/remobile-refurbish/tree/main/documentation/',
         },
         blog: false, // Disable the blog plugin
         theme: {
@@ -57,7 +67,7 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    image: 'img/remobile-social-card.jpg', // Create this image later
     navbar: {
       title: 'ReMobile Refurbish',
       logo: {
@@ -71,9 +81,27 @@ const config: Config = {
           position: 'left',
           label: 'Documentation',
         },
-        // Removed blog link
         {
-          href: 'https://github.com/facebook/docusaurus',
+          type: 'docSidebar',
+          sidebarId: 'mvpSidebar',
+          position: 'left',
+          label: 'Tech Docs - MVP',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'futureSidebar',
+          position: 'left',
+          label: 'Tech Docs - Future Scopes',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'devSidebar',
+          position: 'left',
+          label: 'For Development',
+        },
+        // Your GitHub repo
+        {
+          href: 'https://github.com/vladimirterehoff/remobile-refurbish',
           label: 'GitHub',
           position: 'right',
         },
@@ -87,39 +115,46 @@ const config: Config = {
           items: [
             {
               label: 'Documentation',
-              to: '/docs/intro',
+              to: '/docs/tutorial/intro',
+            },
+            {
+              label: 'MVP Scope',
+              to: '/docs/tech-docs-mvp',
+            },
+            {
+              label: 'Development Guide',
+              to: '/docs/for-development',
             },
           ],
         },
         {
-          title: 'Community',
+          title: 'Project',
           items: [
             {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+              label: 'About ReMobile',
+              href: '#', // Update with actual company URL
             },
             {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
-            },
-            {
-              label: 'X',
-              href: 'https://x.com/docusaurus',
+              label: 'Project Status',
+              href: '#', // Update with project management tool URL
             },
           ],
         },
         {
-          title: 'More',
+          title: 'Resources',
           items: [
-            // Removed blog link
             {
               label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus',
+              href: 'https://github.com/vladimirterehoff/remobile-refurbish',
+            },
+            {
+              label: 'API Reference',
+              href: '#', // Update when API docs are ready
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} ReMobile Refurbish. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} ReMobile Refurbish. Internal Use Only.`,
     },
     prism: {
       theme: prismThemes.github,
