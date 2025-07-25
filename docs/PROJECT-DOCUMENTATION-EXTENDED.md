@@ -2,15 +2,14 @@
 
 **Document Type**: Additional Information (Not in Current Scope)  
 **Status**: For Reference Only  
-**Last Updated**: 2024-01-24
+**Last Updated**: 2025-07-25
 
 ## Table of Contents
 1. [Document Purpose](#document-purpose)
 2. [Remaining Questions](#remaining-questions)
 3. [Future Enhancements (Post-MVP)](#future-enhancements-post-mvp)
-4. [Implementation Notes](#implementation-notes)
-5. [Next Steps](#next-steps)
-6. [Change Log](#change-log)
+4. [Next Steps](#next-steps)
+5. [Change Log](#change-log)
 
 ---
 
@@ -51,6 +50,41 @@ This document contains additional information, clarifications, and future consid
 ## 3. Future Enhancements (Post-MVP)
 
 The following features and capabilities have been identified for potential future development phases:
+
+### High Priority Features
+
+#### Purchase & Invoice Batch Management (Full Implementation)
+- Complete cost tracking and profitability analysis per batch
+- Link every device to its original purchase for financial accountability
+- Calculate profit/loss per batch based on repair costs and final sale price
+- Supplier quality assessment metrics (e.g., failure rates by supplier)
+- Financial reporting by batch and time period
+
+#### Employee Performance "Live" Dashboard
+- Separate dashboard for factory floor display on large LCD screens
+- Real-time leaderboard showing:
+  - Technician name and daily targets
+  - Current completed count
+  - Visual progress bars
+- Auto-refresh functionality for real-time updates
+- Foster transparency and friendly competition
+- Support for different target types by technician level
+
+### Operational Enhancements
+
+#### Daily Production Prediction Module
+- Analyze "Awaiting Repair" queue to forecast next day's output
+- Calculate estimated completions based on repair types and historical data
+- Display predictions prominently on management dashboard
+- Store predicted vs actual metrics for accuracy tracking
+- Enable proactive planning for packing staff and logistics
+
+#### Unified Inventory System (Enhanced)
+- Automatic parts deduction when repairs are completed
+- Real-time device location tracking throughout workflow
+- Instant overview of all devices by status and location
+- Integration between device inventory and spare parts inventory
+- Support for low-stock alerts (already noted as future feature)
 
 ### Security & Tracking
 - Lost/stolen phone tracking system
@@ -99,28 +133,7 @@ The following features and capabilities have been identified for potential futur
 
 ---
 
-## 4. Implementation Notes
-
-### Technology Stack Considerations
-- The MVP uses Next.js 15, TypeScript, and Supabase
-- Future phases might require additional services for features like:
-  - Image storage (for QC photos)
-  - SMS gateway (for notifications)
-  - Advanced analytics platform
-
-### Scalability Considerations
-- Current design assumes single location
-- Database schema should allow for future multi-location expansion
-- Consider using UUIDs for all primary keys to support distributed systems
-
-### Integration Readiness
-- Design APIs with versioning from the start
-- Document all data formats for future integrations
-- Consider webhook system for external notifications
-
----
-
-## 5. Next Steps
+## 4. Next Steps
 
 ### Immediate Actions
 1. ⏳ Get answers for remaining critical questions (physical tracking, failed device handling)
@@ -135,7 +148,7 @@ The following features and capabilities have been identified for potential futur
 
 ---
 
-## 6. Change Log
+## 5. Change Log
 
 ### Documentation History
 - 2024-01-24: Initial documentation structure created
@@ -143,6 +156,12 @@ The following features and capabilities have been identified for potential futur
 - 2024-01-24: Added business constraints, KPIs, and data import process based on client feedback
 - 2024-01-24: Added assumptions, clarifications, and remaining questions based on detailed Q&A
 - 2024-01-24: Split documentation into MVP and Extended versions
+- 2025-07-25: Added four new features from client discussion:
+  - Purchase & Invoice Batch Management (full implementation)
+  - Employee Performance "Live" Dashboard (high priority)
+  - Daily Production Prediction Module
+  - Unified Inventory System enhancements
+- 2025-07-25: Removed Implementation Notes section (moved UUID consideration to DATABASE-DESIGN-PROCESS.md)
 
 ### Key Decisions Made
 - Simplified work assignment to queue-based system

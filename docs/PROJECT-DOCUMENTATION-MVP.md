@@ -2,7 +2,7 @@
 
 **Document Type**: MVP Scope (Approved for Development)  
 **Status**: Ready for Client Approval  
-**Last Updated**: 2024-01-24
+**Last Updated**: 2025-07-25
 
 ## Table of Contents
 1. [Project Overview](#project-overview)
@@ -71,6 +71,7 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - Each batch is recorded with supplier information
 - Individual phones are registered within batches using IMEI
 - **Important**: Batches cannot be modified after creation
+- **Purchase Details**: Each batch includes invoice number, supplier name, purchase date, and total amount (for future cost tracking)
 
 #### Data Import Process (Dr. Phone Integration)
 1. **Individual Phone Scanning**: Each phone's IMEI is captured via Dr. Phone software when connected
@@ -171,6 +172,7 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - Batch creation and management (see Batch Intake Process)
 - Dr. Phone data import functionality
 - Initial phone status assignment
+- Purchase invoice details capture (invoice number, supplier, date, amount)
 
 ### 4.2 Phone Tracking Module
 **Purpose**: Central tracking of phone status throughout lifecycle
@@ -261,6 +263,7 @@ When implementing each module, check impacts on:
 ### Data Management
 - **Batch Immutability**: Batches cannot be modified after creation
 - **Cost Tracking**: No batch cost tracking in MVP
+- **Purchase Invoice**: Basic invoice details captured (invoice number, amount, supplier) for future extensibility
 - **Time Estimates**: No repair time estimates needed
 - **Stock Levels**: No minimum stock level alerts in MVP
 - **Data Retention**: Keep all records indefinitely
@@ -301,6 +304,12 @@ The system tracks operational KPIs focused on volume and workflow efficiency:
 - Users access reports as needed
 - Focus on real-time operational visibility
 - No automated alerts or notifications
+
+---
+
+## Change Log
+
+- 2025-07-25: Added basic purchase invoice details to Batch Intake (invoice number, supplier, date, amount) for future extensibility
 
 ---
 

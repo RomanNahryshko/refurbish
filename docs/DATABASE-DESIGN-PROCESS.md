@@ -1,7 +1,7 @@
 # Database Design Process
 
 **Status**: 🟡 In Progress  
-**Last Updated**: 2024-01-24
+**Last Updated**: 2025-07-25
 
 ## Table of Contents
 1. [Design Process Overview](#design-process-overview)
@@ -51,6 +51,10 @@
 - **Scalability**: Design for future growth
 - **Integrity**: Enforce data consistency at DB level
 - **Security**: Implement RLS from the start
+
+### Scalability Considerations
+- **Primary Keys**: Consider using UUIDs vs auto-increment IDs for future distributed system support
+- **Multi-location**: Design schema to support potential multi-location expansion (even if single location for MVP) --  approve with client. Not sure this needed.
 
 ---
 
@@ -300,4 +304,5 @@ When a dependency is identified:
 
 ## Change Log
 - 2024-01-24: Initial process document created
+- 2025-07-25: Added UUID primary key consideration to Scalability Considerations
 - [Future dates]: Document updates as design progresses 
