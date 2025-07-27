@@ -7,7 +7,7 @@ export function middleware(request) {
     const [user, pwd] = atob(authValue).split(':')
     
     // Replace these with your desired credentials
-    if (user === 'remobile' && pwd === 'secure-docs-2024') {
+    if (user === 'remobile' && pwd === 'Refurbish$!year2026') {
       return
     }
   }
