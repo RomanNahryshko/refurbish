@@ -119,11 +119,11 @@ const config: Config = {
             },
             {
               label: 'MVP Scope',
-              to: '/docs/tech-docs-mvp',
+              to: '/docs/tech-docs-mvp/intro',
             },
             {
               label: 'Development Guide',
-              to: '/docs/for-development',
+              to: '/docs/for-development/intro',
             },
           ],
         },
