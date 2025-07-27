@@ -1,0 +1,22 @@
+{
+  "name": "remobile-refurbish-docs",
+  "version": 2,
+  "builds": [
+    {
+      "src": "documentation/package.json",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["documentation/**"]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/documentation/$1"
+    }
+  ],
+  "installCommand": "cd documentation && npm install",
+  "buildCommand": "cd documentation && npm run build",
+  "outputDirectory": "documentation/build"
+} 
