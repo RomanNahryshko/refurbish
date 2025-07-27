@@ -19,6 +19,9 @@ const config: Config = {
   title: 'ReMobile Refurbish Documentation',
   tagline: 'Internal ERP System for Phone Refurbishment Operations',
   favicon: 'img/favicon.ico',
+  
+  // Prevent search engine indexing
+  noIndex: true,
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
