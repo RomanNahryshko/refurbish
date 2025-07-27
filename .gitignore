@@ -71,3 +71,8 @@ temp/
 # Supabase
 supabase/.branches
 supabase/.temp
+
+# Documentation
+documentation/build/
+documentation/.docusaurus/
+documentation/node_modules/
