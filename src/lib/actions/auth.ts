@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
 import { LoginFormData, SignupFormData } from '@/lib/types'
-import { USER_ROLES } from '@/lib/constants'
 
 export async function login(formData: LoginFormData) {
   const supabase = await createClient()

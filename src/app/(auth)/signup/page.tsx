@@ -14,7 +14,7 @@ export default function SignupPage() {
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">
             <p className="text-lg">
-              "Join our team and help streamline phone refurbishment operations."
+              {'"Join our team and help streamline phone refurbishment operations."'}
             </p>
             <footer className="text-sm">Internal ERP System</footer>
           </blockquote>

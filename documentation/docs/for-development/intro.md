@@ -27,6 +27,5 @@ This section contains technical guides and processes for developers working on t
 ## 🛠️ Quick Links
 
 - [Database Design Process](/docs/for-development/database-design)
-- [Implementation Guide](/docs/for-development/implementation-guide)
 
 Select a guide from the sidebar to get started. 
