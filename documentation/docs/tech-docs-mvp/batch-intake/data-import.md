@@ -7,8 +7,8 @@ title: Data Import (Dr. Phone)
 This document describes the process for importing data from Dr. Phone.
 
 1.  **Individual Phone Scanning**: Each phone's IMEI is captured via Dr. Phone software when connected.
-2.  **Bulk Export/Import**: Dr. Phone results (IMEI, phone model/brand, QC results) are exported in bulk (Excel/CSV) and imported into the system.
-3.  **No Manual Entry**: Data entry is automated through bulk import, not manual typing.
+2.  **Manual Export/Import**: Dr. Phone results (IMEI, phone model/brand, QC results) are manually exported (Excel/CSV) and manually imported into the system.
+3.  **Bulk Data Entry**: Initial data entry through manual bulk import, with ability to manually modify faults.
 4.  **Import Frequency**: Daily or per batch basis (flexible timing).
 5.  **Error Handling**: Basic validation and error reporting.
-6.  **Data Immutability**: No updates/corrections after import. 
+6.  **Fault Modification**: After import, faults can be manually added, modified, or supplemented with visual inspection findings. 

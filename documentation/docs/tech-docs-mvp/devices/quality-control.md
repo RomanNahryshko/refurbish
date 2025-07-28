@@ -10,10 +10,9 @@ This document outlines the Quality Control (QC) process.
 
 1.  **Initial QC** (during Intake & Triage)
     -   Software diagnostics via Dr. Phone (detects faults like camera issues)
-    -   Manual visual inspection for physical damage/scratches
-    -   Touchscreen functionality verification
-    -   General functionality testing
-    -   IMEI linked to QC results
+    -   Manual review and modification of Dr. Phone detected faults
+    -   Manual addition of visual faults (housing damage, screen corruption, etc.)
+    -   IMEI linked to final QC results (both automated + manual)
 
 2.  **Final QC** (after repairs)
     -   Complete re-run of all QC tests

@@ -80,12 +80,6 @@ const config: Config = {
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'tutorialSidebar',
-          position: 'left',
-          label: 'Documentation',
-        },
-        {
-          type: 'docSidebar',
           sidebarId: 'mvpSidebar',
           position: 'left',
           label: 'Tech Docs - MVP',
@@ -100,7 +94,7 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'devSidebar',
           position: 'left',
-          label: 'For Development',
+          label: 'For Developers',
         },
         // Your GitHub repo
         {
@@ -117,16 +111,12 @@ const config: Config = {
           title: 'Docs',
           items: [
             {
-              label: 'Documentation',
-              to: '/docs/tutorial/intro',
-            },
-            {
               label: 'MVP Scope',
               to: '/docs/tech-docs-mvp/intro',
             },
             {
-              label: 'Development Guide',
-              to: '/docs/for-development/intro',
+              label: 'For Developers',
+              to: '/docs/for-developers/intro',
             },
           ],
         },

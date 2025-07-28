@@ -75,20 +75,19 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 
 #### Data Import Process (Dr. Phone Integration)
 1. **Individual Phone Scanning**: Each phone's IMEI is captured via Dr. Phone software when connected
-2. **Bulk Export/Import**: Dr. Phone results (IMEI, phone model/brand, QC results) are exported in bulk (Excel/CSV) and imported into the system
-3. **No Manual Entry**: Data entry is automated through bulk import, not manual typing
+2. **Manual Export/Import**: Dr. Phone results (IMEI, phone model/brand, QC results) are manually exported (Excel/CSV) and manually imported into the system
+3. **Bulk Data Entry**: Initial data entry through manual bulk import, with ability to manually modify faults
 4. **Import Frequency**: Daily or per batch basis (flexible timing)
 5. **Error Handling**: Basic validation and error reporting
-6. **Data Immutability**: No updates/corrections after import
+6. **Fault Modification**: After import, faults can be manually added, modified, or supplemented with visual inspection findings
 
 #### Quality Control Process
 **QC Stages:**
 1. **Initial QC** (during Intake & Triage)
    - Software diagnostics via Dr. Phone (detects faults like camera issues)
-   - Manual visual inspection for physical damage/scratches
-   - Touchscreen functionality verification
-   - General functionality testing
-   - IMEI linked to QC results
+   - Manual review and modification of Dr. Phone detected faults
+   - Manual addition of visual faults (housing damage, screen corruption, etc.)
+   - IMEI linked to final QC results (both automated + manual)
 
 2. **Final QC** (after repairs)
    - Complete re-run of all QC tests
@@ -103,7 +102,7 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 
 #### Repair Job Management
 **Job Creation & Tracking:**
-- Jobs created based on initial QC findings
+- Jobs manually created by Operations Manager based on final QC findings (Dr. Phone results + manual fault additions/modifications)
 - Multiple repairs per phone supported (battery + screen, etc.)
 - Each repair tracked separately
 - Can be handled by same or different technicians
@@ -173,9 +172,10 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - Dr. Phone data import functionality
 - Initial phone status assignment
 - Purchase invoice details capture (invoice number, supplier, date, amount)
+- Label generation and printing for physical device identification
 
-### 4.2 Phone Tracking Module
-**Purpose**: Central tracking of phone status throughout lifecycle
+### 4.2 Devices Module (formerly Phone Tracking)
+**Purpose**: Central management and tracking of device status throughout lifecycle
 **Key Features**: 
 - Real-time status updates
 - History tracking
@@ -183,13 +183,15 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 - QC results recording
 - Grade management (Ungraded, A, B, C)
 - Multiple repair tracking per phone
+- Digital job sheet for each device
 
 ### 4.3 Repair Jobs Module
 **Purpose**: Manage repair task creation and assignment
 **Key Features**: 
 - Queue-based repair management (see Repair Job Management)
 - Parts allocation tracking
-- Repair types: Housing (L1), Glass (L2), Battery (L3), Other with text input
+- Fixed repair types: Housing (L1), Glass (L2), Battery (L3), Software Update, Other with text input
+- Note: Task types are fixed for MVP, no custom task creation
 
 ### 4.4 Inventory Module
 **Purpose**: Track spare parts and usage
@@ -215,9 +217,9 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 
 | Module | Depends On | Required By |
 |--------|------------|-------------|
-| **Batch Intake** | Auth/Users, Core DB | Phone Tracking, Inventory |
-| **Phone Tracking** | Batch Intake, Auth | Repair Jobs, QC Process |
-| **Repair Jobs** | Phone Tracking, Inventory | QC Process, Reporting |
+| **Batch Intake** | Auth/Users, Core DB | Devices, Inventory |
+| **Devices** | Batch Intake, Auth | Repair Jobs, QC Process |
+| **Repair Jobs** | Devices, Inventory | QC Process, Reporting |
 | **Inventory** | Auth/Users, Core DB | Repair Jobs, Reporting |
 | **Admin** | All modules | None |
 
@@ -232,11 +234,11 @@ Phones are assigned grades during the Final Quality Control & Grading phase:
 4. Inventory Module
 
 **Phase 3: Workflow**
-5. Phone Tracking Module
+5. Devices Module
 6. Repair Jobs Module
 
 **Phase 4: Quality Control**
-7. QC Process (within Phone Tracking)
+7. QC Process (within Devices Module)
 
 **Phase 5: Administration**
 8. Admin Module & Reporting
