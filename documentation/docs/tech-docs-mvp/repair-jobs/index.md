@@ -27,4 +27,6 @@ The following repair tasks are available in the MVP:
 - Required when a new battery is installed (approximately 80% of cases)
 - Part of the QC process
 - Must be manually added as a separate task (no automatic dependencies in MVP)
-- **Assumption**: Any technician can perform software updates (to be confirmed with Hassib) 
+- **Assumption**: Any technician can perform software updates (to be confirmed with Hassib)
+
+After repairs are completed, each device undergoes a [final quality control check](../device-tracking/quality-control.md#final-qc). 

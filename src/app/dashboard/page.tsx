@@ -7,31 +7,31 @@ const modules = [
   {
     title: 'Batch Intake',
     description: 'Register new phone batches from suppliers',
-    href: '/dashboard/batch-intake',
+    href: '/batch-intake',
     icon: '📦',
   },
   {
     title: 'Phone Tracking',
     description: 'Track phones by IMEI through the refurbishment process',
-    href: '/dashboard/phone-tracking',
+    href: '/phone-tracking',
     icon: '📱',
   },
   {
     title: 'Repair Jobs',
     description: 'Manage and assign repair tasks to technicians',
-    href: '/dashboard/repair-jobs',
+    href: '/repair-jobs',
     icon: '🔧',
   },
   {
     title: 'Inventory',
     description: 'Monitor spare parts stock levels',
-    href: '/dashboard/inventory',
+    href: '/inventory',
     icon: '📊',
   },
   {
     title: 'Shipping',
     description: 'Prepare shipping manifests for completed phones',
-    href: '/dashboard/shipping',
+    href: '/shipping',
     icon: '📦',
   },
   {

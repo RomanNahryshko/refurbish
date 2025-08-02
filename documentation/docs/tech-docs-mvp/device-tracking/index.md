@@ -1,8 +1,8 @@
 ---
-title: Devices Module
+title: Device Tracking Module
 ---
 
-# Devices Module
+# Device Tracking Module
 
 ## Purpose
 Central management and tracking of device status throughout lifecycle.

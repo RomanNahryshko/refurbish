@@ -11,7 +11,9 @@ This system digitizes and streamlines the entire workflow for used phone refurbi
 - **Frontend**: Next.js 15 with App Router
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4 with shadcn/ui
+- **State Management**: TanStack Query (React Query) for data fetching
 - **Backend & Database**: Supabase (PostgreSQL, Auth, RLS)
+- **Documentation**: Docusaurus for technical documentation
 - **Package Manager**: npm
 
 ## Features
@@ -65,24 +67,56 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
+6. View documentation (optional):
+```bash
+npm run docs:dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) for the app or [http://localhost:3001](http://localhost:3001) for documentation.
+
 ## Development
+
+### Commands
 
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
+- `npm run docs:dev` - Start documentation server
+- `npm run docs:build` - Build documentation
 
 ## Project Structure
 
 ```
-src/
-├── app/              # Next.js app router pages
-├── components/       # React components
-│   ├── ui/          # shadcn/ui components
-│   ├── layout/      # Layout components
-│   └── common/      # Shared components
-├── lib/             # Utility functions and types
-└── types/           # TypeScript type definitions
+.
+├── src/                  # Application source code
+│   ├── app/             # Next.js app router pages & routing
+│   ├── modules/         # Feature-specific business logic
+│   │   ├── batch-intake/    # Batch management module
+│   │   ├── phone-tracking/  # Device tracking module
+│   │   ├── repair-jobs/     # Repair management module
+│   │   ├── inventory/       # Parts inventory module
+│   │   └── shipping/        # Shipping module
+│   ├── components/      # Shared React components
+│   │   ├── ui/         # Basic UI components (shadcn/ui)
+│   │   ├── layout/     # Site layout components
+│   │   ├── common/     # Shared utilities
+│   │   └── auth/       # Authentication components
+│   ├── lib/             # Core utilities & services
+│   │   ├── api/        # Database API layer
+│   │   ├── hooks/      # Shared React Query hooks
+│   │   ├── auth/       # RBAC & permissions
+│   │   ├── actions/    # Server actions
+│   │   ├── supabase/   # Database clients
+│   │   └── providers/  # App providers (React Query, etc.)
+│   ├── types/          # TypeScript definitions
+│   ├── styles/         # Global styles
+│   └── middleware.ts   # Authentication middleware
+├── documentation/       # Docusaurus documentation site
+│   └── docs/           # Technical documentation
+│       ├── tech-docs-mvp/    # MVP specifications
+│       └── tech-docs-future/ # Future features
+└── schema.sql          # Database schema
 ```
 
 ## Contributing

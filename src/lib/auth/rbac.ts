@@ -73,6 +73,7 @@ export function canAccessModule(userRole: UserRole, module: string): boolean {
     'inventory': ['inventory.read', 'inventory.update'],
     'shipping': ['shipping.create', 'shipping.read'],
     'admin': ['*'],
+    'dashboard': ['batch.read', 'phone.read'], // Dashboard requires basic read permissions
   }
   
   const requiredPermissions = modulePermissions[module] || []

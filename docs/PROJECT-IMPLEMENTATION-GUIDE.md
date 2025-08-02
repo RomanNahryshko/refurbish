@@ -153,8 +153,7 @@ The company buys used phones, performs quality control checks, repairs them if n
   ├── styles/
   │   └── globals.css
   └── types/
-      ├── auth.ts
-      └── subscription.ts
+      └── auth.ts
   ```
 
 #### 7. Create Placeholder Pages

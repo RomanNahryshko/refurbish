@@ -18,11 +18,11 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Batch Intake', href: '/dashboard/batch-intake' },
-  { name: 'Phone Tracking', href: '/dashboard/phone-tracking' },
-  { name: 'Repair Jobs', href: '/dashboard/repair-jobs' },
-  { name: 'Inventory', href: '/dashboard/inventory' },
-  { name: 'Shipping', href: '/dashboard/shipping' },
+  { name: 'Batch Intake', href: '/batch-intake' },
+  { name: 'Phone Tracking', href: '/phone-tracking' },
+  { name: 'Repair Jobs', href: '/repair-jobs' },
+  { name: 'Inventory', href: '/inventory' },
+  { name: 'Shipping', href: '/shipping' },
 ]
 
 export function Header() {

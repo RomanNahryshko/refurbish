@@ -3,7 +3,16 @@
 -- This is a first version and will be updated with a full DB design
 
 -- Custom Types for core statuses and roles
-CREATE TYPE phone_status AS ENUM ('Received', 'In QC', 'Awaiting Repair', 'In Repair', 'Final QC', 'Graded', 'Shipped');
+CREATE TYPE phone_status AS ENUM (
+    'Received', 
+    'In QC', 
+    'Awaiting Repair', 
+    'In Repair', 
+    'Final QC', 
+    'Graded', 
+    'Shipped',
+    'On Hold'  -- MVP: For devices pending decision (e.g., failed QC, not worth repairing, etc.)
+);
 CREATE TYPE user_role AS ENUM ('data_entry', 'qc_controller', 'technician', 'ops_manager');
 
 -- Core Tables - A simple starting point for our main entities.

@@ -56,76 +56,15 @@
 - **Primary Keys**: Consider using UUIDs vs auto-increment IDs for future distributed system support
 - **Multi-location**: Design schema to support potential multi-location expansion (even if single location for MVP) --  approve with client. Not sure this needed.
 
----
 
-## 2. Current Schema Status
-
-### Existing Tables (Basic Schema)
-✅ **Created in schema.sql:**
-- `batches` - Basic structure
-- `phones` - Basic structure
-- `spare_parts` - Basic structure
-- `user_profiles` - Basic structure
-
-### Missing Tables
-❌ **To be designed:**
-- `repair_jobs`
-- `repair_job_parts`
-- `phone_assessments`
-- `qc_checks`
-- `shipments`
-- `audit_logs`
-- `suppliers`
-- `customers` (if needed)
-- `notifications`
-- `system_settings`
 
 ---
 
-## 3. Entity Identification
-
-### Core Entities
-
-#### 3.1 Batch
-**Purpose**: Group of phones received together  
-**Key Attributes**: [To be defined based on business process]
-- [ ] Batch ID
-- [ ] Supplier reference
-- [ ] Date received
-- [ ] Total phones
-- [ ] Status
-- [ ] Cost information
-
-#### 3.2 Phone
-**Purpose**: Individual phone unit  
-**Key Attributes**: [To be defined]
-- [ ] Unique identifier (IMEI/Serial)
-- [ ] Model information
-- [ ] Condition/Grade
-- [ ] Current status
-- [ ] Location tracking
-
-#### 3.3 Repair Job
-**Purpose**: [To be defined]  
-**Key Attributes**: [To be defined]
-
-#### 3.4 Spare Part
-**Purpose**: Inventory items used in repairs  
-**Key Attributes**: [To be defined]
-
-#### 3.5 User
-**Purpose**: System users with different roles  
-**Key Attributes**: ✅ Partially defined
-
-### Supporting Entities
-[To be identified based on business processes]
-
----
-
-## 4. Relationship Mapping
+## 2. Relationship Mapping
 
 ### Identified Relationships
 ```
+[to create]
 batches (1) ← → (N) phones
 phones (1) ← → (N) repair_jobs
 repair_jobs (N) ← → (N) spare_parts (through repair_job_parts)
@@ -138,10 +77,11 @@ users (1) ← → (N) qc_checks (as controller)
 - [ ] Can a phone have multiple active repair jobs?
 - [ ] Can spare parts be reserved for specific repairs?
 - [ ] Can users be assigned to specific batches/phones?
+- etc.
 
 ---
 
-## 5. Field Specifications
+## 3. Field Specifications
 
 ### Naming Conventions
 - **Tables**: plural, snake_case (e.g., `repair_jobs`)
@@ -168,7 +108,7 @@ updated_by UUID REFERENCES auth.users(id)
 
 ---
 
-## 6. Constraints & Validations
+## 4. Constraints & Validations
 
 ### Types of Constraints
 - [ ] Primary Keys
@@ -182,7 +122,7 @@ updated_by UUID REFERENCES auth.users(id)
 
 ---
 
-## 7. Indexes & Performance
+## 5. Indexes & Performance
 
 ### Index Strategy
 - [ ] Primary key indexes (automatic)
@@ -197,7 +137,7 @@ updated_by UUID REFERENCES auth.users(id)
 
 ---
 
-## 8. Security Considerations
+## 6. Security Considerations
 
 ### Row Level Security (RLS)
 - [ ] Define policies per table
@@ -211,7 +151,7 @@ updated_by UUID REFERENCES auth.users(id)
 
 ---
 
-## 9. Migration Strategy
+## 7. Migration Strategy
 
 ### Approach
 - [ ] Initial schema creation
@@ -221,7 +161,7 @@ updated_by UUID REFERENCES auth.users(id)
 
 ---
 
-## 10. Definition of Done
+## 8. Definition of Done
 
 ### For Each Table/Entity Design:
 - [ ] **Entity Defined**: Purpose, attributes, and relationships documented
@@ -242,6 +182,7 @@ updated_by UUID REFERENCES auth.users(id)
 - [ ] **API Contract**: If module exposes data, document the interface
 
 ### Dependency Check Questions:
+(remove?)
 1. **When adding a new field/table:**
    - Does this affect existing queries in other modules?
    - Do related tables need corresponding updates?
@@ -256,33 +197,6 @@ updated_by UUID REFERENCES auth.users(id)
    - Which modules consume this logic?
    - Are there status workflows that need adjustment?
    - Do validation rules in other modules need updates?
-
-### Documentation Update Protocol:
-When a dependency is identified:
-1. Note it in the current module's documentation
-2. Update the affected module's documentation
-3. Add a change log entry in both places
-4. Flag for testing during implementation
-
----
-
-## 11. Approval Checklist
-
-### Before Finalizing Schema
-- [ ] All business processes documented
-- [ ] All entities identified
-- [ ] All relationships defined
-- [ ] All fields specified with types
-- [ ] All constraints defined
-- [ ] Performance considerations addressed
-- [ ] Security policies defined
-- [ ] Client review completed
-- [ ] Test cases prepared
-
-### Sign-off Required From
-- [ ] Technical Lead
-- [ ] Business Stakeholder
-- [ ] Database Administrator (if applicable)
 
 ---
 
