@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, FormEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,43 +12,38 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleSubmit(formData: FormData) {
+  const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
     setIsLoading(true)
     setError(null)
-    
-    console.log('Login started, isLoading:', true)
 
-    // Ensure minimum loading time to show spinner
-    const startTime = Date.now()
-    
-    const result = await login({
-      email: formData.get('email') as string,
-      password: formData.get('password') as string,
-    })
+    const formData = new FormData(event.currentTarget)
 
-    // Ensure at least 800ms of loading to show the spinner
-    const elapsedTime = Date.now() - startTime
-    const minLoadingTime = 800
-    const remainingTime = Math.max(0, minLoadingTime - elapsedTime)
+    try {
+      // Run login and minimum delay in parallel
+      const [result] = await Promise.all([
+        login({
+          email: formData.get('email') as string,
+          password: formData.get('password') as string,
+        }),
+        new Promise(resolve => setTimeout(resolve, 800)) // Minimum 800ms loading time
+      ])
 
-    if (result?.error) {
-      setTimeout(() => {
+      if (result?.error) {
         setError(result.error)
         setIsLoading(false)
-        console.log('Login failed, isLoading:', false)
-      }, remainingTime)
-    } else {
-      // Success - show spinner for a bit then redirect
-      setTimeout(() => {
-        console.log('Login successful, redirecting...')
+      } else {
         window.location.href = '/dashboard'
-      }, remainingTime + 200)
+      }
+    } catch (err) {
+      setError('An unexpected error occurred.')
+      setIsLoading(false)
     }
   }
 
   return (
     <Card className="w-full max-w-md">
-      <form action={handleSubmit}>
+      <form onSubmit={handleFormSubmit}>
         <CardContent className="space-y-6 pt-6">
           {error && (
             <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
