@@ -35,7 +35,7 @@ export type SupabaseOptions = {
   auth?: {
     persistSession?: boolean
     storageKey?: string
-    storage?: any
+    storage?: unknown
     flowType?: 'implicit' | 'pkce'
     autoRefreshToken?: boolean
     detectSessionInUrl?: boolean

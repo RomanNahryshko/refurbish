@@ -173,7 +173,7 @@ export function UserList({ currentUserId }: UserListProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user: any) => (
+                                      {users.map((user: Record<string, unknown>) => (
                     <tr key={user.id} className="border-b hover:bg-accent/50">
                       <td className="p-3">
                         <div>

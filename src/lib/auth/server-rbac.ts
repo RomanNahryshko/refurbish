@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { supabaseUrl, supabaseAnonKey } from '@/lib/supabase'
 import { hasPermission } from './rbac'
 import { UserRole } from '@/lib/types/business-types'
+import type { User } from '@supabase/supabase-js'
 
 /**
  * Server-side RBAC middleware for API routes
@@ -11,7 +12,7 @@ import { UserRole } from '@/lib/types/business-types'
 export async function checkPermission(
   request: NextRequest,
   requiredPermission: string
-): Promise<{ authorized: boolean; user: any; error?: string }> {
+): Promise<{ authorized: boolean; user: User | null; error?: string }> {
   try {
     // Create Supabase client for server-side
     const supabase = createServerClient(
@@ -22,7 +23,7 @@ export async function checkPermission(
           getAll() {
             return request.cookies.getAll()
           },
-          setAll(cookiesToSet) {
+          setAll() {
             // In API routes, we typically can't modify the response to set cookies
             // but we can still read them for auth purposes
           },
@@ -99,9 +100,9 @@ export async function checkPermission(
  */
 export function withPermission(
   requiredPermission: string,
-  handler: (request: NextRequest, context: any, user: any) => Promise<NextResponse>
+  handler: (request: NextRequest, context: Record<string, unknown>, user: User) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, context: any) => {
+  return async (request: NextRequest, context: Record<string, unknown>) => {
     const { authorized, user, error } = await checkPermission(request, requiredPermission)
 
     if (!authorized) {

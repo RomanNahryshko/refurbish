@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { useUser, useUpdateUser, useResetUserPassword, useUserAuditLogs } from '@/lib/hooks/use-users'
+import { useUser, useUpdateUser, useUserAuditLogs } from '@/lib/hooks/use-users'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -181,7 +181,7 @@ export function EditUserForm({ userId, currentUserId }: EditUserFormProps) {
             <CardHeader>
               <CardTitle>Edit User Information</CardTitle>
               <CardDescription>
-                Update the user's profile information and role
+                Update the user&apos;s profile information and role
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -214,7 +214,7 @@ export function EditUserForm({ userId, currentUserId }: EditUserFormProps) {
                           />
                         </FormControl>
                         <FormDescription>
-                          The user's display name in the system
+                          The user&apos;s display name in the system
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -285,7 +285,7 @@ export function EditUserForm({ userId, currentUserId }: EditUserFormProps) {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {auditLogs.map((log: any) => (
+                  {auditLogs.map((log: Record<string, unknown>) => (
                     <div key={log.id} className="flex items-start gap-3 p-3 border rounded">
                       <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
                       <div className="flex-1 min-w-0">

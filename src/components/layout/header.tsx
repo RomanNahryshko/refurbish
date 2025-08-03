@@ -5,8 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { logout } from '@/lib/actions/auth'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -17,6 +16,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import type { User } from '@supabase/supabase-js'
+import type { Session } from '@supabase/supabase-js'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
@@ -29,9 +30,8 @@ const navigation = [
 
 export function Header() {
   const pathname = usePathname()
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<{full_name?: string; role?: string} | null>(null);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -44,23 +44,21 @@ export function Header() {
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) {
-      setLoading(false);
       return;
     }
 
     // Define a function to update user and profile state
-    const updateUserAndProfile = (session: any) => {
+    const updateUserAndProfile = (session: Session | null) => {
       setUser(session?.user ?? null);
-      setLoading(false);
     };
 
     // Fetch the initial session
-    supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
       updateUserAndProfile(session);
     });
 
     // Subscribe to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
       updateUserAndProfile(session);
     });
 

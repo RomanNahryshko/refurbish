@@ -6,12 +6,10 @@ import { createClient } from '@/lib/supabase/client'
 
 export function Footer() {
   const [userRole, setUserRole] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const supabase = createClient()
     if (!supabase) {
-      setLoading(false)
       return
     }
 
@@ -29,8 +27,6 @@ export function Footer() {
         }
       } catch (error) {
         console.error('Error fetching user role:', error)
-      } finally {
-        setLoading(false)
       }
     }
 

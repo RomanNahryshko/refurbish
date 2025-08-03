@@ -8,8 +8,6 @@ import * as z from 'zod'
 import { useCreateUser } from '@/lib/hooks/use-users'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { RoleSelector } from './role-selector'
@@ -156,7 +154,7 @@ export function CreateUserForm({ currentUserId, onSuccess }: CreateUserFormProps
                     />
                   </FormControl>
                   <FormDescription>
-                    This will be the user's login email address
+                    This will be the user&apos;s login email address
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -177,7 +175,7 @@ export function CreateUserForm({ currentUserId, onSuccess }: CreateUserFormProps
                     />
                   </FormControl>
                   <FormDescription>
-                    The user's display name in the system
+                    The user&apos;s display name in the system
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -211,7 +209,7 @@ export function CreateUserForm({ currentUserId, onSuccess }: CreateUserFormProps
               <ul className="text-blue-700 text-sm space-y-1">
                 <li>• A secure temporary password will be generated</li>
                 <li>• The user account will be created immediately</li>
-                <li>• You'll receive the login credentials to share</li>
+                <li>• You&apos;ll receive the login credentials to share</li>
                 <li>• The user must change their password on first login</li>
               </ul>
             </div>

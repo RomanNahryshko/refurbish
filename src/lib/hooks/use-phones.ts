@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { phonesApi } from '@/lib/api/phones'
-import { PhoneFilters, PhoneStatus } from '@/lib/types/business-types'
+import { PhoneFilters, PhoneStatus, Phone } from '@/lib/types/business-types'
 import { useToast } from '@/lib/hooks/use-toast'
 
 /**
@@ -44,9 +44,9 @@ export function useUpdatePhoneStatus() {
       const previousPhones = queryClient.getQueryData(['phones'])
 
       // Optimistically update to the new value
-      queryClient.setQueryData(['phones'], (old: any) => {
+      queryClient.setQueryData(['phones'], (old: Phone[]) => {
         if (!old) return old
-        return old.map((phone: any) =>
+        return old.map((phone: Phone) =>
           phone.id === id ? { ...phone, status } : phone
         )
       })

@@ -84,9 +84,9 @@ export async function updateSession(request: NextRequest) {
       if (profile?.must_change_password === true) {
         return NextResponse.redirect(new URL(passwordChangePath, request.url))
       }
-    } catch (error) {
+    } catch {
       // If we can't check the profile, allow the request to continue
-      console.warn('Could not check must_change_password flag:', error)
+      console.warn('Could not check must_change_password flag')
     }
   }
 
@@ -103,7 +103,7 @@ export async function updateSession(request: NextRequest) {
       if (profile?.must_change_password === true) {
         return NextResponse.redirect(new URL(passwordChangePath, request.url))
       }
-    } catch (error) {
+    } catch {
       // Continue to dashboard if we can't check
     }
     

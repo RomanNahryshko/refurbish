@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '../supabase'
 
@@ -8,7 +9,7 @@ export async function createClient() {
   if (!hasValidSupabaseConfig) {
     // Return a mock client that won't crash the app
     console.warn('Supabase server client not configured properly')
-    return null as any
+    return null as unknown as SupabaseClient
   }
 
   const cookieStore = await cookies()

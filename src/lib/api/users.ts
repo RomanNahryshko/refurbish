@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
 import { createAdminClient, generateTemporaryPassword } from '@/lib/supabase/admin'
-import { User, UserAudit } from '@/lib/types/business-types'
 
 // Types for user management
 export interface CreateUserData {
@@ -188,7 +187,7 @@ export const usersApi = {
       }
 
       // Create user profile
-      const profileData: any = {
+      const profileData: Record<string, unknown> = {
         id: authUser.user.id,
         full_name: userData.full_name,
         role: userData.role,
@@ -247,7 +246,7 @@ export const usersApi = {
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // Update user profile
-    const { data, error } = await supabase
+    const { data: updateData, error } = await supabase
       .from('user_profiles')
       .update({
         ...userData,
@@ -269,7 +268,7 @@ export const usersApi = {
       details: { updated_fields: Object.keys(userData) }
     })
 
-    return data
+    return updateData
   },
 
   /**
@@ -280,7 +279,7 @@ export const usersApi = {
     const supabase = createClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
-    const { data, error } = await supabase
+    const { data: statusData, error } = await supabase
       .from('user_profiles')
       .update({ 
         status,
@@ -302,7 +301,7 @@ export const usersApi = {
       details: { new_status: status }
     })
 
-    return data
+    return statusData
   },
 
   /**
@@ -320,7 +319,7 @@ export const usersApi = {
       const newPassword = generateTemporaryPassword()
 
       // Update user password using admin API
-      const { data, error } = await adminClient.auth.admin.updateUserById(userId, {
+      const { error } = await adminClient.auth.admin.updateUserById(userId, {
         password: newPassword
       })
 

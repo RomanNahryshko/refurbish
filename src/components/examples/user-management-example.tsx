@@ -104,7 +104,7 @@ export function UserManagementExample() {
           <p className="text-muted-foreground">No users found</p>
         ) : (
           <div className="space-y-2">
-            {users?.map((user: any) => (
+            {users?.map((user: Record<string, unknown>) => (
               <div 
                 key={user.id} 
                 className="flex items-center justify-between p-3 border rounded"

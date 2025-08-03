@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/lib/hooks/use-toast'
+import type { User } from '@supabase/supabase-js'
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
@@ -32,8 +33,7 @@ export default function ChangePasswordPage() {
   const router = useRouter()
   const toast = useToast()
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
-  const [userProfile, setUserProfile] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [isForced, setIsForced] = useState(false)
 
   const form = useForm<ChangePasswordFormData>({
@@ -75,8 +75,6 @@ export default function ChangePasswordPage() {
           })
           return
         }
-
-        setUserProfile(profile)
         setIsForced(profile?.must_change_password === true)
         setLoading(false)
 
