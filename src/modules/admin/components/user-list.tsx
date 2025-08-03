@@ -174,40 +174,40 @@ export function UserList({ currentUserId }: UserListProps) {
                 </thead>
                 <tbody>
                                       {users.map((user: Record<string, unknown>) => (
-                    <tr key={user.id} className="border-b hover:bg-accent/50">
+                    <tr key={String(user.id)} className="border-b hover:bg-accent/50">
                       <td className="p-3">
                         <div>
                           <div className="font-medium">
-                            {user.full_name || 'No name set'}
+                            {String(user.full_name || 'No name set')}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {user.auth_user?.email || 'No email'}
+                            {String((user as any)?.auth_user?.email || 'No email')}
                           </div>
                         </div>
                       </td>
                       <td className="p-3">
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {user.role}
+                          {String(user.role)}
                         </span>
                       </td>
                       <td className="p-3">
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          user.status === 'active' 
+                          String(user.status) === 'active' 
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {user.status || 'active'}
+                          {String(user.status || 'active')}
                         </span>
                       </td>
                       <td className="p-3 text-sm text-muted-foreground">
                         {user.last_login 
-                          ? new Date(user.last_login).toLocaleDateString()
+                          ? new Date(String(user.last_login)).toLocaleDateString()
                           : 'Never'
                         }
                       </td>
                       <td className="p-3 text-sm text-muted-foreground">
                         {user.created_at 
-                          ? new Date(user.created_at).toLocaleDateString()
+                          ? new Date(String(user.created_at)).toLocaleDateString()
                           : 'Unknown'
                         }
                       </td>

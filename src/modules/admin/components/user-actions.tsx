@@ -37,15 +37,15 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
   const updateStatusMutation = useUpdateUserStatus()
   const resetPasswordMutation = useResetUserPassword()
 
-  const isCurrentUser = user.id === currentUserId
-  const isActive = user.status === 'active' || !user.status
+  const isCurrentUser = String(user.id) === currentUserId
+  const isActive = String(user.status) === 'active' || !user.status
 
   const handleStatusChange = async () => {
     const newStatus = isActive ? 'disabled' : 'active'
     
     try {
       await updateStatusMutation.mutateAsync({
-        userId: user.id,
+        userId: String(user.id),
         status: newStatus,
         performedBy: currentUserId || 'unknown-admin'
       })
@@ -59,8 +59,8 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
   const handlePasswordReset = async () => {
     try {
       await resetPasswordMutation.mutateAsync({
-        userId: user.id,
-        email: user.auth_user?.email || user.email,
+        userId: String(user.id),
+        email: String((user as any).auth_user?.email || (user as any).email),
         performedBy: currentUserId || 'unknown-admin'
       })
       onUpdate()
@@ -84,7 +84,7 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
     <>
       <div className="flex items-center gap-2">
         {/* View/Edit Button */}
-        <Link href={`/admin/users/${user.id}`}>
+        <Link href={`/admin/users/${String(user.id)}`}>
           <Button size="sm" variant="outline">
             <Eye className="h-4 w-4 mr-1" />
             View
@@ -101,7 +101,7 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
           <DropdownMenuContent align="end">
             {/* Edit */}
             <DropdownMenuItem asChild>
-              <Link href={`/admin/users/${user.id}`} className="flex items-center">
+              <Link href={`/admin/users/${String(user.id)}`} className="flex items-center">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit User
               </Link>
@@ -152,7 +152,7 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
             </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to {actionType === 'enable' ? 'enable' : 'disable'} {' '}
-              <strong>{user.full_name || user.auth_user?.email}</strong>?
+              <strong>{String(user.full_name || (user as any).auth_user?.email)}</strong>?
               {actionType === 'disable' && (
                 <span className="block mt-2 text-red-600">
                   This user will no longer be able to access the system.
@@ -182,7 +182,7 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
             <AlertDialogTitle>Reset Password</AlertDialogTitle>
             <AlertDialogDescription>
               This will generate a new temporary password for{' '}
-              <strong>{user.full_name || user.auth_user?.email}</strong>.
+              <strong>{String(user.full_name || (user as any).auth_user?.email)}</strong>.
               <span className="block mt-2 text-amber-600">
                 The user will be required to change their password on next login.
               </span>

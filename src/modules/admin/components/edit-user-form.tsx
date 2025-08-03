@@ -286,23 +286,23 @@ export function EditUserForm({ userId, currentUserId }: EditUserFormProps) {
               ) : (
                 <div className="space-y-3">
                   {auditLogs.map((log: Record<string, unknown>) => (
-                    <div key={log.id} className="flex items-start gap-3 p-3 border rounded">
+                    <div key={String(log.id)} className="flex items-start gap-3 p-3 border rounded">
                       <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="font-medium">{log.action.replace('_', ' ')}</span>
+                          <span className="font-medium">{String(log.action || '').replace('_', ' ')}</span>
                           <span className="text-muted-foreground">
-                            by {log.performer?.full_name || 'System'}
+                            by {String((log.performer as Record<string, unknown>)?.full_name || 'System')}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(log.created_at).toLocaleString()}
+                          {new Date(String(log.created_at)).toLocaleString()}
                         </p>
-                        {log.details && Object.keys(log.details).length > 0 && (
+                        {log.details && typeof log.details === 'object' && log.details !== null && Object.keys(log.details).length > 0 ? (
                           <div className="mt-1 text-xs bg-muted p-2 rounded">
                             <pre>{JSON.stringify(log.details, null, 2)}</pre>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   ))}
