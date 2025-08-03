@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { logout } from '@/lib/actions/auth'
@@ -27,6 +29,91 @@ const navigation = [
 
 export function Header() {
   const pathname = usePathname()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
+
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      window.location.href = '/login'
+    } catch (error) {
+      // Force redirect even if there's an error
+      window.location.href = '/login'
+    }
+  }
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+
+    const supabase = createClient()
+
+    const getUser = async (authUser: any) => {
+      if (authUser) {
+        // Get user profile for full name and role with timeout fallback
+        try {
+          const profilePromise = supabase
+            .from('user_profiles')
+            .select('full_name, role')
+            .eq('id', authUser.id)
+            .single()
+
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+          )
+
+          const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any
+          
+          if (error) {
+            // If profile fetch fails, still show user with email
+            setUser({
+              ...authUser,
+              full_name: authUser.email?.split('@')[0] || 'User',
+              role: 'unknown'
+            })
+          } else {
+            setUser({
+              ...authUser,
+              full_name: profile?.full_name,
+              role: profile?.role
+            })
+          }
+        } catch (fetchError) {
+          // Fallback to just showing user email
+          setUser({
+            ...authUser,
+            full_name: authUser.email?.split('@')[0] || 'User',
+            role: 'unknown'
+          })
+        }
+      } else {
+        setUser(null)
+      }
+      setLoading(false)
+    }
+
+    // Get initial user
+    const getInitialUser = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      await getUser(authUser)
+    }
+
+    getInitialUser()
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event: string, session: any) => {
+        await getUser(session?.user || null)
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [mounted])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -100,19 +187,37 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="/avatars/01.png" alt="User" />
-                  <AvatarFallback>U</AvatarFallback>
+                  <AvatarFallback>
+                    {mounted && user?.full_name 
+                      ? user.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+                      : 'U'
+                    }
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">User Name</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    user@example.com
-                  </p>
-                </div>
+                {!mounted || loading ? (
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">Loading...</p>
+                    <p className="text-xs leading-none text-muted-foreground">...</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user?.full_name || 'Unknown User'}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email || 'No email'}
+                    </p>
+                    {user?.role && (
+                      <p className="text-xs leading-none text-blue-600 font-medium">
+                        {user.role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                      </p>
+                    )}
+                  </div>
+                )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
@@ -122,12 +227,8 @@ export function Header() {
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <form action={logout}>
-                  <button type="submit" className="w-full text-left">
-                    Log out
-                  </button>
-                </form>
+              <DropdownMenuItem onClick={handleLogout}>
+                Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

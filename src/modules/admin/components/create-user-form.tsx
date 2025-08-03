@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { RoleSelector } from './role-selector'
+import { RoleSelector } from '@/modules/admin/components/role-selector'
 
 const createUserSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
