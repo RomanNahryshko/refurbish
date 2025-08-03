@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { usersApi, CreateUserData, UpdateUserData, UserFilters } from '@/lib/api/users'
+import { CreateUserData, UpdateUserData, UserFilters } from '@/lib/api/users'
 import { useToast } from '@/lib/hooks/use-toast'
 
 /**

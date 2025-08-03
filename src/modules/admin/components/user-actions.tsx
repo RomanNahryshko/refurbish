@@ -51,7 +51,7 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
       })
       onUpdate()
       setShowStatusDialog(false)
-    } catch (error) {
+    } catch {
       // Error handled by toast in hook
     }
   }
@@ -65,7 +65,7 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
       })
       onUpdate()
       setShowPasswordDialog(false)
-    } catch (error) {
+    } catch {
       // Error handled by toast in hook
     }
   }

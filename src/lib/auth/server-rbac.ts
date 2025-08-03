@@ -22,7 +22,7 @@ export async function checkPermission(
           getAll() {
             return request.cookies.getAll()
           },
-          setAll(cookiesToSet) {
+          setAll(_cookiesToSet) {
             // In API routes, we typically can't modify the response to set cookies
             // but we can still read them for auth purposes
           },

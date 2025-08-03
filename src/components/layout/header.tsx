@@ -5,8 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { logout } from '@/lib/actions/auth'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -29,7 +28,12 @@ const navigation = [
 
 export function Header() {
   const pathname = usePathname()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{
+    id: string;
+    email: string;
+    full_name?: string;
+    role?: string;
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
 
@@ -38,7 +42,7 @@ export function Header() {
       const supabase = createClient()
       await supabase.auth.signOut()
       window.location.href = '/login'
-    } catch (error) {
+    } catch {
       // Force redirect even if there's an error
       window.location.href = '/login'
     }
@@ -53,7 +57,7 @@ export function Header() {
 
     const supabase = createClient()
 
-    const getUser = async (authUser: any) => {
+    const getUser = async (authUser: { id: string; email: string } | null) => {
       if (authUser) {
         // Get user profile for full name and role with timeout fallback
         try {
@@ -67,7 +71,8 @@ export function Header() {
             setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
           )
 
-          const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any
+          const result = await Promise.race([profilePromise, timeoutPromise])
+          const { data: profile, error } = result as { data: { full_name?: string; role?: string } | null; error: any }
           
           if (error) {
             // If profile fetch fails, still show user with email
@@ -83,7 +88,7 @@ export function Header() {
               role: profile?.role
             })
           }
-        } catch (fetchError) {
+        } catch {
           // Fallback to just showing user email
           setUser({
             ...authUser,
@@ -107,7 +112,7 @@ export function Header() {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: string, session: any) => {
+      async (_event: string, session: { user?: { id: string; email: string } } | null) => {
         await getUser(session?.user || null)
       }
     )
