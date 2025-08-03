@@ -12,6 +12,20 @@ interface RoleBadgeProps {
   role: string
 }
 
+const roleLabels: Record<string, string> = {
+  data_entry: 'Data Entry',
+  qc_controller: 'QC Controller', 
+  technician: 'Technician',
+  ops_manager: 'Operations Manager'
+}
+
+const roleColors: Record<string, string> = {
+  data_entry: 'bg-blue-100 text-blue-800',
+  qc_controller: 'bg-green-100 text-green-800',
+  technician: 'bg-purple-100 text-purple-800', 
+  ops_manager: 'bg-red-100 text-red-800'
+}
+
 export function RoleSelector({ value, onValueChange }: RoleSelectorProps) {
   return (
     <Select value={value} onValueChange={onValueChange}>
@@ -29,28 +43,12 @@ export function RoleSelector({ value, onValueChange }: RoleSelectorProps) {
 }
 
 export function RoleBadge({ role }: RoleBadgeProps) {
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'ops_manager':
-        return 'bg-red-100 text-red-800'
-      case 'technician':
-        return 'bg-blue-100 text-blue-800'
-      case 'qc_controller':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'data_entry':
-        return 'bg-green-100 text-green-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getRoleLabel = (role: string) => {
-    return role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
-  }
-
+  const label = roleLabels[role] || role
+  const colorClass = roleColors[role] || 'bg-gray-100 text-gray-800'
+  
   return (
-    <Badge className={getRoleColor(role)}>
-      {getRoleLabel(role)}
+    <Badge className={colorClass}>
+      {label}
     </Badge>
   )
 }

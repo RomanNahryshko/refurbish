@@ -24,9 +24,6 @@ const eslintConfig = [
       
       // Change any to warning instead of error
       '@typescript-eslint/no-explicit-any': 'warn',
-      
-      // Allow unescaped entities in JSX
-      'react/no-unescaped-entities': 'warn',
     },
   },
 ];

@@ -32,8 +32,8 @@ export default function ChangePasswordPage() {
   const router = useRouter()
   const toast = useToast()
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
-  const [_userProfile, setUserProfile] = useState<{ must_change_password?: boolean } | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const [userProfile, setUserProfile] = useState<any>(null)
   const [isForced, setIsForced] = useState(false)
 
   const form = useForm<ChangePasswordFormData>({

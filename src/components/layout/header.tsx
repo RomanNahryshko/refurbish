@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { logout } from '@/lib/actions/auth'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -28,74 +29,32 @@ const navigation = [
 
 export function Header() {
   const pathname = usePathname()
-  const [user, setUser] = useState<{
-    id: string;
-    email: string;
-    full_name?: string;
-    role?: string;
-  } | null>(null)
+  const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [mounted, setMounted] = useState(false)
 
   const handleLogout = async () => {
-    try {
-      const supabase = createClient()
-      await supabase.auth.signOut()
-      window.location.href = '/login'
-    } catch {
-      // Force redirect even if there's an error
-      window.location.href = '/login'
-    }
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    window.location.href = '/login'
   }
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    if (!mounted) return
-
     const supabase = createClient()
 
-    const getUser = async (authUser: { id: string; email: string } | null) => {
+    const getUser = async (authUser: any) => {
       if (authUser) {
-        // Get user profile for full name and role with timeout fallback
-        try {
-          const profilePromise = supabase
-            .from('user_profiles')
-            .select('full_name, role')
-            .eq('id', authUser.id)
-            .single()
+        // Get user profile for full name and role
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('full_name, role')
+          .eq('id', authUser.id)
+          .single()
 
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
-          )
-
-          const result = await Promise.race([profilePromise, timeoutPromise])
-          const { data: profile, error } = result as { data: { full_name?: string; role?: string } | null; error: any }
-          
-          if (error) {
-            // If profile fetch fails, still show user with email
-            setUser({
-              ...authUser,
-              full_name: authUser.email?.split('@')[0] || 'User',
-              role: 'unknown'
-            })
-          } else {
-            setUser({
-              ...authUser,
-              full_name: profile?.full_name,
-              role: profile?.role
-            })
-          }
-        } catch {
-          // Fallback to just showing user email
-          setUser({
-            ...authUser,
-            full_name: authUser.email?.split('@')[0] || 'User',
-            role: 'unknown'
-          })
-        }
+        setUser({
+          ...authUser,
+          full_name: profile?.full_name,
+          role: profile?.role
+        })
       } else {
         setUser(null)
       }
@@ -112,13 +71,13 @@ export function Header() {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: string, session: { user?: { id: string; email: string } } | null) => {
+      async (event: string, session: any) => {
         await getUser(session?.user || null)
       }
     )
 
     return () => subscription.unsubscribe()
-  }, [mounted])
+  }, [])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -192,8 +151,9 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
+                  <AvatarImage src="/avatars/01.png" alt="User" />
                   <AvatarFallback>
-                    {mounted && user?.full_name 
+                    {user?.full_name 
                       ? user.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
                       : 'U'
                     }
@@ -203,7 +163,7 @@ export function Header() {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
-                {!mounted || loading ? (
+                {loading ? (
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">Loading...</p>
                     <p className="text-xs leading-none text-muted-foreground">...</p>

@@ -103,7 +103,7 @@ export async function updateSession(request: NextRequest) {
       if (profile?.must_change_password === true) {
         return NextResponse.redirect(new URL(passwordChangePath, request.url))
       }
-    } catch {
+    } catch (error) {
       // Continue to dashboard if we can't check
     }
     

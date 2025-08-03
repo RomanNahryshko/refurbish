@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import { createAdminClient, generateTemporaryPassword } from '@/lib/supabase/admin'
+import { User, UserAudit } from '@/lib/types/business-types'
 
 // Types for user management
 export interface CreateUserData {
@@ -319,7 +320,7 @@ export const usersApi = {
       const newPassword = generateTemporaryPassword()
 
       // Update user password using admin API
-      const { data: _data, error } = await adminClient.auth.admin.updateUserById(userId, {
+      const { data, error } = await adminClient.auth.admin.updateUserById(userId, {
         password: newPassword
       })
 
