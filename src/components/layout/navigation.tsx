@@ -58,7 +58,7 @@ const navigationItems: NavigationItem[] = [
   },
   {
     title: 'Admin',
-    href: '/dashboard/admin',
+    href: '/admin',
     description: 'System administration',
     allowedRoles: ['ops_manager'],
   },

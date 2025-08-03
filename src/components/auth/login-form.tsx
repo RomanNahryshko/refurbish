@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,7 +39,7 @@ export function LoginForm() {
       <form action={handleSubmit}>
         <CardContent className="space-y-4">
           {error && (
-            <div className="p-3 text-sm text-error bg-error/10 border border-error/20 rounded-md">
+            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
               {error}
             </div>
           )}
@@ -81,12 +80,7 @@ export function LoginForm() {
               'Sign In'
             )}
           </Button>
-          <div className="text-sm text-center text-muted-foreground">
-            Don{"'"}t have an account?{' '}
-            <Link href="/signup" className="text-primary hover:underline">
-              Sign up
-            </Link>
-          </div>
+
         </CardFooter>
       </form>
     </Card>

@@ -40,9 +40,25 @@ CREATE TABLE spare_parts (
     quantity INT NOT NULL DEFAULT 0
 );
 
--- For managing user roles
+-- For managing user roles and admin features
 CREATE TABLE user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT,
-  role user_role NOT NULL
+  role user_role NOT NULL,
+  status TEXT DEFAULT 'active',
+  must_change_password BOOLEAN DEFAULT false,
+  created_by UUID REFERENCES auth.users(id),
+  last_login TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- User activity audit table for admin actions
+CREATE TABLE user_audit (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id),
+  action TEXT NOT NULL,
+  performed_by UUID REFERENCES auth.users(id),
+  details JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 ); 

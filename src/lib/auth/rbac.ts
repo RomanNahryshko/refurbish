@@ -1,4 +1,4 @@
-import { UserRole } from '@/lib/types'
+import { UserRole } from '@/lib/types/business-types'
 import { USER_ROLES } from '@/lib/constants'
 
 // Define permissions for each role
@@ -30,6 +30,13 @@ export const rolePermissions: Record<UserRole, string[]> = {
   [USER_ROLES.OPS_MANAGER]: [
     // Ops managers have all permissions
     '*',
+    'user.create',
+    'user.read',
+    'user.update',
+    'user.delete',
+    'user.manage.status',
+    'user.manage.password',
+    'audit.read',
   ],
 }
 

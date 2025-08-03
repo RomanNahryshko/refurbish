@@ -1,4 +1,4 @@
-import { User } from '@/lib/types'
+import { User } from './business-types'
 
 export interface AuthState {
   user: User | null
@@ -26,7 +26,6 @@ export interface AuthContextValue {
   session: Session | null
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, metadata?: UserMetadata) => Promise<void>
   signOut: () => Promise<void>
   updateUser: (updates: Partial<User>) => Promise<void>
 }
@@ -35,4 +34,4 @@ export interface UserMetadata {
   full_name?: string
   role?: string
   avatar_url?: string
-} 
+}

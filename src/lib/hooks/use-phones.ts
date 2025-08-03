@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { phonesApi } from '@/lib/api/phones'
-import { PhoneFilters, PhoneStatus } from '@/lib/types'
+import { PhoneFilters, PhoneStatus } from '@/lib/types/business-types'
 import { useToast } from '@/lib/hooks/use-toast'
 
 /**

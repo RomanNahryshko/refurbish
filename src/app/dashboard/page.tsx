@@ -37,7 +37,7 @@ const modules = [
   {
     title: 'Admin',
     description: 'System administration and user management',
-    href: '/dashboard/admin',
+    href: '/admin',
     icon: '⚙️',
   },
 ]

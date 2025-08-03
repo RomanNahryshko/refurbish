@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { SparePart } from '@/lib/types'
+import { SparePart } from '@/lib/types/business-types'
 
 export const inventoryApi = {
   /**

@@ -25,7 +25,7 @@ export default function LoginPage() {
           <div className="flex flex-col space-y-2 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">Sign in to your account</h1>
             <p className="text-sm text-muted-foreground">
-              Enter your email below to sign in or click {"Sign up"} to create a new account
+              Enter your email below to sign in to the system
             </p>
           </div>
           <LoginForm />

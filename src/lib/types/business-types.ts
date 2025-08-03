@@ -1,4 +1,4 @@
-import { PHONE_GRADES, PHONE_STATUS, USER_ROLES } from './constants'
+import { PHONE_GRADES, PHONE_STATUS, USER_ROLES } from '../constants'
 
 // Type utilities
 export type ValueOf<T> = T[keyof T]
@@ -12,8 +12,21 @@ export interface User {
   full_name?: string
   avatar_url?: string
   role: UserRole
+  status?: string
+  must_change_password?: boolean
+  created_by?: string
+  last_login?: string
   created_at: string
   updated_at?: string
+}
+
+export interface UserAudit {
+  id: string
+  user_id: string
+  action: string
+  performed_by: string
+  details?: Record<string, unknown>
+  created_at: string
 }
 
 // Phone status types
@@ -95,11 +108,6 @@ export interface LoginFormData {
   password: string
 }
 
-export interface SignupFormData extends LoginFormData {
-  full_name: string
-  role: UserRole
-}
-
 // Filter types
 export interface PhoneFilters {
   status?: PhoneStatus
@@ -111,4 +119,4 @@ export interface PhoneFilters {
 export interface DateRange {
   from: Date
   to: Date
-} 
+}

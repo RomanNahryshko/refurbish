@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { Phone, PhoneFilters, PhoneStatus } from '@/lib/types'
+import { Phone, PhoneFilters, PhoneStatus } from '@/lib/types/business-types'
 
 export const phonesApi = {
   /**

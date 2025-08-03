@@ -13,7 +13,7 @@ export function Footer() {
           <Link href="/dashboard" className="hover:text-foreground transition-colors">
             Dashboard
           </Link>
-          <Link href="/dashboard/admin" className="hover:text-foreground transition-colors">
+          <Link href="/admin" className="hover:text-foreground transition-colors">
             Admin
           </Link>
           <a 

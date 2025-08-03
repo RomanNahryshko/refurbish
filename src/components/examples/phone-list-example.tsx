@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { usePhones, useUpdatePhoneStatus } from '@/lib/hooks/use-phones'
-import { PhoneStatus } from '@/lib/types'
+import { PhoneStatus } from '@/lib/types/business-types'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { Batch } from '@/lib/types'
+import { Batch } from '@/lib/types/business-types'
 
 export const batchesApi = {
   /**

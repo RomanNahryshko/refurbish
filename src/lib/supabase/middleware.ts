@@ -44,6 +44,7 @@ export async function updateSession(request: NextRequest) {
   // Protected routes
   const protectedPaths = [
     '/dashboard',
+    '/admin',
     '/batch-intake',
     '/phone-tracking',
     '/repair-jobs',
@@ -51,13 +52,16 @@ export async function updateSession(request: NextRequest) {
     '/shipping',
     '/api/protected'
   ]
-  const authPaths = ['/login', '/signup']
+  const authPaths = ['/login']
+  const passwordChangePath = '/change-password'
+  
   const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   )
   const isAuthPath = authPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   )
+  const isPasswordChangePage = request.nextUrl.pathname === passwordChangePath
 
   // Redirect to login if accessing protected route without session
   if (!user && isProtectedPath) {
@@ -67,8 +71,42 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Redirect to dashboard if accessing auth pages while logged in
+  // Check if user must change password (for authenticated users only)
+  if (user && !isPasswordChangePage && !isAuthPath) {
+    try {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('must_change_password')
+        .eq('id', user.id)
+        .single()
+
+      // Redirect to password change page if flag is set
+      if (profile?.must_change_password === true) {
+        return NextResponse.redirect(new URL(passwordChangePath, request.url))
+      }
+    } catch (error) {
+      // If we can't check the profile, allow the request to continue
+      console.warn('Could not check must_change_password flag:', error)
+    }
+  }
+
+  // Redirect to dashboard if accessing auth pages while logged in (unless forced password change)
   if (user && isAuthPath) {
+    // First check if they need to change password
+    try {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('must_change_password')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.must_change_password === true) {
+        return NextResponse.redirect(new URL(passwordChangePath, request.url))
+      }
+    } catch (error) {
+      // Continue to dashboard if we can't check
+    }
+    
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
