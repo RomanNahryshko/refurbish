@@ -81,7 +81,10 @@ export async function checkPermission(
       authorized: true,
       user: {
         ...user,
-        profile
+        user_metadata: {
+          ...user.user_metadata,
+          profile
+        }
       }
     }
 
