@@ -23,7 +23,10 @@ export async function login(formData: LoginFormData) {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  
+  // Return success instead of redirecting
+  // The client component will handle the redirect
+  return { success: true }
 }
 
 export async function logout() {

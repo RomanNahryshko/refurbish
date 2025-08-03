@@ -29,55 +29,79 @@ const navigation = [
 
 export function Header() {
   const pathname = usePathname()
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    window.location.href = '/login'
-  }
+    const supabase = createClient();
+    if (supabase) {
+      await supabase.auth.signOut();
+      window.location.href = '/login';
+    }
+  };
 
   useEffect(() => {
-    const supabase = createClient()
+    const supabase = createClient();
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
 
-    const getUser = async (authUser: any) => {
-      if (authUser) {
-        // Get user profile for full name and role
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('full_name, role')
-          .eq('id', authUser.id)
-          .single()
+    // Define a function to update user and profile state
+    const updateUserAndProfile = (session: any) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    };
 
-        setUser({
-          ...authUser,
-          full_name: profile?.full_name,
-          role: profile?.role
-        })
+    // Fetch the initial session
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
+      updateUserAndProfile(session);
+    });
+
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
+      updateUserAndProfile(session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const supabase = createClient();
+      if (user && supabase) {
+        try {
+          const { data, error } = await supabase
+            .from('user_profiles')
+            .select('full_name, role')
+            .eq('id', user.id)
+            .single();
+
+          if (error) {
+            console.error('Error fetching profile:', error);
+            setProfile(null);
+          } else {
+            setProfile(data);
+          }
+        } catch (e) {
+          console.error('Exception while fetching profile', e);
+          setProfile(null);
+        }
       } else {
-        setUser(null)
+        setProfile(null);
       }
-      setLoading(false)
-    }
+    };
 
-    // Get initial user
-    const getInitialUser = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      await getUser(authUser)
-    }
+    fetchProfile();
+  }, [user]);
 
-    getInitialUser()
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: string, session: any) => {
-        await getUser(session?.user || null)
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [])
+  const userFullName = profile?.full_name || user?.user_metadata?.full_name || 'Unknown User';
+  const userEmail = user?.email || 'No email';
+  const userRole = profile?.role;
+  const userInitials = userFullName.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -146,57 +170,48 @@ export function Header() {
             </SheetContent>
           </Sheet>
 
-          {/* User Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="/avatars/01.png" alt="User" />
-                  <AvatarFallback>
-                    {user?.full_name 
-                      ? user.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
-                      : 'U'
-                    }
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                {loading ? (
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">Loading...</p>
-                    <p className="text-xs leading-none text-muted-foreground">...</p>
-                  </div>
-                ) : (
+          {/* User Menu - Only show when authenticated */}
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
-                      {user?.full_name || 'Unknown User'}
+                      {userFullName}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email || 'No email'}
+                      {userEmail}
                     </p>
-                    {user?.role && (
-                      <p className="text-xs leading-none text-blue-600 font-medium">
-                        {user.role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    {userRole && (
+                      <p className="text-xs leading-none text-blue-600 font-medium pt-1">
+                        {userRole.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                       </p>
                     )}
                   </div>
-                )}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer">
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
     </header>
