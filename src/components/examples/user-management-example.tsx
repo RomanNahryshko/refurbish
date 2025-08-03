@@ -106,22 +106,22 @@ export function UserManagementExample() {
           <div className="space-y-2">
             {users?.map((user: Record<string, unknown>) => (
               <div 
-                key={user.id} 
+                key={String(user.id)} 
                 className="flex items-center justify-between p-3 border rounded"
               >
                 <div>
-                  <div className="font-medium">{user.full_name}</div>
+                  <div className="font-medium">{String(user.full_name || 'Unknown')}</div>
                   <div className="text-sm text-muted-foreground">
-                    {user.role} • {user.status}
+                    {String(user.role || 'No Role')} • {String(user.status || 'No Status')}
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleToggleUserStatus(user.id, user.status)}
+                  onClick={() => handleToggleUserStatus(String(user.id), String(user.status))}
                   disabled={updateStatusMutation.isPending}
                 >
-                  {user.status === 'active' ? 'Disable' : 'Enable'}
+                  {String(user.status) === 'active' ? 'Disable' : 'Enable'}
                 </Button>
               </div>
             ))}
