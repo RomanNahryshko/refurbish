@@ -108,7 +108,7 @@ export function withPermission(
   return async (request: NextRequest, context: Record<string, unknown>) => {
     const { authorized, user, error } = await checkPermission(request, requiredPermission)
 
-    if (!authorized) {
+    if (!authorized || !user) {
       return NextResponse.json(
         { error: error || 'Unauthorized' },
         { status: 403 }
