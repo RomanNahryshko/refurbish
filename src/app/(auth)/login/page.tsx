@@ -27,7 +27,7 @@ export default function LoginPage() {
         {/* Mission Statement at Bottom */}
         <div className="text-center mt-4 pt-3 border-t border-gray-200">
           <p className="text-sm text-gray-500 italic">
-            "Delivering refurbished phones that feel new"
+            &ldquo;Delivering refurbished phones that feel new&rdquo;
           </p>
         </div>
       </div>
