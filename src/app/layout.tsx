@@ -5,8 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/common/theme-provider";
 import { ToastProvider } from "@/components/common/toast-provider";
 import { QueryProvider } from "@/lib/providers/query-provider";
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
+import { ConditionalLayout } from "@/components/layout/conditional-layout";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -36,11 +35,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
-            <div className="relative flex min-h-screen flex-col">
-              <Header />
-              <main className="flex-1">{children}</main>
-              <Footer />
-            </div>
+            <ConditionalLayout>{children}</ConditionalLayout>
             <ToastProvider />
           </QueryProvider>
         </ThemeProvider>
