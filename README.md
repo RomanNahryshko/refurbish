@@ -27,10 +27,11 @@ This system digitizes and streamlines the entire workflow for used phone refurbi
 
 ## User Roles
 
-1. **data_entry** - Data entry personnel
-2. **qc_controller** - Quality control staff
-3. **technician** - Repair technicians
-4. **ops_manager** - Operations managers
+1. **admin** - System administrators
+2. **general_manager** - General managers with full business access
+3. **ops_manager** - Operations managers handling intake and workflow
+4. **qc_controller** - Quality control staff
+5. **technician** - Repair technicians (L1, L2, L3)
 
 ## Getting Started
 

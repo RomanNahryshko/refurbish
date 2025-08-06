@@ -13,17 +13,19 @@ interface RoleBadgeProps {
 }
 
 const roleLabels: Record<string, string> = {
-  data_entry: 'Data Entry',
+  admin: 'Admin',
+  general_manager: 'General Manager',
+  ops_manager: 'Operations Manager',
   qc_controller: 'QC Controller', 
-  technician: 'Technician',
-  ops_manager: 'Operations Manager'
+  technician: 'Technician'
 }
 
 const roleColors: Record<string, string> = {
-  data_entry: 'bg-blue-100 text-blue-800',
+  admin: 'bg-red-100 text-red-800',
+  general_manager: 'bg-orange-100 text-orange-800',
+  ops_manager: 'bg-yellow-100 text-yellow-800',
   qc_controller: 'bg-green-100 text-green-800',
-  technician: 'bg-purple-100 text-purple-800', 
-  ops_manager: 'bg-red-100 text-red-800'
+  technician: 'bg-purple-100 text-purple-800'
 }
 
 export function RoleSelector({ value, onValueChange }: RoleSelectorProps) {

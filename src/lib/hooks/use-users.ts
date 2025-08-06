@@ -16,9 +16,15 @@ export function useUsers(filters?: UserFilters) {
       if (filters?.status) params.append('status', filters.status)
       if (filters?.search) params.append('search', filters.search)
       
-      const response = await fetch(`/api/admin/users?${params}`)
+      const response = await fetch(`/api/admin/users?${params}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
       if (!response.ok) {
-        throw new Error('Failed to fetch users')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch users')
       }
       return response.json()
     },
@@ -241,21 +247,4 @@ export function useResetUserPassword() {
   })
 }
 
-/**
- * Hook to fetch user audit logs
- */
-export function useUserAuditLogs(userId?: string, limit: number = 50) {
-  return useQuery({
-    queryKey: ['user-audit', userId, limit],
-    queryFn: async () => {
-      if (!userId) return []
-      
-      const response = await fetch(`/api/admin/users/${userId}/audit?limit=${limit}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch audit logs')
-      }
-      return response.json()
-    },
-    enabled: !!userId,
-  })
-}
+// useUserAuditLogs hook removed - not in MVP scope

@@ -15,10 +15,11 @@ export const PHONE_STATUS = {
 
 // User roles
 export const USER_ROLES = {
-  DATA_ENTRY: 'data_entry',
+  ADMIN: 'admin',
+  GENERAL_MANAGER: 'general_manager',
+  OPS_MANAGER: 'ops_manager',
   QC_CONTROLLER: 'qc_controller',
   TECHNICIAN: 'technician',
-  OPS_MANAGER: 'ops_manager',
 } as const
 
 // Phone grades

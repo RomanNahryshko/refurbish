@@ -1,12 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { usersApi } from '@/lib/api/users'
-import { requireUserManagementAccess } from '@/lib/auth/server-rbac'
+import { checkPermission } from '@/lib/services/permissions'
+import { createClient } from '@/lib/supabase/server'
 
 // GET /api/admin/users - List users
 export async function GET(request: NextRequest) {
-  // Check RBAC - only ops_manager can access
-  const rbacError = await requireUserManagementAccess(request)
-  if (rbacError) return rbacError
+  // Check authentication
+  const supabase = await createClient()
+  
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase client not configured' }, { status: 500 })
+  }
+  
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    console.error('Auth error in /api/admin/users:', authError)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  
+  // Check permission
+  if (!await checkPermission(user.id, 'user_profiles', 'read')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const { searchParams } = new URL(request.url)
@@ -35,9 +51,24 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/users - Create user
 export async function POST(request: NextRequest) {
-  // Check RBAC - only ops_manager can access
-  const rbacError = await requireUserManagementAccess(request)
-  if (rbacError) return rbacError
+  // Check authentication
+  const supabase = await createClient()
+  
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase client not configured' }, { status: 500 })
+  }
+  
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    console.error('Auth error in POST /api/admin/users:', authError)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  
+  // Check permission
+  if (!await checkPermission(user.id, 'user_profiles', 'create')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const body = await request.json()

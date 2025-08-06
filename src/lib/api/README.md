@@ -7,14 +7,15 @@ This directory contains the API service layer and React Query hooks for data fet
 ```
 lib/
 ├── api/                 # API service layer
+│   ├── users.ts        # User management API calls
 │   ├── phones.ts       # Phone-related API calls
 │   ├── batches.ts      # Batch management API
-│   ├── inventory.ts    # Inventory API
-│   └── repairs.ts      # Repair jobs API
+│   └── inventory.ts    # Inventory API
 ├── hooks/              # React Query hooks
+│   ├── use-users.ts    # User data hooks
 │   ├── use-phones.ts   # Phone data hooks
-│   ├── use-batches.ts  # Batch data hooks
-│   └── use-inventory.ts # Inventory hooks
+│   ├── use-toast.ts    # Toast notification hook
+│   └── use-confirmation.ts # Confirmation dialog hook
 └── providers/          # React Query provider
     └── query-provider.tsx
 ```
@@ -71,13 +72,13 @@ function PhoneCard({ phone }) {
 ### Creating New Records
 
 ```typescript
-import { useCreateBatch } from '@/lib/hooks/use-batches'
+import { useCreateUser } from '@/lib/hooks/use-users'
 
-function CreateBatchForm() {
-  const createBatch = useCreateBatch()
+function CreateUserForm() {
+  const createUser = useCreateUser()
   
   const handleSubmit = (data) => {
-    createBatch.mutate(data, {
+    createUser.mutate(data, {
       onSuccess: () => {
         // Redirect or show success message
       }
@@ -85,6 +86,14 @@ function CreateBatchForm() {
   }
 }
 ```
+
+### Note on Missing Hooks
+
+The following API services exist but don't have React Query hooks yet:
+- `batches.ts` - needs `use-batches.ts` hook
+- `inventory.ts` - needs `use-inventory.ts` hook
+
+These will be created as needed when implementing their respective UI modules.
 
 ## Best Practices
 
@@ -96,11 +105,15 @@ function CreateBatchForm() {
 
 ## Adding New API Endpoints
 
-1. Create API function in appropriate service file:
+1. Create API function in appropriate service file (or add to existing):
 ```typescript
-// lib/api/repairs.ts
-export const repairsApi = {
+// lib/api/batches.ts (example of existing file)
+export const batchesApi = {
   async getAll() {
+    const supabase = createClient()
+    // ... implementation
+  },
+  async create(data: BatchInput) {
     const supabase = createClient()
     // ... implementation
   }
@@ -109,16 +122,27 @@ export const repairsApi = {
 
 2. Create React Query hook:
 ```typescript
-// lib/hooks/use-repairs.ts
-export function useRepairs() {
+// lib/hooks/use-batches.ts (to be created)
+export function useBatches() {
   return useQuery({
-    queryKey: ['repairs'],
-    queryFn: repairsApi.getAll
+    queryKey: ['batches'],
+    queryFn: batchesApi.getAll
+  })
+}
+
+export function useCreateBatch() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: batchesApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['batches'] })
+    }
   })
 }
 ```
 
 3. Use in component:
 ```typescript
-const { data: repairs } = useRepairs()
+const { data: batches } = useBatches()
+const createBatch = useCreateBatch()
 ```

@@ -10,14 +10,25 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { RoleSelector } from './role-selector'
 
 const createUserSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
-  role: z.enum(['data_entry', 'qc_controller', 'technician', 'ops_manager']).refine((val) => val !== undefined, {
+  role: z.enum(['admin', 'general_manager', 'ops_manager', 'qc_controller', 'technician']).refine((val) => val !== undefined, {
     message: 'Please select a role',
   }),
+  technician_level: z.enum(['L1', 'L2', 'L3']).optional(),
+}).refine((data) => {
+  // If role is technician, technician_level is required
+  if (data.role === 'technician' && !data.technician_level) {
+    return false
+  }
+  return true
+}, {
+  message: 'Technician level is required for technician role',
+  path: ['technician_level'],
 })
 
 type CreateUserFormData = z.infer<typeof createUserSchema>
@@ -39,6 +50,7 @@ export function CreateUserForm({ currentUserId, onSuccess }: CreateUserFormProps
       email: '',
       full_name: '',
       role: undefined,
+      technician_level: undefined,
     },
   })
 
@@ -56,15 +68,11 @@ export function CreateUserForm({ currentUserId, onSuccess }: CreateUserFormProps
       // Reset form
       form.reset()
 
-      // Call success callback or redirect
+      // Call success callback
       if (onSuccess) {
         onSuccess()
-      } else {
-        // Don't redirect immediately - let admin see the password first
-        setTimeout(() => {
-          router.push('/admin/users')
-        }, 5000) // Auto-redirect after 5 seconds
       }
+      // No automatic redirect - let admin copy password and navigate manually
     } catch (error) {
       // Error is handled by the mutation hook's toast
       console.error('Create user error:', error)
@@ -202,6 +210,35 @@ export function CreateUserForm({ currentUserId, onSuccess }: CreateUserFormProps
                 </FormItem>
               )}
             />
+
+            {/* Technician Level - only show for technicians */}
+            {form.watch('role') === 'technician' && (
+              <FormField
+                control={form.control}
+                name="technician_level"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Technician Level</FormLabel>
+                    <FormControl>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select technician level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="L1">Level 1 (L1) - Housing change only</SelectItem>
+                          <SelectItem value="L2">Level 2 (L2) - Glass change only</SelectItem>
+                          <SelectItem value="L3">Level 3 (L3) - Battery and all other repairs</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormDescription>
+                      Determines the type of repair tasks this technician can perform
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Info Box */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">

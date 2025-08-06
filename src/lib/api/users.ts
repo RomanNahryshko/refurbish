@@ -1,17 +1,19 @@
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, generateTemporaryPassword } from '@/lib/supabase/admin'
 
 // Types for user management
 export interface CreateUserData {
   email: string
   full_name: string
-  role: 'data_entry' | 'qc_controller' | 'technician' | 'ops_manager'
+  role: 'admin' | 'general_manager' | 'ops_manager' | 'qc_controller' | 'technician'
+  technician_level?: 'L1' | 'L2' | 'L3'
   temporary_password?: string
 }
 
 export interface UpdateUserData {
   full_name?: string
-  role?: 'data_entry' | 'qc_controller' | 'technician' | 'ops_manager'
+  role?: 'admin' | 'general_manager' | 'ops_manager' | 'qc_controller' | 'technician'
+  technician_level?: 'L1' | 'L2' | 'L3' | null
   status?: string
 }
 
@@ -27,13 +29,10 @@ export const usersApi = {
    * Requires ops_manager role
    */
   async getAll(filters?: UserFilters) {
-    const adminClient = createAdminClient()
-    if (!adminClient) {
-      throw new Error('Admin client not configured. Set SUPABASE_SERVICE_ROLE_KEY environment variable.')
-    }
+    const supabase = await createClient()
 
     // Get user profiles
-    let query = adminClient
+    let query = supabase
       .from('user_profiles')
       .select(`
         id,
@@ -71,12 +70,25 @@ export const usersApi = {
       return []
     }
 
-    // Get user emails from auth.users using admin client
-    const { data: authUsers, error: authError } = await adminClient.auth.admin.listUsers()
+    // Try to get user emails if admin client is available
+    const adminClient = createAdminClient()
+    let authUsers = null
+    
+    if (adminClient) {
+      const { data, error: authError } = await adminClient.auth.admin.listUsers()
+      if (!authError) {
+        authUsers = data
+      } else {
+        console.warn('Could not fetch auth users:', authError)
+      }
+    }
 
-    if (authError) {
-      console.error('Error fetching auth users:', authError)
-      throw new Error(`Failed to fetch user emails: ${authError.message}`)
+    // If we couldn't get auth users, continue without email data
+    if (!authUsers) {
+      return profiles.map(profile => ({
+        ...profile,
+        auth_user: null
+      }))
     }
 
     // Combine profile data with auth data
@@ -109,13 +121,10 @@ export const usersApi = {
    * Requires ops_manager role
    */
   async getById(userId: string) {
-    const adminClient = createAdminClient()
-    if (!adminClient) {
-      throw new Error('Admin client not configured. Set SUPABASE_SERVICE_ROLE_KEY environment variable.')
-    }
+    const supabase = await createClient()
 
     // Get user profile
-    const { data: profile, error: profileError } = await adminClient
+    const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select(`
         id,
@@ -135,16 +144,22 @@ export const usersApi = {
       throw new Error(`Failed to fetch user: ${profileError.message}`)
     }
 
-    // Get auth user data
-    const { data: authUser, error: authError } = await adminClient.auth.admin.getUserById(userId)
-
-    if (authError) {
-      console.warn('Could not fetch auth user data:', authError.message)
+    // Try to get auth user data if admin client is available
+    const adminClient = createAdminClient()
+    let authUser = null
+    
+    if (adminClient) {
+      const { data, error: authError } = await adminClient.auth.admin.getUserById(userId)
+      if (!authError && data) {
+        authUser = data
+      } else {
+        console.warn('Could not fetch auth user data:', authError?.message)
+      }
     }
 
     return {
       ...profile,
-      auth_user: authUser.user ? {
+      auth_user: authUser?.user ? {
         email: authUser.user.email,
         created_at: authUser.user.created_at,
         last_sign_in_at: authUser.user.last_sign_in_at,
@@ -191,6 +206,7 @@ export const usersApi = {
         id: authUser.user.id,
         full_name: userData.full_name,
         role: userData.role,
+        technician_level: userData.role === 'technician' ? (userData.technician_level || 'L1') : null,
         status: 'active',
         must_change_password: true, // Force password change on first login
         created_at: new Date().toISOString()
@@ -213,17 +229,7 @@ export const usersApi = {
         throw new Error(`Failed to create user profile: ${profileError.message}`)
       }
 
-      // Log the action
-      await this.logAuditAction({
-        user_id: authUser.user.id,
-        action: 'create_user',
-        performed_by: performedBy,
-        details: { 
-          email: userData.email,
-          role: userData.role,
-          full_name: userData.full_name
-        }
-      })
+      // Audit logging removed - not in MVP scope
 
       return {
         user: {
@@ -242,16 +248,30 @@ export const usersApi = {
    * Requires ops_manager role
    */
   async update(userId: string, userData: UpdateUserData, performedBy: string) {
-    const supabase = createClient()
+    const supabase = await createClient()
     if (!supabase) throw new Error('Supabase client not initialized')
+
+    // Prepare update data with technician_level constraint handling
+    const updatePayload: Record<string, unknown> = {
+      ...userData,
+      updated_at: new Date().toISOString()
+    }
+
+    // Handle technician_level constraint
+    if (userData.role) {
+      if (userData.role === 'technician') {
+        // If changing to technician, ensure technician_level is set
+        updatePayload.technician_level = userData.technician_level || 'L1'
+      } else {
+        // If changing from technician to other role, clear technician_level
+        updatePayload.technician_level = null
+      }
+    }
 
     // Update user profile
     const { data: updateData, error } = await supabase
       .from('user_profiles')
-      .update({
-        ...userData,
-        updated_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq('id', userId)
       .select()
       .single()
@@ -260,13 +280,7 @@ export const usersApi = {
       throw new Error(`Failed to update user: ${error.message}`)
     }
 
-    // Log the action for audit trail
-    await this.logAuditAction({
-      user_id: userId,
-      action: 'update_user',
-      performed_by: performedBy,
-      details: { updated_fields: Object.keys(userData) }
-    })
+    // Audit logging removed - not in MVP scope
 
     return updateData
   },
@@ -276,7 +290,7 @@ export const usersApi = {
    * Requires ops_manager role
    */
   async updateStatus(userId: string, status: 'active' | 'disabled', performedBy: string) {
-    const supabase = createClient()
+    const supabase = await createClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data: statusData, error } = await supabase
@@ -293,13 +307,7 @@ export const usersApi = {
       throw new Error(`Failed to update user status: ${error.message}`)
     }
 
-    // Log the action
-    await this.logAuditAction({
-      user_id: userId,
-      action: status === 'active' ? 'enable_user' : 'disable_user',
-      performed_by: performedBy,
-      details: { new_status: status }
-    })
+    // Audit logging removed - not in MVP scope
 
     return statusData
   },
@@ -336,13 +344,7 @@ export const usersApi = {
         })
         .eq('id', userId)
 
-      // Log the action
-      await this.logAuditAction({
-        user_id: userId,
-        action: 'reset_password',
-        performed_by: performedBy,
-        details: { email }
-      })
+      // Audit logging removed - not in MVP scope
 
       return {
         success: true,
@@ -353,96 +355,7 @@ export const usersApi = {
     }
   },
 
-  /**
-   * Get user audit logs
-   * Requires ops_manager role
-   */
-  async getAuditLogs(userId?: string, limit: number = 50) {
-    const adminClient = createAdminClient()
-    if (!adminClient) throw new Error('Admin client not initialized')
-
-    // Get audit logs without relationships first
-    let query = adminClient
-      .from('user_audit')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(limit)
-
-    if (userId) {
-      query = query.eq('user_id', userId)
-    }
-
-    const { data: auditLogs, error } = await query
-
-    if (error) {
-      throw new Error(`Failed to fetch audit logs: ${error.message}`)
-    }
-
-    if (!auditLogs || auditLogs.length === 0) {
-      return []
-    }
-
-    // Get all unique user IDs from the audit logs
-    const userIds = Array.from(new Set([
-      ...auditLogs.map(log => log.user_id),
-      ...auditLogs.map(log => log.performed_by).filter(Boolean)
-    ]))
-
-    // Get user profiles for these IDs
-    const { data: userProfiles } = await adminClient
-      .from('user_profiles')
-      .select('id, full_name')
-      .in('id', userIds)
-
-    // Map profiles by ID for quick lookup
-    const profileMap = new Map()
-    userProfiles?.forEach(profile => {
-      profileMap.set(profile.id, profile)
-    })
-
-    // Enhance audit logs with user information
-    const enhancedLogs = auditLogs.map(log => ({
-      ...log,
-      user: profileMap.get(log.user_id),
-      performer: profileMap.get(log.performed_by)
-    }))
-
-    return enhancedLogs
-  },
-
-  /**
-   * Log an audit action
-   * Internal function for tracking admin actions
-   */
-  async logAuditAction(auditData: {
-    user_id: string
-    action: string
-    performed_by: string
-    details?: Record<string, unknown>
-  }) {
-    const adminClient = createAdminClient()
-    if (!adminClient) return // Fail silently for audit logs
-
-    // Only log if performed_by is a valid UUID
-    if (!auditData.performed_by || 
-        auditData.performed_by === 'unknown-admin' || 
-        !auditData.performed_by.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-      console.warn('Skipping audit log - invalid performer UUID:', auditData.performed_by)
-      return
-    }
-
-    const { error } = await adminClient
-      .from('user_audit')
-      .insert({
-        user_id: auditData.user_id,
-        action: auditData.action,
-        performed_by: auditData.performed_by,
-        details: auditData.details || {},
-        created_at: new Date().toISOString()
-      })
-
-    if (error) {
-      console.error('Failed to log audit action:', error.message)
-    }
-  }
+  // Audit log methods removed - not in MVP scope
+  // Will be added in future phase if needed
+  // Methods removed: getAuditLogs(), logAuditAction()
 }

@@ -13,7 +13,7 @@ const modules = [
   {
     title: 'Phone Tracking',
     description: 'Track phones by IMEI through the refurbishment process',
-    href: '/phone-tracking',
+          href: '/devices',
     icon: '📱',
   },
   {

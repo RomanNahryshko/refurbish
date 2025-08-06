@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -22,7 +23,8 @@ import type { Session } from '@supabase/supabase-js'
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'Batch Intake', href: '/batch-intake' },
-  { name: 'Phone Tracking', href: '/phone-tracking' },
+  { name: 'Devices', href: '/devices' },
+  { name: 'Quality Control', href: '/quality-control' },
   { name: 'Repair Jobs', href: '/repair-jobs' },
   { name: 'Inventory', href: '/inventory' },
   { name: 'Shipping', href: '/shipping' },
@@ -30,188 +32,204 @@ const navigation = [
 
 export function Header() {
   const pathname = usePathname()
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<{full_name?: string; role?: string} | null>(null);
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<{full_name?: string; role?: string} | null>(null)
 
   const handleLogout = async () => {
-    const supabase = createClient();
+    const supabase = createClient()
     if (supabase) {
-      await supabase.auth.signOut();
-      window.location.href = '/login';
+      await supabase.auth.signOut()
+      window.location.href = '/login'
     }
-  };
+  }
 
   useEffect(() => {
-    const supabase = createClient();
+    const supabase = createClient()
     if (!supabase) {
-      return;
+      return
     }
 
     // Define a function to update user and profile state
     const updateUserAndProfile = (session: Session | null) => {
-      setUser(session?.user ?? null);
-    };
+      setUser(session?.user ?? null)
+    }
 
     // Fetch the initial session
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
-      updateUserAndProfile(session);
-    });
+      updateUserAndProfile(session)
+    })
 
     // Subscribe to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
-      updateUserAndProfile(session);
-    });
+      updateUserAndProfile(session)
+    })
 
     return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+      subscription.unsubscribe()
+    }
+  }, [])
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const supabase = createClient();
-      if (user && supabase) {
+      if (user) {
         try {
-          const { data, error } = await supabase
-            .from('user_profiles')
-            .select('full_name, role')
-            .eq('id', user.id)
-            .single();
-
-          if (error) {
-            console.error('Error fetching profile:', error);
-            setProfile(null);
+          const response = await fetch('/api/user/profile')
+          if (response.ok) {
+            const data = await response.json()
+            setProfile(data)
           } else {
-            setProfile(data);
+            console.error('Error fetching profile:', response.statusText)
+            setProfile(null)
           }
         } catch (e) {
-          console.error('Exception while fetching profile', e);
-          setProfile(null);
+          console.error('Exception while fetching profile', e)
+          setProfile(null)
         }
       } else {
-        setProfile(null);
+        setProfile(null)
       }
-    };
+    }
 
-    fetchProfile();
-  }, [user]);
+    fetchProfile()
+  }, [user])
 
-  const userFullName = profile?.full_name || user?.user_metadata?.full_name || 'Unknown User';
-  const userEmail = user?.email || 'No email';
-  const userRole = profile?.role;
-  const userInitials = userFullName.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
+  const userFullName = profile?.full_name || user?.user_metadata?.full_name || 'Unknown User'
+  const userEmail = user?.email || 'No email'
+  const userRole = profile?.role
+  const userInitials = userFullName.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U'
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
-        <div className="mr-4 flex">
-          <Link href="/dashboard" className="mr-6 flex items-center space-x-2">
-            <div className="h-8 w-8 rounded bg-primary-600 flex items-center justify-center text-white font-bold">
-              R
-            </div>
-            <span className="hidden font-bold sm:inline-block">
-              ReMobile Refurbish
-            </span>
-          </Link>
-        </div>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex flex-1 items-center space-x-6 text-sm font-medium">
-          {navigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`transition-colors hover:text-foreground/80 ${
-                pathname === item.href ? 'text-foreground' : 'text-foreground/60'
-              }`}
-            >
-              {item.name}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center">
+            <Link href="/dashboard">
+              <Image
+                src="/logo_remobile.svg"
+                alt="ReMobile Logo"
+                width={96}
+                height={96}
+                className="h-24 w-24"
+              />
             </Link>
-          ))}
-        </nav>
+          </div>
 
-        <div className="flex flex-1 items-center justify-end space-x-4">
-          {/* Mobile Navigation */}
-          <Sheet>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left">
-              <nav className="flex flex-col space-y-4">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`text-sm font-medium transition-colors hover:text-foreground/80 ${
-                      pathname === item.href ? 'text-foreground' : 'text-foreground/60'
-                    }`}
+          {/* Desktop Navigation - Centered */}
+          <nav className="hidden md:flex items-center space-x-6">
+            {navigation.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`text-sm font-medium transition-colors hover:text-foreground/80 ${
+                  pathname === item.href ? 'text-foreground' : 'text-foreground/60'
+                }`}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Right side actions */}
+          <div className="flex items-center space-x-4">
+            {/* Mobile Menu Button */}
+            <Sheet>
+              <SheetTrigger asChild className="md:hidden">
+                <Button variant="ghost" size="icon">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    {item.name}
-                  </Link>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
-
-          {/* User Menu - Only show when authenticated */}
-          {user && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>
-                      {userInitials}
-                    </AvatarFallback>
-                  </Avatar>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                  <span className="sr-only">Open menu</span>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {userFullName}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {userEmail}
-                    </p>
-                    {userRole && (
-                      <p className="text-xs leading-none text-blue-600 font-medium pt-1">
-                        {userRole.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[250px] sm:w-[300px]">
+                <div className="flex flex-col space-y-4 mt-4">
+                  <Link href="/dashboard" className="flex justify-center mb-6">
+                    <Image
+                      src="/logo_remobile.svg"
+                      alt="ReMobile Logo"
+                      width={96}
+                      height={96}
+                      className="h-24 w-24"
+                    />
+                  </Link>
+                  <nav className="flex flex-col space-y-3">
+                    {navigation.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`text-sm font-medium transition-colors hover:text-foreground/80 px-2 py-1 rounded-md hover:bg-accent ${
+                          pathname === item.href 
+                            ? 'text-foreground bg-accent' 
+                            : 'text-foreground/60'
+                        }`}
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </nav>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {/* User Menu - Only show when authenticated */}
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback className="bg-primary-100 text-primary-700">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {userFullName}
                       </p>
-                    )}
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {userEmail}
+                      </p>
+                      {userRole && (
+                        <p className="text-xs leading-none text-blue-600 font-medium pt-1">
+                          {userRole.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </p>
+                      )}
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/change-password" className="cursor-pointer">
+                      Change Password
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
       </div>
     </header>
   )
-} 
+}

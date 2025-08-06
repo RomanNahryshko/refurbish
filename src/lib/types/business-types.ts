@@ -20,14 +20,7 @@ export interface User {
   updated_at?: string
 }
 
-export interface UserAudit {
-  id: string
-  user_id: string
-  action: string
-  performed_by: string
-  details?: Record<string, unknown>
-  created_at: string
-}
+// UserAudit interface removed - not in MVP scope
 
 // Phone status types
 export type PhoneStatus = ValueOf<typeof PHONE_STATUS>
