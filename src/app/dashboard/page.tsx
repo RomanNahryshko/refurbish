@@ -1,7 +1,7 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { SupabaseWarning } from '@/components/common/supabase-warning'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SupabaseWarning } from '@/components/common/supabase-warning';
 
 const modules = [
   {
@@ -42,6 +42,33 @@ const modules = [
   },
 ]
 
+const dashboardCards = [
+  {
+    title: "Total Phones",
+    value: "0",
+    description: "In system",
+    icon: "📱",
+  },
+  {
+    title: "Awaiting Repair",
+    value: "0",
+    description: "Phones in queue",
+    icon: "🔧",
+  },
+  {
+    title: "Ready to Ship",
+    value: "0",
+    description: "Graded phones",
+    icon: "✅",
+  },
+  {
+    title: "Low Stock Items",
+    value: "0",
+    description: "Parts below minimum",
+    icon: "⚠️",
+  },
+];
+
 export default function DashboardPage() {
   return (
     <div className="container mx-auto p-6">
@@ -73,46 +100,18 @@ export default function DashboardPage() {
 
       {/* Quick Stats Section */}
       <div className="mt-8 grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Phones</CardTitle>
-            <span className="text-2xl">📱</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">In system</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Awaiting Repair</CardTitle>
-            <span className="text-2xl">🔧</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Phones in queue</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ready to Ship</CardTitle>
-            <span className="text-2xl">✅</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Graded phones</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
-            <span className="text-2xl">⚠️</span>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Parts below minimum</p>
-          </CardContent>
-        </Card>
+        {dashboardCards.map((card, index) => (
+          <Card key={index}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+              <span className="text-2xl">{card.icon}</span>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{card.value}</div>
+              <p className="text-xs text-muted-foreground">{card.description}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   )

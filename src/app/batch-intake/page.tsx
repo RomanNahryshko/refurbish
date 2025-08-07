@@ -22,6 +22,17 @@ export default function BatchIntakePage() {
     batch.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+
+  const headerList = [
+    { label: 'Batch Number', key: 'batch_number' },
+    { label: 'Supplier', key: 'supplier_name' },
+    { label: 'Expected', key: 'device_count' },
+    { label: 'Imported', key: 'imported_devices_count' },
+    { label: 'Invoice', key: 'invoice_number' },
+    { label: 'Date', key: 'received_date' },
+    { label: 'Amount', key: 'invoice_amount' },
+    { label: 'Actions', key: 'actions' }
+  ]
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
@@ -56,14 +67,11 @@ export default function BatchIntakePage() {
             <table className="w-full">
               <thead className="border-b bg-muted/50">
                 <tr>
-                  <th className="p-3 text-left font-medium">Batch Number</th>
-                  <th className="p-3 text-left font-medium">Supplier</th>
-                  <th className="p-3 text-left font-medium">Expected</th>
-                  <th className="p-3 text-left font-medium">Imported</th>
-                  <th className="p-3 text-left font-medium">Invoice</th>
-                  <th className="p-3 text-left font-medium">Date</th>
-                  <th className="p-3 text-left font-medium">Amount</th>
-                  <th className="p-3 text-left font-medium">Actions</th>
+                  {headerList.map((header) => (
+                    <th key={header.key} className="p-3 text-left font-medium">
+                      {header.label}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -71,9 +79,6 @@ export default function BatchIntakePage() {
                   const supplier = mockSuppliers.find(s => s.id === batch.supplier_id)
                   const importedDevicesCount = mockDevices.filter(d => d.batch_id === batch.id).length
                   const expectedCount = batch.device_count
-                  const isComplete = importedDevicesCount >= expectedCount
-                  const completionPercentage = Math.round((importedDevicesCount / expectedCount) * 100)
-                  
                   return (
                     <tr 
                       key={batch.id} 

@@ -74,7 +74,7 @@ export default function BatchDevicesPage() {
 
   const getDeviceStats = () => {
     const stats = {
-      expected: batch.device_count, // Expected count from batch creation
+      expected: batch?.device_count || 0, // Expected count from batch creation
       received: batchDevices.length, // Actual devices imported/in DB
       inQC: 0,
       inRepair: 0,
@@ -87,10 +87,46 @@ export default function BatchDevicesPage() {
       else if (['graded', 'ready_to_ship', 'shipped'].includes(device.status)) stats.readyToShip++
     })
     
-    return stats
+    return [
+      {
+        label: 'Expected',
+        value: stats.expected,
+        color: 'secondary'
+      },
+      {
+        label: 'Imported from Dr. Phone',
+        value: stats.received,
+        color: 'default'
+      },
+      {
+        label: 'In QC',
+        value: stats.inQC,
+        color: 'destructive'
+      },
+      {
+        label: 'In Repair',
+        value: stats.inRepair,
+        color: 'warning'
+      },
+      {
+        label: 'Ready to Ship',
+        value: stats.readyToShip,
+        color: 'success'
+      }
+    ]
   }
 
   const stats = getDeviceStats()
+  const headers = [
+    { label: 'Internal ID', key: 'internal_id' },
+    { label: 'Device', key: 'device' },
+    { label: 'IMEI', key: 'imei' },
+    { label: 'Status', key: 'status' },
+    { label: 'Grade', key: 'grade' },
+    { label: 'QC', key: 'qc' },
+    { label: 'Repairs', key: 'repairs' },
+    { label: 'Actions', key: 'actions' }
+  ]
 
   if (!batch) {
     return <div>Batch not found</div>
@@ -123,36 +159,14 @@ export default function BatchDevicesPage() {
 
       {/* Statistics */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{stats.expected}</div>
-            <p className="text-sm text-muted-foreground">Expected</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{stats.received}</div>
-            <p className="text-sm text-muted-foreground">Imported from Dr Phone</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{stats.inQC}</div>
-            <p className="text-sm text-muted-foreground">In QC</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{stats.inRepair}</div>
-            <p className="text-sm text-muted-foreground">In Repair</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">{stats.readyToShip}</div>
-            <p className="text-sm text-muted-foreground">Ready to Ship</p>
-          </CardContent>
-        </Card>
+        {stats.map((stat) => (
+          <Card key={stat.label}>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Device List */}
@@ -186,14 +200,11 @@ export default function BatchDevicesPage() {
             <table className="w-full">
               <thead className="border-b bg-muted/50">
                 <tr>
-                  <th className="p-3 text-left">Internal ID</th>
-                  <th className="p-3 text-left">Device</th>
-                  <th className="p-3 text-left">IMEI</th>
-                  <th className="p-3 text-left">Status</th>
-                  <th className="p-3 text-left">Grade</th>
-                  <th className="p-3 text-left">QC</th>
-                  <th className="p-3 text-left">Repairs</th>
-                  <th className="p-3 text-left">Actions</th>
+                  {headers.map((header) => (
+                    <th key={header.key} className="p-3 text-left">
+                      {header.label}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>

@@ -1,16 +1,16 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
-import { 
-  Search, 
-  Filter, 
+import { useState } from 'react';
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import {
+  Search,
+  Filter,
   Smartphone,
   AlertCircle,
   CheckCircle,
@@ -22,9 +22,8 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
-  FileSearch
-} from 'lucide-react'
-import { mockDevices, mockBatches } from '@/lib/mock-data'
+} from 'lucide-react';
+import { mockDevices, mockBatches } from '@/lib/mock-data';
 
 // Device status to icon/color mapping
 const statusConfig = {
