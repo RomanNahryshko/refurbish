@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import { 
   ArrowLeft, 
   Upload, 
@@ -15,11 +13,7 @@ import {
   FileSpreadsheet, 
   AlertCircle, 
   CheckCircle,
-  Edit,
-  Save,
-  ChevronDown,
-  ChevronUp,
-  Wrench
+  Save
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -41,17 +35,14 @@ export default function ImportDrPhonePage() {
   const batchId = params.id as string
   const batch = mockBatches.find(b => b.id === batchId)
   
-  const [importMethod, setImportMethod] = useState<'file' | 'manual'>('file')
   const [importedData, setImportedData] = useState<DrPhoneData[]>([])
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [manualInput, setManualInput] = useState('')
   
   // Per-device repair task selection state
   const [deviceRepairs, setDeviceRepairs] = useState<Record<number, string[]>>({})
   const [deviceOtherDescriptions, setDeviceOtherDescriptions] = useState<Record<number, string>>({})
   const [completedDevices, setCompletedDevices] = useState<Set<number>>(new Set())
   
-  // Mock imported data
+  // Mock imported data for simulation
   const mockDrPhoneData: DrPhoneData[] = [
     {
       imei: '356789012345678',
@@ -73,31 +64,40 @@ export default function ImportDrPhonePage() {
       brand: 'Apple',
       serialNumber: 'F2LZK7654321',
       faults: ['Screen unresponsive in corner', 'Speaker crackling']
+    },
+    {
+      imei: '356789012345681',
+      model: 'Pixel 6',
+      brand: 'Google',
+      serialNumber: 'GP6K1234567',
+      faults: ['No faults detected']
+    },
+    {
+      imei: '356789012345682',
+      model: 'Galaxy A52',
+      brand: 'Samsung',
+      serialNumber: 'RF8A1234567',
+      faults: ['Battery drain issue', 'Wifi connectivity problems']
     }
   ]
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Mock file processing
+      // Check if it's an Excel file
+      if (!file.name.endsWith('.xlsx')) {
+        toast.error('Please upload an Excel file (.xlsx)')
+        return
+      }
+      
+      // Mock file processing - in real implementation this would parse Excel
+      toast.info('Processing Excel file...')
       setTimeout(() => {
         setImportedData(mockDrPhoneData)
         toast.success(`Imported ${mockDrPhoneData.length} devices from ${file.name}`)
-      }, 1000)
+      }, 1500)
     }
   }
-
-  const handleManualImport = () => {
-    // Mock parsing CSV text
-    const lines = manualInput.trim().split('\n')
-    if (lines.length > 0) {
-      setImportedData(mockDrPhoneData)
-      toast.success(`Imported ${mockDrPhoneData.length} devices`)
-      setManualInput('')
-    }
-  }
-
-
 
   // Handle per-device repair task selection
   const handleDeviceRepairToggle = (deviceIndex: number, repairId: string) => {
@@ -161,86 +161,62 @@ export default function ImportDrPhonePage() {
         </div>
       </div>
 
-      {/* Import Methods */}
+      {/* Excel File Upload */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Import Method</CardTitle>
+          <CardTitle>Upload Dr. Phone Excel File</CardTitle>
           <CardDescription>
-            Choose how to import Dr. Phone diagnostic results
+            Upload Excel file (.xlsx) exported from Dr. Phone software containing device diagnostic results
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={importMethod} onValueChange={(v) => setImportMethod(v as 'file' | 'manual')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="file">
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Upload File
-              </TabsTrigger>
-              <TabsTrigger value="manual">
-                <Edit className="h-4 w-4 mr-2" />
-                Paste Data
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="file" className="space-y-4">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Upload CSV or Excel file exported from Dr. Phone software. 
-                  File should contain IMEI, Model, and diagnostic results.
-                </AlertDescription>
-              </Alert>
-              
-              <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                <Download className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground mb-4">
-                  Click to upload or drag and drop
-                </p>
-                <input
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="file-upload"
-                />
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <Button type="button" className="cursor-pointer">
-                    Choose File
-                  </Button>
-                </label>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="manual" className="space-y-4">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Paste CSV data directly from Dr. Phone export. 
-                  Format: IMEI, Brand, Model, Serial Number, Faults
-                </AlertDescription>
-              </Alert>
-              
-              <Textarea
-                placeholder="Paste CSV data here..."
-                value={manualInput}
-                onChange={(e) => setManualInput(e.target.value)}
-                rows={10}
-                className="font-mono text-sm"
-              />
-              
-              <Button 
-                onClick={handleManualImport}
-                disabled={!manualInput.trim()}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Import Data
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Excel file should contain columns: IMEI, Brand, Model, Serial Number, and diagnostic faults.
+              Only .xlsx files are supported.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="border-2 border-dashed rounded-lg p-8 text-center">
+            <FileSpreadsheet className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground mb-4">
+              Click to upload Excel file or drag and drop
+            </p>
+            <input
+              type="file"
+              accept=".xlsx"
+              onChange={handleFileUpload}
+              className="hidden"
+              id="file-upload"
+            />
+            <label htmlFor="file-upload" className="cursor-pointer">
+              <Button type="button" className="cursor-pointer">
+                <Upload className="h-4 w-4 mr-2" />
+                Choose Excel File
               </Button>
-            </TabsContent>
-          </Tabs>
+            </label>
+            
+            {/* Demo/Simulation Button */}
+            <div className="mt-4 pt-4 border-t border-dashed">
+              <p className="text-xs text-muted-foreground mb-2">For testing purposes:</p>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setImportedData(mockDrPhoneData)
+                  toast.success(`Loaded ${mockDrPhoneData.length} demo devices for testing`)
+                }}
+                className="text-xs"
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Load Demo Data
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Imported Data Review */}
+      {/* Initial Quality Control */}
       {importedData.length > 0 && (
         <Card>
           <CardHeader>
