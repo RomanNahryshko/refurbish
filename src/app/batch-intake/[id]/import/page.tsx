@@ -1,24 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { 
-  ArrowLeft, 
-  Upload, 
+import {
+  ArrowLeft,
+  Upload,
   Download,
-  FileSpreadsheet, 
-  AlertCircle, 
+  FileSpreadsheet,
+  AlertCircle,
   CheckCircle,
-  Save
+  Save,
+  Loader2
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { mockBatches } from '@/lib/mock-data'
 import { InitialQCDeviceCard } from '@/components/batch-intake/initial-qc-device-card'
+import { useExcelParser } from '@/lib/hooks/use-excel-parser'
+import { ExcelDataTable } from '@/components/common/excel-data-table'
 
 // Mock Dr. Phone data format
 interface DrPhoneData {
@@ -35,12 +38,19 @@ export default function ImportDrPhonePage() {
   const batchId = params.id as string
   const batch = mockBatches.find(b => b.id === batchId)
   
+  // Excel parser hook
+  const { parsedData, isParsing, error, parseExcelFile, clearData } = useExcelParser()
+  
+
+  
   const [importedData, setImportedData] = useState<DrPhoneData[]>([])
   
   // Per-device repair task selection state
   const [deviceRepairs, setDeviceRepairs] = useState<Record<number, string[]>>({})
   const [deviceOtherDescriptions, setDeviceOtherDescriptions] = useState<Record<number, string>>({})
   const [completedDevices, setCompletedDevices] = useState<Set<number>>(new Set())
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [fileInputKey, setFileInputKey] = useState(0)
   
   // Mock imported data for simulation
   const mockDrPhoneData: DrPhoneData[] = [
@@ -81,21 +91,78 @@ export default function ImportDrPhonePage() {
     }
   ]
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      // Check if it's an Excel file
-      if (!file.name.endsWith('.xlsx')) {
-        toast.error('Please upload an Excel file (.xlsx)')
-        return
+      const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = e.target.files?.[0]
+      if (file) {
+        // Clear previous data when new file is selected
+        if (parsedData) {
+          clearData()
+          // Force file input to re-render
+          setFileInputKey(prev => prev + 1)
+        }
+        
+        // Check if it's an Excel file (case insensitive)
+        const fileName = file.name.toLowerCase()
+        if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+          toast.error('Please upload an Excel file (.xlsx or .xls)')
+          return
+        }
+        
+        // Parse Excel file using web worker
+        if (typeof parseExcelFile !== 'function') {
+          toast.error('Excel parser not initialized')
+          return
+        }
+        
+        try {
+          parseExcelFile(file)
+          toast.info('Processing Excel file...')
+        } catch (error) {
+          toast.error('Failed to start file processing')
+        }
       }
-      
-      // Mock file processing - in real implementation this would parse Excel
-      toast.info('Processing Excel file...')
-      setTimeout(() => {
-        setImportedData(mockDrPhoneData)
-        toast.success(`Imported ${mockDrPhoneData.length} devices from ${file.name}`)
-      }, 1500)
+    } catch (error) {
+      toast.error('Error processing file upload')
+    }
+  }
+
+  const handleUploadClick = () => {
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement
+    
+    if (fileInput && !isParsing) {
+      // Reset the file input value to ensure onChange triggers even for same file
+      fileInput.value = ''
+      fileInput.click()
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+    
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      const file = files[0]
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        parseExcelFile(file)
+        toast.info('Processing Excel file...')
+      } else {
+        toast.error('Please upload an Excel file (.xlsx or .xls)')
+      }
     }
   }
 
@@ -114,6 +181,20 @@ export default function ImportDrPhonePage() {
   const handleDeviceOtherDescription = (deviceIndex: number, description: string) => {
     setDeviceOtherDescriptions(prev => ({ ...prev, [deviceIndex]: description }))
   }
+
+  // Handle Excel parsing success
+  React.useEffect(() => {
+    if (parsedData) {
+      toast.success(`Successfully parsed ${parsedData.totalRows} rows from Excel file`)
+    }
+  }, [parsedData])
+
+  // Handle Excel parsing error
+  React.useEffect(() => {
+    if (error) {
+      toast.error(`Excel parsing error: ${error}`)
+    }
+  }, [error])
 
   const handleCompleteDeviceQC = (deviceIndex: number) => {
     setCompletedDevices(prev => new Set([...prev, deviceIndex]))
@@ -174,47 +255,102 @@ export default function ImportDrPhonePage() {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               Excel file should contain columns: IMEI, Brand, Model, Serial Number, and diagnostic faults.
-              Only .xlsx files are supported.
+              Supports .xlsx and .xls files. The file will be parsed in a web worker and displayed in a table below.
             </AlertDescription>
           </Alert>
           
-          <div className="border-2 border-dashed rounded-lg p-8 text-center">
+          <div 
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              isDragOver 
+                ? 'border-primary bg-primary/5' 
+                : 'hover:border-primary/50'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             <FileSpreadsheet className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mb-4">
               Click to upload Excel file or drag and drop
             </p>
             <input
+              key={fileInputKey}
               type="file"
-              accept=".xlsx"
+              accept=".xlsx,.xls"
               onChange={handleFileUpload}
               className="hidden"
               id="file-upload"
+              disabled={isParsing}
             />
-            <label htmlFor="file-upload" className="cursor-pointer">
-              <Button type="button" className="cursor-pointer">
-                <Upload className="h-4 w-4 mr-2" />
-                Choose Excel File
-              </Button>
-            </label>
+            <Button 
+              type="button" 
+              disabled={isParsing}
+              className="cursor-pointer"
+              onClick={handleUploadClick}
+            >
+              {isParsing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  {parsedData ? 'Choose New Excel File' : 'Choose Excel File'}
+                </>
+              )}
+            </Button>
             
             {/* Demo/Simulation Button */}
             <div className="mt-4 pt-4 border-t border-dashed">
               <p className="text-xs text-muted-foreground mb-2">For testing purposes:</p>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setImportedData(mockDrPhoneData)
-                  toast.success(`Loaded ${mockDrPhoneData.length} demo devices for testing`)
-                }}
-                className="text-xs"
-              >
-                <Download className="h-3 w-3 mr-1" />
-                Load Demo Data
-              </Button>
+              <div className="flex gap-2 justify-center">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setImportedData(mockDrPhoneData)
+                    toast.success(`Loaded ${mockDrPhoneData.length} demo devices for testing`)
+                  }}
+                  className="text-xs"
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Load Demo Data
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Excel Data Preview */}
+      {parsedData && (
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Excel Data Preview</CardTitle>
+                <CardDescription>
+                  Preview of parsed Excel data. You can search, filter, and export the data.
+                </CardDescription>
+              </div>
+              <Button variant="outline" onClick={() => {
+                clearData()
+                
+                // Reset file input value
+                const fileInput = document.getElementById('file-upload') as HTMLInputElement
+                if (fileInput) {
+                  fileInput.value = ''
+                }
+              }}>
+                Clear Data
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ExcelDataTable data={parsedData} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Initial Quality Control */}
       {importedData.length > 0 && (
