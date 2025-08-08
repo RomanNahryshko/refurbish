@@ -21,7 +21,8 @@ import { toast } from 'sonner'
 import { mockBatches } from '@/lib/mock-data'
 import { InitialQCDeviceCard } from '@/components/batch-intake/initial-qc-device-card'
 import { useExcelParser } from '@/lib/hooks/use-excel-parser'
-import { ExcelDataTable } from '@/components/common/excel-data-table'
+import { v4 as uuidv4 } from 'uuid'
+
 
 // Mock Dr. Phone data format
 interface DrPhoneData {
@@ -29,7 +30,38 @@ interface DrPhoneData {
   model: string
   brand: string
   serialNumber: string
-  faults: string[]
+  faults: string
+}
+
+// Function to convert Excel data to DrPhoneData format
+function convertExcelToDrPhoneData(excelData: any): DrPhoneData[] {
+  if (!excelData || !excelData.rows || excelData.rows.length === 0) {
+    return []
+  }
+
+  return excelData.rows.map((row: any) => {
+    // Excel parser returns rows as objects with column names as keys
+    const imei = row['IMEI'] || row['imei'] || row[0] || ''
+    const brand = row['Brand'] || row['brand'] || row[1] || ''
+    const model = row['Model'] || row['model'] || row[2] || ''
+    const serialNumber = row['Serial Number'] || row['SerialNumber'] || row['serial_number'] || row[3] || ''
+    const faultsString = row['Faults'] || row['faults'] || row[4] || ''
+    
+    // Split faults by common delimiters and clean up
+    const faults = faultsString
+      .split(/[,;|]/)
+      .map((fault: string) => fault.trim())
+      .filter((fault: string) => fault.length > 0)
+      .filter((fault: string) => fault.toLowerCase() !== 'no faults detected')
+    
+    return {
+      imei,
+      brand,
+      model,
+      serialNumber,
+      faults: faults.length > 0 ? faults : ['No faults detected']
+    }
+  });
 }
 
 export default function ImportDrPhonePage() {
@@ -59,35 +91,35 @@ export default function ImportDrPhonePage() {
       model: 'iPhone 12',
       brand: 'Apple',
       serialNumber: 'F2LZK1234567',
-      faults: ['Battery health 78%', 'Minor scratches on screen']
+      faults: 'Battery health 78%, Minor scratches on screen'
     },
     {
       imei: '356789012345679',
       model: 'Galaxy S21',
       brand: 'Samsung',
       serialNumber: 'RF8R1234567',
-      faults: ['Camera not focusing', 'Housing damage']
+      faults: 'Camera not focusing, Housing damage'
     },
     {
       imei: '356789012345680',
       model: 'iPhone 11',
       brand: 'Apple',
       serialNumber: 'F2LZK7654321',
-      faults: ['Screen unresponsive in corner', 'Speaker crackling']
+      faults: 'Screen unresponsive in corner, Speaker crackling'
     },
     {
       imei: '356789012345681',
       model: 'Pixel 6',
       brand: 'Google',
       serialNumber: 'GP6K1234567',
-      faults: ['No faults detected']
+      faults: 'No faults detected'
     },
     {
       imei: '356789012345682',
       model: 'Galaxy A52',
       brand: 'Samsung',
       serialNumber: 'RF8A1234567',
-      faults: ['Battery drain issue', 'Wifi connectivity problems']
+      faults: 'Battery drain issue, Wifi connectivity problems'
     }
   ]
 
@@ -118,12 +150,12 @@ export default function ImportDrPhonePage() {
         try {
           parseExcelFile(file)
           toast.info('Processing Excel file...')
-        } catch (error) {
-          toast.error('Failed to start file processing')
+        } catch (error: any) {
+          toast.error(`Failed to start file processing: ${error.message}`)
         }
       }
-    } catch (error) {
-      toast.error('Error processing file upload')
+    } catch (error: any) {
+      toast.error(`Error processing file upload: ${error.message}`)
     }
   }
 
@@ -330,24 +362,106 @@ export default function ImportDrPhonePage() {
               <div>
                 <CardTitle>Excel Data Preview</CardTitle>
                 <CardDescription>
-                  Preview of parsed Excel data. You can search, filter, and export the data.
+                  Preview of parsed Excel data. Review the data and proceed to Initial QC.
                 </CardDescription>
               </div>
-              <Button variant="outline" onClick={() => {
-                clearData()
-                
-                // Reset file input value
-                const fileInput = document.getElementById('file-upload') as HTMLInputElement
-                if (fileInput) {
-                  fileInput.value = ''
-                }
-              }}>
-                Clear Data
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => {
+                  clearData()
+                  
+                  // Reset file input value
+                  const fileInput = document.getElementById('file-upload') as HTMLInputElement
+                  if (fileInput) {
+                    fileInput.value = ''
+                  }
+                }}>
+                  Clear Data
+                </Button>
+                <Button 
+                  onClick={() => {
+                    // Convert Excel data to DrPhoneData format
+                    const convertedData = convertExcelToDrPhoneData(parsedData)
+                    setImportedData(convertedData)
+                    toast.success(`Converted ${convertedData.length} devices from Excel data`)
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Convert to Device Cards
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <ExcelDataTable data={parsedData} />
+            <div className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Excel data has been parsed successfully. Click &quot;Convert to Device Cards&quot; to transform the data into device cards for Initial QC processing.
+                </AlertDescription>
+              </Alert>
+              
+              {/* Debug info */}
+              <div className="text-xs text-muted-foreground p-2 bg-gray-50 rounded">
+                <p>Debug: Parsed {parsedData.rows?.length || 0} rows</p>
+                <p>Headers: {parsedData.headers?.join(', ') || 'None'}</p>
+                {parsedData.rows && parsedData.rows.length > 0 && (
+                  <p>First row keys: {Object.keys(parsedData.rows[0]).join(', ')}</p>
+                )}
+              </div>
+              
+              <div className="space-y-4">
+                {parsedData.rows && parsedData.rows.length > 0 ? (
+                  parsedData.rows.map((row, index) => {
+                    console.log('Processing row:', row); // Debug log
+                    
+                    // Convert row to DrPhoneData format for preview
+                    // Excel parser returns rows as objects with column names as keys
+                    const previewDevice: DrPhoneData = {
+                      imei: row['Imei'] || '',
+                      brand: row['Brand'] || row['brand'] || row[1] || '',
+                      model: row['Model Name'] || '',
+                      serialNumber: row['Serial'] || '',
+                      faults: row['Fail'] || 'No faults detected'
+                    }
+                    
+                    console.log('Preview device:', previewDevice); // Debug log
+                    
+                    return (
+                      <InitialQCDeviceCard
+                        key={uuidv4()}
+                        device={previewDevice}
+                        deviceIndex={index}
+                        selectedRepairs={[]}
+                        otherDescription=""
+                        onRepairToggle={() => {}} // No-op for preview
+                        onOtherDescriptionChange={() => {}} // No-op for preview
+                        onCompleteQC={() => {}} // No-op for preview
+                      />
+                    )
+                  })
+                ) : (
+                  // Show demo data if no Excel data is available
+                  <div className="text-center py-8">
+                    <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
+                    <h3 className="text-lg font-semibold text-muted-foreground">No Excel Data Available</h3>
+                    <p className="text-gray-600 mb-4">Upload an Excel file to see device cards here.</p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setImportedData(mockDrPhoneData)
+                        toast.success(`Loaded ${mockDrPhoneData.length} demo devices for testing`)
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Load Demo Data Instead
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+
+            </div>
           </CardContent>
         </Card>
       )}
@@ -379,12 +493,13 @@ export default function ImportDrPhonePage() {
             <div className="space-y-4">
               {importedData
                 .filter((_, index) => !completedDevices.has(index))
-                .map((device, originalIndex) => {
+                .map((device) => {
                   // Find the original index in the full array
                   const deviceIndex = importedData.findIndex(d => d.imei === device.imei)
+                  
                   return (
                     <InitialQCDeviceCard
-                      key={deviceIndex}
+                      key={uuidv4()}
                       device={device}
                       deviceIndex={deviceIndex}
                       selectedRepairs={deviceRepairs[deviceIndex] || []}
@@ -412,7 +527,7 @@ export default function ImportDrPhonePage() {
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
                   Complete Initial QC for each device individually. Repair tasks and grades will be saved automatically.
-                  You can proceed to batch management once you've completed QC for the devices you want to process.
+                  You can proceed to batch management once you&apos;ve completed QC for the devices you want to process.
                 </AlertDescription>
               </Alert>
               
@@ -434,5 +549,5 @@ export default function ImportDrPhonePage() {
         </Card>
       )}
     </div>
-  )
+  );
 }

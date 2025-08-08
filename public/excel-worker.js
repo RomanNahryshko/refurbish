@@ -56,7 +56,7 @@ function parseExcelFile(file) {
         // Define required columns to keep
         const requiredColumns = [
           'Model No', 'Model Name', 'Color', 'Memory', 'serial', 
-          'os', 'version', 'wipe', 'region code', 'batteryhealth', 'time'
+          'os', 'version', 'wipe', 'region code', 'batteryhealth', 'time', 'Imei', 'Fail'
         ];
         
         // Define columns to exclude

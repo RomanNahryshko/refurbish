@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
-import { 
+import {
   ChevronDown,
   ChevronUp,
   Wrench,
@@ -20,7 +20,7 @@ interface DrPhoneData {
   model: string
   brand: string
   serialNumber: string
-  faults: string[]
+  faults: string
 }
 
 interface InitialQCDeviceCardProps {
@@ -94,7 +94,7 @@ export function InitialQCDeviceCard({
         <div>
           <span className="text-sm font-medium text-muted-foreground">Detected Faults (Software Check):</span>
           <div className="mt-2 space-y-1">
-            {device.faults.map((fault, faultIndex) => (
+            {device.faults.split(',').map((fault: string, faultIndex: number) => (
               <Badge key={faultIndex} variant="secondary" className="mr-2">
                 {fault}
               </Badge>
