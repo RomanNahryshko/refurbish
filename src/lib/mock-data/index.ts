@@ -166,7 +166,7 @@ export const mockBatches: Batch[] = [
 // DEVICES
 // =====================================================
 
-export const mockDevices: Device[] = [
+const mockDevicesBase: Device[] = [
   // Batch 1 devices
   {
     id: 'device-1',
@@ -296,6 +296,66 @@ export const mockDevices: Device[] = [
     created_at: '2024-01-16T11:00:00Z'
   }
 ]
+
+// Generate additional mock devices to reach ~60 total
+function zeroPad(value: number, length = 8): string {
+  return String(value).padStart(length, '0')
+}
+
+const brands = [
+  { brand: 'Apple', models: ['iPhone 12', 'iPhone 12 Pro', 'iPhone 13'] },
+  { brand: 'Samsung', models: ['Galaxy S21', 'Galaxy S22', 'Galaxy A52'] },
+  { brand: 'Google', models: ['Pixel 6', 'Pixel 7'] },
+  { brand: 'OnePlus', models: ['9 Pro', '10 Pro'] }
+]
+
+const colors = ['Black', 'White', 'Blue', 'Red', 'Green', 'Silver', 'Gold']
+const storages = ['64GB', '128GB', '256GB']
+const statusCycle: Device['status'][] = [
+  'received',
+  'initial_qc',
+  'awaiting_repair',
+  'in_repair',
+  'final_qc',
+  'graded',
+  'ready_to_ship'
+]
+
+const gradeForStatus = (status: Device['status']): Device['grade'] => {
+  if (status === 'graded' || status === 'ready_to_ship') {
+    const options: Device['grade'][] = ['A', 'B', 'C']
+    return options[Math.floor(Math.random() * options.length)]
+  }
+  return 'ungraded'
+}
+
+const generatedDevices: Device[] = Array.from({ length: 51 }).map((_, idx) => {
+  const i = idx + 10 // continue after existing 09
+  const brandSet = brands[i % brands.length]
+  const model = brandSet.models[i % brandSet.models.length]
+  const color = colors[i % colors.length]
+  const storage = storages[i % storages.length]
+  const status = statusCycle[i % statusCycle.length]
+  const grade = gradeForStatus(status)
+  const batchId = ['batch-1', 'batch-2', 'batch-3'][i % 3]
+
+  return {
+    id: `device-${i}`,
+    internal_id: zeroPad(i),
+    batch_id: batchId,
+    imei: String(300000000000000 + i),
+    serial_number: `SN${300000 + i}`,
+    brand: brandSet.brand,
+    model,
+    color,
+    storage_capacity: storage,
+    status,
+    grade,
+    created_at: `2024-01-18T10:${String(i % 60).padStart(2, '0')}:00Z`
+  }
+})
+
+export const mockDevices: Device[] = [...mockDevicesBase, ...generatedDevices]
 
 // =====================================================
 // REPAIR JOBS

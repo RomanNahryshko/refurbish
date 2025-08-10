@@ -40,7 +40,7 @@ const navigationItems: NavigationItem[] = [
   },
   {
     title: 'Quality Control',
-    href: '/quality-control',
+    href: '/qc',
     description: 'Final QC and grading',
     allowedRoles: ['qc_controller', 'ops_manager', 'general_manager'],
   },

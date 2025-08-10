@@ -1,12 +1,14 @@
-'use client';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+'use client'
 
-import {
+import { useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
+import { 
   ArrowLeft,
   Smartphone,
   Package,
@@ -15,11 +17,13 @@ import {
   XCircle,
   AlertCircle,
   Clock,
+  User,
+  Calendar,
   Hash,
   ClipboardCheck,
-  Package2,
-} from 'lucide-react';
-import { mockDevices, mockBatches, mockRepairJobs, mockQCChecks, mockUsers } from '@/lib/mock-data';
+  Package2
+} from 'lucide-react'
+import { mockDevices, mockBatches, mockRepairJobs, mockQCChecks, mockUsers, getDeviceByInternalId } from '@/lib/mock-data'
 
 
 // Device status to icon/color mapping
@@ -39,12 +43,27 @@ const statusConfig = {
 export default function DeviceJobSheetPage() {
   const params = useParams()
   const router = useRouter()
-  const deviceId = params.id as string
+  const internalId = params.internalId as string
   
-  const device = mockDevices.find(d => d.id === deviceId)
+  // Validate internal ID format (8 digits)
+  if (!/^\d{8}$/.test(internalId)) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-gray-900">Invalid Device ID</h1>
+          <p className="text-gray-600 mt-2">Device ID must be 8 digits: {internalId}</p>
+          <Link href="/devices" className="mt-4 inline-block">
+            <Button>Back to Devices</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+  
+  const device = getDeviceByInternalId(internalId)
   const batch = device ? mockBatches.find(b => b.id === device.batch_id) : null
-  const repairs = mockRepairJobs.filter(r => r.device_id === deviceId)
-  const qcChecks = mockQCChecks.filter(q => q.device_id === deviceId)
+  const repairs = device ? mockRepairJobs.filter(r => r.device_id === device.id) : []
+  const qcChecks = device ? mockQCChecks.filter(q => q.device_id === device.id) : []
   
 
 
@@ -67,54 +86,6 @@ export default function DeviceJobSheetPage() {
   const status = statusConfig[device.status as keyof typeof statusConfig]
   const StatusIcon = status.icon
 
-  const deviceInfoFields = [
-    { label: "Brand", value: device.brand },
-    { label: "Model", value: device.model },
-    { label: "Color", value: device.color },
-    { label: "Storage", value: device.storage_capacity },
-    { 
-      label: "Grade", 
-      value: device.grade && device.grade !== 'ungraded' ? (
-        <Badge>Grade {device.grade}</Badge>
-      ) : (
-        <span className="text-gray-400">Not graded yet</span>
-      )
-    },
-  ];
-
-  const identifierFields = [
-    { 
-      label: "Internal ID", 
-      value: device.internal_id,
-      icon: <Hash className="h-4 w-4" />,
-      className: "font-mono font-medium"
-    },
-    { 
-      label: "IMEI", 
-      value: device.imei || 'N/A',
-      className: "font-mono text-sm"
-    },
-    { 
-      label: "Serial Number", 
-      value: device.serial_number || 'N/A',
-      className: "font-mono text-sm"
-    },
-    { 
-      label: "Batch", 
-      value: (
-        <Link href={`/batch-intake/${batch?.id}`}>
-          <Badge variant="outline" className="cursor-pointer">
-            {batch?.batch_number || 'N/A'}
-          </Badge>
-        </Link>
-      )
-    },
-    { 
-      label: "Received Date", 
-      value: new Date(device.created_at).toLocaleDateString(),
-      className: "text-sm"
-    },
-  ];
 
 
   return (
@@ -122,8 +93,8 @@ export default function DeviceJobSheetPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/device-tracking">
-            <Button variant="ghost" size="sm">
+          <Link href="/devices">
+            <Button variant="ghost" size="sm" className="cursor-pointer">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Devices
             </Button>
@@ -176,12 +147,32 @@ export default function DeviceJobSheetPage() {
                 <CardTitle className="text-lg">Device Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {deviceInfoFields.map((field, index) => (
-                  <div key={index} className="flex justify-between">
-                    <span className="text-gray-600">{field.label}</span>
-                    <span className="font-medium">{field.value}</span>
-                  </div>
-                ))}
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Brand</span>
+                  <span className="font-medium">{device.brand}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Model</span>
+                  <span className="font-medium">{device.model}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Color</span>
+                  <span className="font-medium">{device.color}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Storage</span>
+                  <span className="font-medium">{device.storage_capacity}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Grade</span>
+                  <span className="font-medium">
+                    {device.grade && device.grade !== 'ungraded' ? (
+                      <Badge>Grade {device.grade}</Badge>
+                    ) : (
+                      <span className="text-gray-400">Not graded yet</span>
+                    )}
+                  </span>
+                </div>
               </CardContent>
             </Card>
 
@@ -190,15 +181,33 @@ export default function DeviceJobSheetPage() {
                 <CardTitle className="text-lg">Identifiers</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {identifierFields.map((field, index) => (
-                  <div key={index} className="flex justify-between">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      {field.icon}
-                      {field.label}
-                    </span>
-                    <span className={field.className}>{field.value}</span>
-                  </div>
-                ))}
+                <div className="flex justify-between">
+                  <span className="text-gray-600 flex items-center gap-1">
+                    <Hash className="h-4 w-4" />
+                    Internal ID
+                  </span>
+                  <span className="font-mono font-medium">{device.internal_id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">IMEI</span>
+                  <span className="font-mono text-sm">{device.imei || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Serial Number</span>
+                  <span className="font-mono text-sm">{device.serial_number || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Batch</span>
+                  <Link href={`/batch-intake/${batch?.id}`}>
+                    <Badge variant="outline" className="cursor-pointer">
+                      {batch?.batch_number || 'N/A'}
+                    </Badge>
+                  </Link>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Received Date</span>
+                  <span className="text-sm">{new Date(device.created_at).toLocaleDateString()}</span>
+                </div>
               </CardContent>
             </Card>
           </div>

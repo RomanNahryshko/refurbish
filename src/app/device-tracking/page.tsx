@@ -279,8 +279,8 @@ export default function DeviceTrackingPage() {
                         )}
                       </td>
                       <td className="py-3">
-                        <Link href={`/device-tracking/${device.id}`}>
-                          <Button variant="ghost" size="sm">
+                        <Link href={`/device-tracking/${device.internal_id}`}>
+                          <Button size="sm" className="cursor-pointer">
                             <Eye className="h-4 w-4" />
                             <span className="ml-2">View</span>
                           </Button>

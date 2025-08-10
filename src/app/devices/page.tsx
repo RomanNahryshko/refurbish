@@ -58,7 +58,7 @@ export default function DevicesPage() {
       setBatchFilter(batchFromUrl)
     }
   }, [batchFromUrl])
-  const itemsPerPage = 10
+  const itemsPerPage = 20
 
   // Filter devices based on search and filters
   const filteredDevices = mockDevices.filter(device => {
@@ -85,6 +85,12 @@ export default function DevicesPage() {
   const uniqueBrands = [...new Set(mockDevices.map(d => d.brand))]
   const uniqueGrades = [...new Set(mockDevices.map(d => d.grade).filter(Boolean))]
 
+  // KPI counts (used across variants)
+  const totalCount = mockDevices.length
+  const repairCount = mockDevices.filter(d => d.status === 'in_repair').length
+  const qcCount = mockDevices.filter(d => d.status === 'initial_qc' || d.status === 'final_qc').length
+  const readyCount = mockDevices.filter(d => d.status === 'ready_to_ship').length
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -105,82 +111,47 @@ export default function DevicesPage() {
             }
           </p>
         </div>
-
+        {/* Inline KPIs — Option A: Badge row (visual only) */}
+        <div className="w-full md:w-auto mt-4 md:mt-0 md:ml-6 flex flex-wrap items-center gap-2">
+          <div className="h-8 rounded-sm border border-gray-300 px-3 flex items-center gap-2 text-gray-800 select-none">
+            <span className="font-semibold">{totalCount}</span>
+            <span className="text-sm">Total</span>
+          </div>
+          <div className="h-8 rounded-sm border border-orange-300 px-3 flex items-center gap-2 text-orange-700 select-none">
+            <span className="font-semibold">{repairCount}</span>
+            <span className="text-sm">Repair</span>
+          </div>
+          <div className="h-8 rounded-sm border border-purple-300 px-3 flex items-center gap-2 text-purple-700 select-none">
+            <span className="font-semibold">{qcCount}</span>
+            <span className="text-sm">QC</span>
+          </div>
+          <div className="h-8 rounded-sm border border-green-300 px-3 flex items-center gap-2 text-green-700 select-none">
+            <span className="font-semibold">{readyCount}</span>
+            <span className="text-sm">Ready</span>
+          </div>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Devices</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockDevices.length}</div>
-            <p className="text-xs text-gray-600">All time</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">In Repair</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {mockDevices.filter(d => d.status === 'in_repair').length}
-            </div>
-            <p className="text-xs text-gray-600">Currently being repaired</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Awaiting QC</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              {mockDevices.filter(d => d.status === 'initial_qc' || d.status === 'final_qc').length}
-            </div>
-            <p className="text-xs text-gray-600">Quality control needed</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Ready to Ship</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {mockDevices.filter(d => d.status === 'ready_to_ship').length}
-            </div>
-            <p className="text-xs text-gray-600">Completed & graded</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* (Removed preview variants) */}
 
-      {/* Filters */}
+      {/* Compact Filters Toolbar */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center">
-            <Filter className="mr-2 h-5 w-5" />
-            Search & Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="md:col-span-1">
-              <Label htmlFor="search">Search by IMEI or Internal ID</Label>
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  id="search"
-                  placeholder="Enter IMEI or Internal ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
+        <CardContent className="py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Input
+                id="search"
+                placeholder="Search IMEI / Internal ID"
+                aria-label="Search IMEI or Internal ID"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-9 pl-8"
+              />
             </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
+            <div className="flex items-center gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger id="status">
+                <SelectTrigger id="status" className="h-9 w-[160px]">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
@@ -190,11 +161,9 @@ export default function DevicesPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div>
-              <Label htmlFor="batch">Batch</Label>
+
               <Select value={batchFilter} onValueChange={setBatchFilter}>
-                <SelectTrigger id="batch">
+                <SelectTrigger id="batch" className="h-9 w-[140px]">
                   <SelectValue placeholder="All Batches" />
                 </SelectTrigger>
                 <SelectContent>
@@ -206,11 +175,9 @@ export default function DevicesPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div>
-              <Label htmlFor="brand">Brand</Label>
+
               <Select value={brandFilter} onValueChange={setBrandFilter}>
-                <SelectTrigger id="brand">
+                <SelectTrigger id="brand" className="h-9 w-[140px]">
                   <SelectValue placeholder="All Brands" />
                 </SelectTrigger>
                 <SelectContent>
@@ -220,11 +187,9 @@ export default function DevicesPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div>
-              <Label htmlFor="grade">Grade</Label>
+
               <Select value={gradeFilter} onValueChange={setGradeFilter}>
-                <SelectTrigger id="grade">
+                <SelectTrigger id="grade" className="h-9 w-[140px]">
                   <SelectValue placeholder="All Grades" />
                 </SelectTrigger>
                 <SelectContent>
@@ -235,6 +200,21 @@ export default function DevicesPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="ml-auto flex items-center gap-2 w-full md:w-auto">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm('')
+                  setStatusFilter('all')
+                  setBatchFilter('all')
+                  setBrandFilter('all')
+                  setGradeFilter('all')
+                }}
+              >
+                Clear
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -303,8 +283,8 @@ export default function DevicesPage() {
                         )}
                       </td>
                       <td className="py-3">
-                        <Link href={`/devices/${device.id}`}>
-                          <Button variant="ghost" size="sm">
+                        <Link href={`/devices/${device.internal_id}`}>
+                          <Button size="sm" className="cursor-pointer">
                             <Eye className="h-4 w-4" />
                             <span className="ml-2">View</span>
                           </Button>

@@ -56,8 +56,8 @@ export default function MockupOverviewPage() {
       icon: ClipboardCheck,
       color: 'bg-purple-500',
       pages: [
-        { name: 'QC Queue', href: '/quality-control', status: 'ready' },
-        { name: 'Final QC Form (Demo)', href: `/quality-control/${demoDeviceId}`, status: 'ready' },
+        { name: 'QC Queue', href: '/qc', status: 'ready' },
+        { name: 'Final QC Form (Demo)', href: `/qc/${demoDeviceId}`, status: 'ready' },
         { name: 'Initial QC (in Batch Intake)', href: `/batch-intake/${demoBatchId}/import`, status: 'ready' },
       ]
     },
