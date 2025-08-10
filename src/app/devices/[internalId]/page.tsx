@@ -24,21 +24,7 @@ import {
   Package2
 } from 'lucide-react'
 import { mockDevices, mockBatches, mockRepairJobs, mockQCChecks, mockUsers, getDeviceByInternalId } from '@/lib/mock-data'
-
-
-// Device status to icon/color mapping
-const statusConfig = {
-  'received': { icon: Package, color: 'bg-gray-500', label: 'Received' },
-  'initial_qc': { icon: ClipboardCheck, color: 'bg-blue-500', label: 'Initial QC' },
-  'awaiting_repair': { icon: Clock, color: 'bg-yellow-500', label: 'Awaiting Repair' },
-  'in_repair': { icon: Wrench, color: 'bg-orange-500', label: 'In Repair' },
-  'final_qc': { icon: CheckCircle, color: 'bg-purple-500', label: 'Final QC' },
-  'graded': { icon: CheckCircle, color: 'bg-green-500', label: 'Graded' },
-  'ready_to_ship': { icon: Package2, color: 'bg-indigo-500', label: 'Ready to Ship' },
-  'shipped': { icon: CheckCircle, color: 'bg-green-600', label: 'Shipped' },
-  'failed': { icon: XCircle, color: 'bg-red-500', label: 'Failed' },
-  'returned': { icon: AlertCircle, color: 'bg-red-600', label: 'Returned' }
-}
+import { statusConfig } from '@/components/common/device-list-table'
 
 export default function DeviceJobSheetPage() {
   const params = useParams()

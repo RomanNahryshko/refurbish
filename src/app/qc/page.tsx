@@ -10,18 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { 
   ClipboardCheck,
-  Search,
-  Smartphone,
-  ArrowRight,
-  Package,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Eye,
-  ChevronLeft,
-  ChevronRight
+  Search
 } from 'lucide-react'
 import { mockDevices, mockBatches } from '@/lib/mock-data'
+import { DeviceListTable } from '@/components/common/device-list-table'
+import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
 
 // Filter devices that need final QC
 const devicesForQC = mockDevices.filter(d => d.status === 'final_qc')
@@ -40,7 +33,7 @@ export default function QualityControlPage() {
 
   const [currentPage, setCurrentPage] = useState(1)
   
-  const itemsPerPage = 20
+  const itemsPerPage = DEFAULT_ITEMS_PER_PAGE
   
   // Get QC metrics
   const qcMetrics = getQCMetrics()
@@ -83,164 +76,86 @@ export default function QualityControlPage() {
         </div>
       </div>
 
-      {/* Compact Filters Toolbar */}
+
+
+      {/* Device Table with Integrated Filters */}
       <Card>
-        <CardContent className="py-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
-                id="search"
-                placeholder="Search IMEI / Internal ID"
-                aria-label="Search IMEI or Internal ID"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 pl-8"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Select value={batchFilter} onValueChange={setBatchFilter}>
-                <SelectTrigger id="batch" className="h-9 w-[140px]">
-                  <SelectValue placeholder="All Batches" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Batches</SelectItem>
-                  {mockBatches.map(batch => (
-                    <SelectItem key={batch.id} value={batch.id}>
-                      {batch.batch_number}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={brandFilter} onValueChange={setBrandFilter}>
-                <SelectTrigger id="brand" className="h-9 w-[140px]">
-                  <SelectValue placeholder="All Brands" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Brands</SelectItem>
-                  {uniqueBrands.map(brand => (
-                    <SelectItem key={brand} value={brand!}>{brand}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-
-            </div>
-            <div className="ml-auto flex items-center gap-2 w-full md:w-auto">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchTerm('')
-                  setBatchFilter('all')
-                  setBrandFilter('all')
-                }}
-              >
-                Clear
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Device Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">
-            Devices Ready for QC ({filteredDevices.length} results)
-          </CardTitle>
-        </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="pb-2 font-medium">Internal ID</th>
-                  <th className="pb-2 font-medium">Device</th>
-                  <th className="pb-2 font-medium">IMEI</th>
-                  <th className="pb-2 font-medium">Batch</th>
-                  <th className="pb-2 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {paginatedDevices.length > 0 ? (
-                  paginatedDevices.map((device) => {
-                    const batch = mockBatches.find(b => b.id === device.batch_id)
-                    
-                    return (
-                      <tr key={device.id} className="hover:bg-gray-50">
-                        <td className="py-3">
-                          <div className="flex items-center">
-                            <Smartphone className="mr-2 h-4 w-4 text-gray-400" />
-                            <span className="font-mono font-medium">{device.internal_id}</span>
-                          </div>
-                        </td>
-                        <td className="py-3">
-                          <div>
-                            <div className="font-medium">{device.brand} {device.model}</div>
-                            <div className="text-sm text-gray-600">
-                              {device.color} • {device.storage_capacity}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3">
-                          <span className="font-mono text-sm">{device.imei || '-'}</span>
-                        </td>
-                        <td className="py-3">
-                          <span className="text-sm">{batch?.batch_number || '-'}</span>
-                        </td>
-                        <td className="py-3">
-                          <Link href={`/qc/${device.internal_id}`}>
-                            <Button size="sm" className="cursor-pointer">
-                              <ClipboardCheck className="h-4 w-4" />
-                              <span className="ml-2">Start QC</span>
-                            </Button>
-                          </Link>
-                        </td>
-                      </tr>
-                    )
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-gray-500">
-                      <ClipboardCheck className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-                      <p>No devices awaiting final QC</p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <DeviceListTable
+            devices={paginatedDevices}
+            batches={mockBatches}
+            columns={['internal_id', 'device', 'imei', 'batch', 'actions']}
+            renderActions={(device) => (
+              <Link href={`/qc/${device.internal_id}`}>
+                <Button size="sm" className="cursor-pointer">
+                  <ClipboardCheck className="h-4 w-4" />
+                  <span className="ml-2">Start QC</span>
+                </Button>
+              </Link>
+            )}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalResults={filteredDevices.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            title="Devices Ready for QC"
+            pageKey="qc"
+            renderFilters={() => (
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative w-full md:w-64">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="search"
+                    placeholder="Search IMEI / Internal ID"
+                    aria-label="Search IMEI or Internal ID"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-9 pl-8"
+                  />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select value={batchFilter} onValueChange={setBatchFilter}>
+                    <SelectTrigger className="h-9 w-[120px]">
+                      <SelectValue placeholder="All Batches" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Batches</SelectItem>
+                      {mockBatches.map(batch => (
+                        <SelectItem key={batch.id} value={batch.id}>
+                          {batch.batch_number}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-gray-600">
-                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredDevices.length)} of {filteredDevices.length} devices
+                  <Select value={brandFilter} onValueChange={setBrandFilter}>
+                    <SelectTrigger className="h-9 w-[110px]">
+                      <SelectValue placeholder="All Brands" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Brands</SelectItem>
+                      {uniqueBrands.map(brand => (
+                        <SelectItem key={brand} value={brand!}>{brand}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm('')
+                      setBatchFilter('all')
+                      setBrandFilter('all')
+                    }}
+                    className="h-9"
+                  >
+                    Clear
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+            )}
+          />
         </CardContent>
       </Card>
     </div>

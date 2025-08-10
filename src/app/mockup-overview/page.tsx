@@ -47,7 +47,7 @@ export default function MockupOverviewPage() {
       color: 'bg-green-500',
       pages: [
         { name: 'Device List & Search', href: '/devices', status: 'ready' },
-        { name: 'Device Job Sheet (Demo)', href: `/devices/${demoDeviceId}`, status: 'ready' },
+        { name: 'Device Job Sheet (Demo)', href: `/devices/${demoInternalId}`, status: 'ready' },
       ]
     },
     {
@@ -57,7 +57,7 @@ export default function MockupOverviewPage() {
       color: 'bg-purple-500',
       pages: [
         { name: 'QC Queue', href: '/qc', status: 'ready' },
-        { name: 'Final QC Form (Demo)', href: `/qc/${demoDeviceId}`, status: 'ready' },
+        { name: 'Final QC Form (Demo)', href: `/qc/${demoInternalId}`, status: 'ready' },
         { name: 'Initial QC (in Batch Intake)', href: `/batch-intake/${demoBatchId}/import`, status: 'ready' },
       ]
     },
