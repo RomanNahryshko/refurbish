@@ -19,50 +19,35 @@ import {
   ClipboardCheck,
   Package2,
 } from 'lucide-react';
-import { mockDevices, mockBatches, mockRepairJobs, mockQCChecks, mockUsers } from '@/lib/mock-data';
-
-
-// Device status to icon/color mapping
-const statusConfig = {
-  'received': { icon: Package, color: 'bg-gray-500', label: 'Received' },
-  'initial_qc': { icon: ClipboardCheck, color: 'bg-blue-500', label: 'Initial QC' },
-  'awaiting_repair': { icon: Clock, color: 'bg-yellow-500', label: 'Awaiting Repair' },
-  'in_repair': { icon: Wrench, color: 'bg-orange-500', label: 'In Repair' },
-  'final_qc': { icon: CheckCircle, color: 'bg-purple-500', label: 'Final QC' },
-  'graded': { icon: CheckCircle, color: 'bg-green-500', label: 'Graded' },
-  'ready_to_ship': { icon: Package2, color: 'bg-indigo-500', label: 'Ready to Ship' },
-  'shipped': { icon: CheckCircle, color: 'bg-green-600', label: 'Shipped' },
-  'failed': { icon: XCircle, color: 'bg-red-500', label: 'Failed' },
-  'returned': { icon: AlertCircle, color: 'bg-red-600', label: 'Returned' }
-}
+import { mockDevices, mockBatches, mockRepairJobs, mockQCChecks, mockUsers, getDeviceByInternalId } from '@/lib/mock-data';
+import { statusConfig } from '@/components/common/device-list-table';
 
 export default function DeviceJobSheetPage() {
   const params = useParams()
   const router = useRouter()
-  const deviceId = params.id as string
+  const internalId = params.internalId as string
   
-  const device = mockDevices.find(d => d.id === deviceId)
-  const batch = device ? mockBatches.find(b => b.id === device.batch_id) : null
-  const repairs = mockRepairJobs.filter(r => r.device_id === deviceId)
-  const qcChecks = mockQCChecks.filter(q => q.device_id === deviceId)
+  const device = getDeviceByInternalId(internalId)
   
-
-
   if (!device) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <Card>
-          <CardContent className="py-10 text-center">
-            <AlertCircle className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-            <p className="text-gray-600">Device not found</p>
-            <Button variant="outline" className="mt-4" onClick={() => router.back()}>
-              Go Back
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="p-6 max-w-5xl mx-auto">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-gray-900">Device Not Found</h1>
+          <p className="text-gray-600 mt-2">No device found with internal ID: {internalId}</p>
+          <Link href="/device-tracking" className="mt-4 inline-block">
+            <Button>Back to Device Tracking</Button>
+          </Link>
+        </div>
       </div>
     )
   }
+  
+  const batch = mockBatches.find(b => b.id === device.batch_id)
+  const repairs = mockRepairJobs.filter(r => r.device_id === device.id)
+  const qcChecks = mockQCChecks.filter(q => q.device_id === device.id)
+  
+
 
   const status = statusConfig[device.status as keyof typeof statusConfig]
   const StatusIcon = status.icon
@@ -123,7 +108,7 @@ export default function DeviceJobSheetPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/device-tracking">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="cursor-pointer">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Devices
             </Button>

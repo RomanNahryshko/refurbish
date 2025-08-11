@@ -47,7 +47,7 @@ export default function MockupOverviewPage() {
       color: 'bg-green-500',
       pages: [
         { name: 'Device List & Search', href: '/devices', status: 'ready' },
-        { name: 'Device Job Sheet (Demo)', href: `/devices/${demoDeviceId}`, status: 'ready' },
+        { name: 'Device Job Sheet (Demo)', href: `/devices/${demoInternalId}`, status: 'ready' },
       ]
     },
     {
@@ -56,8 +56,8 @@ export default function MockupOverviewPage() {
       icon: ClipboardCheck,
       color: 'bg-purple-500',
       pages: [
-        { name: 'QC Queue', href: '/quality-control', status: 'ready' },
-        { name: 'Final QC Form (Demo)', href: `/quality-control/${demoDeviceId}`, status: 'ready' },
+        { name: 'QC Queue', href: '/qc', status: 'ready' },
+        { name: 'Final QC Form (Demo)', href: `/qc/${demoInternalId}`, status: 'ready' },
         { name: 'Initial QC (in Batch Intake)', href: `/batch-intake/${demoBatchId}/import`, status: 'ready' },
       ]
     },
@@ -67,7 +67,7 @@ export default function MockupOverviewPage() {
       icon: Wrench,
       color: 'bg-orange-500',
       pages: [
-        { name: 'Repair Queue', href: '/repair-jobs', status: 'partial' },
+        { name: 'Repair Queue', href: '/repair-jobs', status: 'ready' },
         { name: 'Create Repairs', href: '/create-repairs-demo', status: 'pending' },
         { name: 'Technician View', href: '/technician-view', status: 'pending' },
         { name: 'Parts Usage', href: '/parts-usage-demo', status: 'pending' },

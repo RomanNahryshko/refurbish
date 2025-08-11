@@ -8,35 +8,50 @@ import {
   ArrowLeft,
   ClipboardCheck
 } from 'lucide-react'
-import { mockDevices, mockBatches, mockRepairJobs } from '@/lib/mock-data'
+import { mockDevices, mockBatches, mockRepairJobs, getDeviceByInternalId } from '@/lib/mock-data'
 import { toast } from 'sonner'
 import { FinalQCDeviceCard } from '@/components/quality-control/final-qc-device-card'
 
 export default function FinalQCPage() {
   const params = useParams()
   const router = useRouter()
-  const deviceId = params.deviceId as string
+  const internalId = params.internalId as string
+  
+  // Validate internal ID format (8 digits)
+  if (!/^\d{8}$/.test(internalId)) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-gray-900">Invalid Device ID</h1>
+          <p className="text-gray-600 mt-2">Device ID must be 8 digits: {internalId}</p>
+          <Link href="/qc" className="mt-4 inline-block">
+            <Button>Back to QC Queue</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
   
   // Find device and related data
-  const device = mockDevices.find(d => d.id === deviceId) || 
-    { // Add mock device if not found for demo
-      id: deviceId,
-      internal_id: '00000010',
-      batch_id: 'batch-2',
-      imei: '223456789012349',
-      serial_number: 'SN223460',
-      brand: 'Apple',
-      model: 'iPhone 13 Pro',
-      color: 'Sierra Blue',
-      storage_capacity: '256GB',
-      status: 'final_qc',
-      grade: 'ungraded',
-      created_at: '2024-01-17T09:00:00Z'
-    }
+  const device = getDeviceByInternalId(internalId)
+  
+  if (!device) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-gray-900">Device Not Found</h1>
+          <p className="text-gray-600 mt-2">No device found with internal ID: {internalId}</p>
+          <Link href="/qc" className="mt-4 inline-block">
+            <Button>Back to QC Queue</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
   
   const batch = mockBatches.find(b => b.id === device.batch_id)
   const completedRepairs = mockRepairJobs.filter(r => 
-    r.device_id === deviceId && r.status === 'completed'
+    r.device_id === device.id && r.status === 'completed'
   )
   
   // State for QC form
@@ -62,11 +77,11 @@ export default function FinalQCPage() {
     
     if (decision === 'pass') {
       toast.success(`Device ${device.internal_id} passed Final QC with Grade ${grade}. Ready to ship!`)
-      router.push('/quality-control')
+      router.push('/qc')
     } else {
       const repairCount = selectedRepairs.length
       toast.warning(`Device ${device.internal_id} failed Final QC. ${repairCount} additional repair task(s) created`)
-      router.push('/quality-control')
+      router.push('/qc')
     }
   }
 
@@ -74,8 +89,8 @@ export default function FinalQCPage() {
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/quality-control">
-          <Button variant="ghost" size="sm">
+        <Link href="/qc">
+          <Button variant="ghost" size="sm" className="cursor-pointer">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to QC Queue
           </Button>

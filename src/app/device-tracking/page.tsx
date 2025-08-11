@@ -11,33 +11,13 @@ import { Label } from '@/components/ui/label';
 import {
   Search,
   Filter,
-  Smartphone,
-  AlertCircle,
-  CheckCircle,
-  ClipboardCheck,
-  Clock,
-  Wrench,
-  Package,
-  XCircle,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
+  Eye
 } from 'lucide-react';
 import { mockDevices, mockBatches } from '@/lib/mock-data';
+import { DeviceListTable } from '@/components/common/device-list-table';
+import { DEVICE_STATUS_LABELS, DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants';
 
-// Device status to icon/color mapping
-const statusConfig = {
-  'received': { icon: Package, color: 'bg-gray-500', label: 'Received' },
-  'initial_qc': { icon: ClipboardCheck, color: 'bg-blue-500', label: 'Initial QC' },
-  'awaiting_repair': { icon: Clock, color: 'bg-yellow-500', label: 'Awaiting Repair' },
-  'in_repair': { icon: Wrench, color: 'bg-orange-500', label: 'In Repair' },
-  'final_qc': { icon: CheckCircle, color: 'bg-purple-500', label: 'Final QC' },
-  'graded': { icon: CheckCircle, color: 'bg-green-500', label: 'Graded' },
-  'ready_to_ship': { icon: Package, color: 'bg-indigo-500', label: 'Ready to Ship' },
-  'shipped': { icon: CheckCircle, color: 'bg-green-600', label: 'Shipped' },
-  'failed': { icon: XCircle, color: 'bg-red-500', label: 'Failed' },
-  'returned': { icon: AlertCircle, color: 'bg-red-600', label: 'Returned' }
-}
+
 
 export default function DeviceTrackingPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -46,7 +26,7 @@ export default function DeviceTrackingPage() {
   const [brandFilter, setBrandFilter] = useState<string>('all')
   const [gradeFilter, setGradeFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const itemsPerPage = DEFAULT_ITEMS_PER_PAGE
 
   // Filter devices based on search and filters
   const filteredDevices = mockDevices.filter(device => {
@@ -161,8 +141,8 @@ export default function DeviceTrackingPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  {Object.entries(statusConfig).map(([value, config]) => (
-                    <SelectItem key={value} value={value}>{config.label}</SelectItem>
+                  {Object.entries(DEVICE_STATUS_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -224,103 +204,24 @@ export default function DeviceTrackingPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b text-left">
-                  <th className="pb-2 font-medium">Internal ID</th>
-                  <th className="pb-2 font-medium">Device</th>
-                  <th className="pb-2 font-medium">IMEI</th>
-                  <th className="pb-2 font-medium">Batch</th>
-                  <th className="pb-2 font-medium">Status</th>
-                  <th className="pb-2 font-medium">Grade</th>
-                  <th className="pb-2 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {paginatedDevices.map((device) => {
-                  const batch = mockBatches.find(b => b.id === device.batch_id)
-                  const status = statusConfig[device.status as keyof typeof statusConfig]
-                  const StatusIcon = status.icon
-                  
-                  return (
-                    <tr key={device.id} className="hover:bg-gray-50">
-                      <td className="py-3">
-                        <div className="flex items-center">
-                          <Smartphone className="mr-2 h-4 w-4 text-gray-400" />
-                          <span className="font-mono font-medium">{device.internal_id}</span>
-                        </div>
-                      </td>
-                      <td className="py-3">
-                        <div>
-                          <div className="font-medium">{device.brand} {device.model}</div>
-                          <div className="text-sm text-gray-600">
-                            {device.color} • {device.storage_capacity}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3">
-                        <span className="font-mono text-sm">{device.imei || '-'}</span>
-                      </td>
-                      <td className="py-3">
-                        <span className="text-sm">{batch?.batch_number || '-'}</span>
-                      </td>
-                      <td className="py-3">
-                        <Badge variant="outline" className="gap-1">
-                          <StatusIcon className="h-3 w-3" />
-                          {status.label}
-                        </Badge>
-                      </td>
-                      <td className="py-3">
-                        {device.grade && device.grade !== 'ungraded' ? (
-                          <Badge variant="default">Grade {device.grade}</Badge>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="py-3">
-                        <Link href={`/device-tracking/${device.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                            <span className="ml-2">View</span>
-                          </Button>
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-gray-600">
-                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredDevices.length)} of {filteredDevices.length} devices
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
+          <DeviceListTable
+            devices={paginatedDevices}
+            batches={mockBatches}
+            columns={['internal_id', 'device', 'imei', 'batch', 'status', 'grade', 'actions']}
+            renderActions={(device) => (
+              <Link href={`/device-tracking/${device.internal_id}`}>
+                <Button size="sm" className="cursor-pointer">
+                  <Eye className="h-4 w-4" />
+                  <span className="ml-2">View</span>
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+              </Link>
+            )}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalResults={filteredDevices.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         </CardContent>
       </Card>
     </div>
