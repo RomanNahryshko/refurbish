@@ -6,7 +6,10 @@ import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ConfirmationDialog } from '@/components/common/confirmation-dialog'
+
 
 import { 
   ArrowLeft,
@@ -23,13 +26,47 @@ import {
   ClipboardCheck,
   Package2
 } from 'lucide-react'
-import { mockDevices, mockBatches, mockRepairJobs, mockQCChecks, mockUsers, getDeviceByInternalId } from '@/lib/mock-data'
+import { mockDevices, mockBatches, mockRepairJobs, mockQCChecks, mockUsers, mockSpareParts, getDeviceByInternalId } from '@/lib/mock-data'
 import { statusConfig } from '@/components/common/device-list-table'
+
+// Mock current user (for role-based actions)
+const mockCurrentUser = {
+  id: 'user-current',
+  full_name: 'Current User',
+  role: 'technician', // or 'ops_manager'
+  technician_level: 'L2'
+}
 
 export default function DeviceJobSheetPage() {
   const params = useParams()
   const router = useRouter()
   const internalId = params.internalId as string
+  
+  // State for parts recording
+  const [partsRecording, setPartsRecording] = useState<{
+    repairId: string | null
+    selectedPart: string
+    quantity: number
+    notes: string
+  }>({
+    repairId: null,
+    selectedPart: '',
+    quantity: 1,
+    notes: ''
+  })
+  
+  // State for confirmation dialogs
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean
+    title: string
+    description: string
+    action: () => void
+  }>({
+    open: false,
+    title: '',
+    description: '',
+    action: () => {}
+  })
   
   // Validate internal ID format (8 digits)
   if (!/^\d{8}$/.test(internalId)) {
@@ -72,6 +109,68 @@ export default function DeviceJobSheetPage() {
   const status = statusConfig[device.status as keyof typeof statusConfig]
   const StatusIcon = status.icon
 
+  // Handler functions for parts recording and repair actions
+  const handleAddPartsToRepair = (repairId: string) => {
+    setPartsRecording({
+      repairId,
+      selectedPart: '',
+      quantity: 1,
+      notes: ''
+    })
+  }
+
+  const submitPartsRecord = () => {
+    const repair = mockRepairJobs.find(r => r.id === partsRecording.repairId)
+    if (repair && partsRecording.selectedPart) {
+      const selectedPart = mockSpareParts.find(p => p.id === partsRecording.selectedPart)
+      
+      if (!repair.parts_used) {
+        repair.parts_used = []
+      }
+      
+      repair.parts_used.push({
+        spare_part_id: partsRecording.selectedPart,
+        part_name: selectedPart?.name || 'Unknown Part',
+        quantity_used: partsRecording.quantity
+      })
+      
+      console.log('Added parts to repair:', repair.id, partsRecording)
+    }
+    
+    setPartsRecording({
+      repairId: null,
+      selectedPart: '',
+      quantity: 1,
+      notes: ''
+    })
+  }
+
+  const handleCreateRepair = (repairType: string) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Create Repair Job',
+      description: `Create a new ${repairType.replace('_', ' ')} repair for this device?`,
+      action: () => {
+        const newRepair = {
+          id: `repair-new-${Date.now()}`,
+          device_id: device.id,
+          device_internal_id: device.internal_id,
+          device_model: `${device.brand} ${device.model}`,
+          repair_type: repairType as 'housing_change' | 'glass_change' | 'battery_change' | 'software_update' | 'other',
+          description: undefined,
+          status: 'pending' as const,
+          assigned_to: undefined,
+          assigned_to_name: undefined,
+          created_at: new Date().toISOString()
+        }
+        
+        mockRepairJobs.push(newRepair)
+        console.log('Created new repair:', newRepair)
+        setConfirmDialog({ ...confirmDialog, open: false })
+      }
+    })
+  }
+
 
 
   return (
@@ -93,7 +192,15 @@ export default function DeviceJobSheetPage() {
             <p className="text-gray-600">Internal ID: {device.internal_id}</p>
           </div>
         </div>
-
+        
+        <div>
+          <Link href="/repair-jobs">
+            <Button variant="outline" size="sm" className="cursor-pointer">
+              <Wrench className="mr-2 h-4 w-4" />
+              Repair Queue
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Status Card */}
@@ -117,165 +224,99 @@ export default function DeviceJobSheetPage() {
         </CardContent>
       </Card>
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="details" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="details">Device Details</TabsTrigger>
-          <TabsTrigger value="qc">Quality Control</TabsTrigger>
-          <TabsTrigger value="repairs">Repairs</TabsTrigger>
-        </TabsList>
+      {/* Device Information Header */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg">Device Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">Brand & Model</span>
+                <p className="font-medium">{device.brand} {device.model}</p>
+              </div>
+              <div>
+                <span className="text-gray-600">Color & Storage</span>
+                <p className="font-medium">{device.color} • {device.storage_capacity}</p>
+              </div>
+              <div>
+                <span className="text-gray-600">Grade</span>
+                <p className="font-medium">
+                  {device.grade && device.grade !== 'ungraded' ? (
+                    <Badge variant="outline">Grade {device.grade}</Badge>
+                  ) : (
+                    <span className="text-gray-400">Not graded</span>
+                  )}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-600 flex items-center gap-1">
+                  <Hash className="h-3 w-3" />
+                  Internal ID
+                </span>
+                <p className="font-mono font-medium">{device.internal_id}</p>
+              </div>
+              <div>
+                <span className="text-gray-600">IMEI</span>
+                <p className="font-mono text-xs">{device.imei || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-gray-600">Serial Number</span>
+                <p className="font-mono text-xs">{device.serial_number || 'N/A'}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Device Details Tab */}
-        <TabsContent value="details" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Device Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Brand</span>
-                  <span className="font-medium">{device.brand}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Model</span>
-                  <span className="font-medium">{device.model}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Color</span>
-                  <span className="font-medium">{device.color}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Storage</span>
-                  <span className="font-medium">{device.storage_capacity}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Grade</span>
-                  <span className="font-medium">
-                    {device.grade && device.grade !== 'ungraded' ? (
-                      <Badge>Grade {device.grade}</Badge>
-                    ) : (
-                      <span className="text-gray-400">Not graded yet</span>
-                    )}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Batch & Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <span className="text-gray-600 text-sm">Batch</span>
+              <div className="mt-1">
+                <Link href={`/batch-intake/${batch?.id}`}>
+                  <Badge variant="outline" className="cursor-pointer">
+                    {batch?.batch_number || 'N/A'}
+                  </Badge>
+                </Link>
+              </div>
+            </div>
+            <div>
+              <span className="text-gray-600 text-sm">Received Date</span>
+              <p className="text-sm">{new Date(device.created_at).toLocaleDateString()}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Identifiers</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 flex items-center gap-1">
-                    <Hash className="h-4 w-4" />
-                    Internal ID
-                  </span>
-                  <span className="font-mono font-medium">{device.internal_id}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">IMEI</span>
-                  <span className="font-mono text-sm">{device.imei || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Serial Number</span>
-                  <span className="font-mono text-sm">{device.serial_number || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Batch</span>
-                  <Link href={`/batch-intake/${batch?.id}`}>
-                    <Badge variant="outline" className="cursor-pointer">
-                      {batch?.batch_number || 'N/A'}
-                    </Badge>
-                  </Link>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Received Date</span>
-                  <span className="text-sm">{new Date(device.created_at).toLocaleDateString()}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Quality Control Tab */}
-        <TabsContent value="qc" className="space-y-4">
-          {qcChecks.length > 0 ? (
-            qcChecks.map((qc) => {
-              const qcTech = mockUsers.find(u => u.id === qc.performed_by)
-              return (
-                <Card key={qc.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">
-                          {qc.check_type === 'initial' ? 'Initial QC' : 'Final QC'}
-                        </CardTitle>
-                        <CardDescription>
-                          Performed by {qcTech?.full_name} on {new Date(qc.performed_at).toLocaleDateString()}
-                        </CardDescription>
-                      </div>
-                      <Badge variant={qc.overall_result === 'pass' ? 'default' : 'destructive'}>
-                        {qc.overall_result === 'pass' ? 'Passed' : 'Failed'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {qc.test_results?.map((test, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          {test.result === 'pass' ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <XCircle className="h-4 w-4 text-red-500" />
-                          )}
-                          <span className="text-sm capitalize">
-                            {test.test_name.replace('_', ' ')}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    {qc.notes && (
-                      <div className="mt-4 p-3 bg-gray-50 rounded">
-                        <p className="text-sm">{qc.notes}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })
-          ) : (
-            <Card>
-              <CardContent className="py-10 text-center">
-                <ClipboardCheck className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-                <p className="text-gray-600">No QC checks performed yet</p>
-                <Button className="mt-4">
-                  Start Initial QC
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* Repairs Tab */}
-        <TabsContent value="repairs" className="space-y-4">
+      {/* Repair History */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Wrench className="h-5 w-5" />
+            Repair History
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           {repairs.length > 0 ? (
-            repairs.map((repair) => {
-              const technician = mockUsers.find(u => u.id === repair.assigned_to)
-              return (
-                <Card key={repair.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
+            <div className="space-y-4">
+              {repairs.map((repair) => {
+                const technician = mockUsers.find(u => u.id === repair.assigned_to)
+                return (
+                  <div key={repair.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-3">
                       <div>
-                        <CardTitle className="text-lg">
+                        <h4 className="font-medium">
                           {repair.repair_type.split('_').map(w => 
                             w.charAt(0).toUpperCase() + w.slice(1)
                           ).join(' ')} Repair
-                        </CardTitle>
-                        <CardDescription>
+                        </h4>
+                        <p className="text-sm text-gray-600">
                           Assigned to {technician?.full_name}
-                        </CardDescription>
+                        </p>
                       </div>
                       <Badge variant={
                         repair.status === 'completed' ? 'default' :
@@ -285,49 +326,214 @@ export default function DeviceJobSheetPage() {
                         {repair.status.replace('_', ' ')}
                       </Badge>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-
-                      <div className="flex justify-between text-sm">
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
+                      <div>
                         <span className="text-gray-600">Created</span>
-                        <span>{new Date(repair.created_at).toLocaleDateString()}</span>
+                        <p>{new Date(repair.created_at).toLocaleDateString()}</p>
                       </div>
-                      {repair.parts_used && repair.parts_used.length > 0 && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded">
-                          <p className="text-sm font-medium mb-1">Parts Used:</p>
-                          <ul className="text-sm text-gray-600">
-                            {repair.parts_used.map((part, idx) => (
-                              <li key={idx}>• {part.part_name} (Qty: {part.quantity_used})</li>
-                            ))}
-                          </ul>
+                      {repair.assigned_at && (
+                        <div>
+                          <span className="text-gray-600">Assigned</span>
+                          <p>{new Date(repair.assigned_at).toLocaleDateString()}</p>
                         </div>
                       )}
-                      {repair.completion_notes && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded">
-                          <p className="text-sm">{repair.completion_notes}</p>
+                      {repair.completed_at && (
+                        <div>
+                          <span className="text-gray-600">Completed</span>
+                          <p>{new Date(repair.completed_at).toLocaleDateString()}</p>
                         </div>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-              )
-            })
+
+                    {repair.parts_used && repair.parts_used.length > 0 && (
+                      <div className="mt-3 p-3 bg-gray-50 rounded">
+                        <p className="text-sm font-medium mb-1">Parts Used:</p>
+                        <ul className="text-sm text-gray-600">
+                          {repair.parts_used.map((part, idx) => (
+                            <li key={idx}>• {part.part_name} (Qty: {part.quantity_used})</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {repair.completion_notes && (
+                      <div className="mt-3 p-3 bg-gray-50 rounded">
+                        <p className="text-sm">{repair.completion_notes}</p>
+                      </div>
+                    )}
+                    
+                    {/* Action buttons for repairs */}
+                    {(mockCurrentUser.role === 'technician' || mockCurrentUser.role === 'ops_manager') && (
+                      <div className="mt-3 flex gap-2">
+                        {(repair.status === 'completed' || repair.status === 'in_progress') && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddPartsToRepair(repair.id)}
+                            className="cursor-pointer"
+                          >
+                            <Package className="h-4 w-4 mr-1" />
+                            Add Parts
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           ) : (
-            <Card>
-              <CardContent className="py-10 text-center">
-                <Wrench className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-                <p className="text-gray-600">No repairs assigned yet</p>
-                <Button className="mt-4">
-                  Create Repair Task
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="py-8 text-center">
+              <Wrench className="mx-auto h-10 w-10 text-gray-400 mb-3" />
+              <p className="text-gray-600">No repairs scheduled for this device</p>
+            </div>
           )}
-        </TabsContent>
+          
+          {/* Create New Repair - Only for Ops Managers */}
+          {mockCurrentUser.role === 'ops_manager' && (
+            <div className="mt-6 pt-6 border-t">
+              <h4 className="font-medium mb-3">Create New Repair Job</h4>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCreateRepair('housing_change')}
+                  className="cursor-pointer"
+                >
+                  <Package className="h-4 w-4 mr-1" />
+                  Housing Change (L1)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCreateRepair('glass_change')}
+                  className="cursor-pointer"
+                >
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  Glass Change (L2)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCreateRepair('battery_change')}
+                  className="cursor-pointer"
+                >
+                  <Package2 className="h-4 w-4 mr-1" />
+                  Battery Change (L3)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCreateRepair('software_update')}
+                  className="cursor-pointer"
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Software Update
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCreateRepair('other')}
+                  className="cursor-pointer"
+                >
+                  <Wrench className="h-4 w-4 mr-1" />
+                  Other Repair
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText="Create"
+        onConfirm={confirmDialog.action}
+      />
 
-      </Tabs>
+      {/* Parts Recording Dialog */}
+      {partsRecording.repairId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle>Add Parts to Repair</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Select Part</label>
+                <Select value={partsRecording.selectedPart} onValueChange={(value) => 
+                  setPartsRecording({ ...partsRecording, selectedPart: value })
+                }>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Choose a part" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockSpareParts.map(part => (
+                      <SelectItem key={part.id} value={part.id}>
+                        {part.name} (Stock: {part.quantity_in_stock})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Quantity</label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={partsRecording.quantity}
+                  onChange={(e) => setPartsRecording({ 
+                    ...partsRecording, 
+                    quantity: parseInt(e.target.value) || 1 
+                  })}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Notes (Optional)</label>
+                <Input
+                  placeholder="Usage notes..."
+                  value={partsRecording.notes}
+                  onChange={(e) => setPartsRecording({ 
+                    ...partsRecording, 
+                    notes: e.target.value 
+                  })}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setPartsRecording({ 
+                    repairId: null, 
+                    selectedPart: '', 
+                    quantity: 1, 
+                    notes: '' 
+                  })}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={submitPartsRecord} 
+                  className="flex-1"
+                  disabled={!partsRecording.selectedPart}
+                >
+                  Add Parts
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

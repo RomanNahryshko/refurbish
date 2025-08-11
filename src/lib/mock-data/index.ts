@@ -420,8 +420,153 @@ export const mockRepairJobs: RepairJob[] = [
     status: 'completed',
     assigned_to: 'user-5',
     assigned_to_name: 'Tom Battery Pro',
+    assigned_at: '2024-01-16T13:30:00Z',
     completed_at: '2024-01-16T14:00:00Z',
-    created_at: '2024-01-16T13:00:00Z'
+    created_at: '2024-01-16T13:00:00Z',
+    completion_notes: 'iOS updated to latest version successfully'
+  },
+  {
+    id: 'repair-6',
+    device_id: 'device-5',
+    device_internal_id: '00000005',
+    device_model: 'iPhone 12 Pro',
+    repair_type: 'battery_change',
+    description: undefined,
+    status: 'completed',
+    assigned_to: 'user-7',
+    assigned_to_name: 'Lisa L3 Tech',
+    assigned_at: '2024-01-17T09:00:00Z',
+    completed_at: '2024-01-17T11:30:00Z',
+    created_at: '2024-01-17T08:30:00Z',
+    completion_notes: 'Battery replaced successfully, tested at 100% capacity',
+    parts_used: [
+      {
+        spare_part_id: 'part-1',
+        part_name: 'iPhone 12 Battery',
+        quantity_used: 1
+      }
+    ]
+  },
+  {
+    id: 'repair-7',
+    device_id: 'device-6',
+    device_internal_id: '00000006',
+    device_model: 'iPhone 11',
+    repair_type: 'glass_change',
+    description: undefined,
+    status: 'pending',
+    assigned_to: undefined,
+    assigned_to_name: undefined,
+    created_at: '2024-01-18T10:00:00Z'
+  },
+  {
+    id: 'repair-8',
+    device_id: 'device-7',
+    device_internal_id: '00000007',
+    device_model: 'Galaxy S22',
+    repair_type: 'housing_change',
+    description: undefined,
+    status: 'in_progress',
+    assigned_to: 'user-8',
+    assigned_to_name: 'Mark L1 Specialist',
+    assigned_at: '2024-01-18T11:00:00Z',
+    created_at: '2024-01-18T09:00:00Z'
+  },
+  {
+    id: 'repair-9',
+    device_id: 'device-8',
+    device_internal_id: '00000008',
+    device_model: 'iPhone 14',
+    repair_type: 'other',
+    description: 'Camera module replacement',
+    status: 'pending',
+    assigned_to: undefined,
+    assigned_to_name: undefined,
+    created_at: '2024-01-18T12:00:00Z'
+  },
+  {
+    id: 'repair-10',
+    device_id: 'device-9',
+    device_internal_id: '00000009',
+    device_model: 'Galaxy S21',
+    repair_type: 'glass_change',
+    description: undefined,
+    status: 'completed',
+    assigned_to: 'user-9',
+    assigned_to_name: 'Sarah L2 Pro',
+    assigned_at: '2024-01-19T08:30:00Z',
+    completed_at: '2024-01-19T12:00:00Z',
+    created_at: '2024-01-19T08:00:00Z',
+    completion_notes: 'Screen replaced, all touch functions verified',
+    parts_used: [
+      {
+        spare_part_id: 'part-2',
+        part_name: 'iPhone 11 Screen',
+        quantity_used: 1
+      }
+    ]
+  },
+  {
+    id: 'repair-11',
+    device_id: 'device-10',
+    device_internal_id: '00000010',
+    device_model: 'iPhone 13 Pro',
+    repair_type: 'battery_change',
+    description: undefined,
+    status: 'pending',
+    assigned_to: undefined,
+    assigned_to_name: undefined,
+    created_at: '2024-01-19T14:00:00Z'
+  },
+  {
+    id: 'repair-12',
+    device_id: 'device-11',
+    device_internal_id: '00000011',
+    device_model: 'Galaxy S23',
+    repair_type: 'housing_change',
+    description: undefined,
+    status: 'in_progress',
+    assigned_to: 'user-8',
+    assigned_to_name: 'Mark L1 Specialist',
+    assigned_at: '2024-01-19T15:00:00Z',
+    created_at: '2024-01-19T14:30:00Z'
+  },
+  {
+    id: 'repair-13',
+    device_id: 'device-12',
+    device_internal_id: '00000012',
+    device_model: 'iPhone 12',
+    repair_type: 'software_update',
+    description: undefined,
+    status: 'pending',
+    assigned_to: undefined,
+    assigned_to_name: undefined,
+    created_at: '2024-01-20T09:00:00Z'
+  },
+  {
+    id: 'repair-14',
+    device_id: 'device-13',
+    device_internal_id: '00000013',
+    device_model: 'Galaxy S22 Ultra',
+    repair_type: 'other',
+    description: 'Charging port repair',
+    status: 'pending',
+    assigned_to: undefined,
+    assigned_to_name: undefined,
+    created_at: '2024-01-20T10:30:00Z'
+  },
+  {
+    id: 'repair-15',
+    device_id: 'device-14',
+    device_internal_id: '00000014',
+    device_model: 'iPhone 14 Pro',
+    repair_type: 'glass_change',
+    description: undefined,
+    status: 'in_progress',
+    assigned_to: 'user-9',
+    assigned_to_name: 'Sarah L2 Pro',
+    assigned_at: '2024-01-20T11:00:00Z',
+    created_at: '2024-01-20T10:00:00Z'
   }
 ]
 

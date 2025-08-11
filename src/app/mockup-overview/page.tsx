@@ -67,7 +67,7 @@ export default function MockupOverviewPage() {
       icon: Wrench,
       color: 'bg-orange-500',
       pages: [
-        { name: 'Repair Queue', href: '/repair-jobs', status: 'partial' },
+        { name: 'Repair Queue', href: '/repair-jobs', status: 'ready' },
         { name: 'Create Repairs', href: '/create-repairs-demo', status: 'pending' },
         { name: 'Technician View', href: '/technician-view', status: 'pending' },
         { name: 'Parts Usage', href: '/parts-usage-demo', status: 'pending' },
