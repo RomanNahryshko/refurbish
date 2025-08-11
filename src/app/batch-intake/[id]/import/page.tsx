@@ -66,7 +66,7 @@ export default function ImportDrPhonePage() {
   const createDevicesFromImport = useCreateDevicesFromImport()
   
   // Function to create a single device when QC is completed
-  const createSingleDevice = async (deviceData: DrPhoneData) => {
+  const createSingleDevice = async (deviceData: DrPhoneData, deviceIndex: number) => {
     try {
       setIsCreatingDevice(true)
       
@@ -76,6 +76,12 @@ export default function ImportDrPhonePage() {
         return null
       }
 
+      // Get the selected repairs and grade for this device
+      const selectedRepairs = deviceRepairs[deviceIndex] || []
+      const selectedGrade = deviceGrades[deviceIndex] || ''
+      const otherDescription = deviceOtherDescriptions[deviceIndex] || ''
+      const qcApproach = deviceQcApproaches[deviceIndex] || ''
+
       // Try to create the device directly - let the database handle conflicts
       const deviceToCreate = {
         imei: deviceData.imei,
@@ -84,7 +90,13 @@ export default function ImportDrPhonePage() {
         serial_number: deviceData.serialNumber,
         dr_phone_data: {
           faults: deviceData.faults,
-          original_data: deviceData
+          original_data: deviceData,
+          qc_data: {
+            approach: qcApproach,
+            selected_repairs: selectedRepairs,
+            selected_grade: selectedGrade,
+            other_description: otherDescription
+          }
         }
       }
       
@@ -442,7 +454,7 @@ export default function ImportDrPhonePage() {
 
       if (deviceData) {
         // Create device first, then complete QC
-        const deviceId = await createSingleDevice(deviceData)
+        const deviceId = await createSingleDevice(deviceData, deviceIndex)
         
         if (deviceId) {
           // Now mark as completed
@@ -755,7 +767,7 @@ export default function ImportDrPhonePage() {
                       onRepairToggle={(repairId) => handleDeviceRepairToggle(index, repairId)}
                       onOtherDescriptionChange={(desc) => handleDeviceOtherDescription(index, desc)}
                       onGradeChange={(grade) => handleDeviceGradeChange(index, grade)}
-                      onCompleteQCWithDevice={(deviceData) => handleCompleteDeviceQC(index, deviceData)}
+                      onCompleteQCWithDevice={(deviceData, deviceIndex) => handleCompleteDeviceQC(deviceIndex, deviceData)}
                       isRepairSectionExpanded={expandedRepairSections[index] || false}
                       onRepairSectionToggle={() => handleRepairSectionToggle(index)}
                       qcApproach={deviceQcApproaches[index] || ''}

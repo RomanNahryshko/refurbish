@@ -88,6 +88,41 @@ export const devicesApi = {
   },
 
   /**
+   * Get a single device by internal ID
+   */
+  async getByInternalId(internalId: string) {
+    const supabase = createClient()
+    if (!supabase) throw new Error('Supabase client not initialized')
+
+    const { data, error } = await supabase
+      .from('devices')
+      .select(`
+        *,
+        batch:batches(
+          id,
+          batch_number,
+          supplier:suppliers(name),
+          received_date,
+          notes
+        )
+      `)
+      .eq('internal_id', internalId)
+      .is('deleted_at', null)
+      .single()
+
+    if (error) throw error
+    return data as Device & {
+      batch: {
+        id: string
+        batch_number: string
+        supplier: { name: string }
+        received_date: string
+        notes?: string
+      }
+    }
+  },
+
+  /**
    * Create a new device
    */
   async create(deviceData: CreateDeviceData) {

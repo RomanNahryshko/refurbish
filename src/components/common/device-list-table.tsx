@@ -3,23 +3,24 @@
 import { ReactNode, useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  Smartphone,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  Filter,
-  Package,
-  ClipboardCheck,
-  Clock,
-  Wrench,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Package2
+import {
+    Smartphone,
+    ChevronLeft,
+    ChevronRight,
+    ChevronDown,
+    ChevronUp,
+    Filter,
+    Package,
+    ClipboardCheck,
+    Clock,
+    Wrench,
+    CheckCircle,
+    XCircle,
+    AlertCircle,
+    Package2
 } from 'lucide-react'
 import { Device, Batch } from '@/types/mock-types'
+import { repairTypes } from '@/components/common/repair-task-selector'
 
 // Device status to icon/color mapping
 export const statusConfig = {
@@ -43,6 +44,7 @@ export type DeviceTableColumn =
   | 'status' 
   | 'grade' 
   | 'serial_number'
+  | 'required_repairs'
   | 'actions'
 
 interface DeviceListTableProps {
@@ -104,6 +106,7 @@ export function DeviceListTable({
       case 'status': return 'Status'
       case 'grade': return 'Grade'
       case 'serial_number': return 'Serial Number'
+      case 'required_repairs': return 'Required Repairs'
       case 'actions': return 'Actions'
       default: return ''
     }
@@ -148,14 +151,41 @@ export function DeviceListTable({
         )
       
       case 'grade':
-        return device.grade && device.grade !== 'ungraded' ? (
-          <Badge variant="default">Grade {device.grade}</Badge>
+        // First check if there's a grade from QC data, then fall back to device.grade
+        const qcGrade = device.dr_phone_data?.qc_data?.selected_grade
+        const displayGrade = qcGrade || device.grade
+        
+        return displayGrade && displayGrade !== 'ungraded' ? (
+          <Badge variant="default">Grade {displayGrade}</Badge>
         ) : (
           <span className="text-gray-400">-</span>
         )
       
       case 'serial_number':
         return <span className="font-mono text-sm">{device.serial_number || '-'}</span>
+      
+      case 'required_repairs':
+        const repairs = device.dr_phone_data?.qc_data?.selected_repairs
+        if (!repairs || repairs.length === 0) return <span className="text-gray-400">-</span>
+        
+        return (
+          <div className="space-y-1 max-w-[200px]">
+            {repairs.map((repairId: string, index: number) => {
+              // Get repair label from repair types
+              const repairType = repairTypes.find(rt => rt.id === repairId)
+              return (
+                <Badge key={index} variant="secondary" className="text-xs">
+                  {repairType?.label || repairId}
+                </Badge>
+              )
+            })}
+            {device.dr_phone_data?.qc_data?.other_description && (
+              <div className="text-xs text-gray-600 mt-1 italic">
+                "{device.dr_phone_data.qc_data.other_description}"
+              </div>
+            )}
+          </div>
+        )
       
       case 'actions':
         return renderActions(device)

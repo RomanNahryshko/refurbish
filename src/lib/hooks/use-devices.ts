@@ -41,6 +41,16 @@ export function useDevice(id: string) {
   })
 }
 
+// Hook to get a single device by internal ID
+export function useDeviceByInternalId(internalId: string) {
+  return useQuery({
+    queryKey: [...deviceKeys.details(), 'internal', internalId],
+    queryFn: () => devicesApi.getByInternalId(internalId),
+    enabled: !!internalId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
 // Hook to create a new device
 export function useCreateDevice() {
   const queryClient = useQueryClient()

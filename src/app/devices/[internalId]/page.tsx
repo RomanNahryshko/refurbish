@@ -1,33 +1,28 @@
 'use client'
 
-import { useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ConfirmationDialog } from '@/components/common/confirmation-dialog'
+import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
+import { LoadingSpinner } from '@/components/common/loading-spinner';
 
-
-import { 
+import {
   ArrowLeft,
   Smartphone,
   Package,
   Wrench,
   CheckCircle,
-  XCircle,
   AlertCircle,
-  Clock,
-  User,
-  Calendar,
   Hash,
-  ClipboardCheck,
   Package2
-} from 'lucide-react'
-import { mockDevices, mockBatches, mockRepairJobs, mockQCChecks, mockUsers, mockSpareParts, getDeviceByInternalId } from '@/lib/mock-data'
-import { statusConfig } from '@/components/common/device-list-table'
+} from 'lucide-react';
+import { useDeviceByInternalId } from '@/lib/hooks/use-devices';
+import { statusConfig } from '@/components/common/device-list-table';
 
 // Mock current user (for role-based actions)
 const mockCurrentUser = {
@@ -41,6 +36,9 @@ export default function DeviceJobSheetPage() {
   const params = useParams()
   const router = useRouter()
   const internalId = params.internalId as string
+  
+  // Fetch device data by internal ID
+  const { data: device, isLoading: deviceLoading, error: deviceError } = useDeviceByInternalId(internalId)
   
   // State for parts recording
   const [partsRecording, setPartsRecording] = useState<{
@@ -83,10 +81,57 @@ export default function DeviceJobSheetPage() {
     )
   }
   
-  const device = getDeviceByInternalId(internalId)
-  const batch = device ? mockBatches.find(b => b.id === device.batch_id) : null
-  const repairs = device ? mockRepairJobs.filter(r => r.device_id === device.id) : []
-  const qcChecks = device ? mockQCChecks.filter(q => q.device_id === device.id) : []
+  // Show loading state
+  if (deviceLoading) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="flex justify-center items-center py-12">
+          <LoadingSpinner />
+          <span className="ml-2">Loading device information...</span>
+        </div>
+      </div>
+    )
+  }
+  
+  // Show error state
+  if (deviceError) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <Card>
+          <CardContent className="py-10 text-center">
+            <AlertCircle className="mx-auto h-10 w-10 text-red-600 mb-3" />
+            <h3 className="text-lg font-semibold text-red-600">Error Loading Device</h3>
+            <p className="text-gray-600 mb-4">{deviceError.message}</p>
+            <Button variant="outline" className="mt-4" onClick={() => router.back()}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+  
+  // Show not found state
+  if (!device) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <Card>
+          <CardContent className="py-10 text-center">
+            <AlertCircle className="mx-auto h-10 w-10 text-gray-400 mb-3" />
+            <p className="text-gray-600">Device not found</p>
+            <Button variant="outline" className="mt-4" onClick={() => router.back()}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+  
+  // Extract batch data from device response
+  const batch = device.batch
+  // For now, we'll use empty arrays for repairs until we implement those APIs
+  const repairs: any[] = []
   
 
 
@@ -120,22 +165,8 @@ export default function DeviceJobSheetPage() {
   }
 
   const submitPartsRecord = () => {
-    const repair = mockRepairJobs.find(r => r.id === partsRecording.repairId)
-    if (repair && partsRecording.selectedPart) {
-      const selectedPart = mockSpareParts.find(p => p.id === partsRecording.selectedPart)
-      
-      if (!repair.parts_used) {
-        repair.parts_used = []
-      }
-      
-      repair.parts_used.push({
-        spare_part_id: partsRecording.selectedPart,
-        part_name: selectedPart?.name || 'Unknown Part',
-        quantity_used: partsRecording.quantity
-      })
-      
-      console.log('Added parts to repair:', repair.id, partsRecording)
-    }
+    // TODO: Implement parts recording API
+    console.log('Parts recording:', partsRecording)
     
     setPartsRecording({
       repairId: null,
@@ -164,7 +195,7 @@ export default function DeviceJobSheetPage() {
           created_at: new Date().toISOString()
         }
         
-        mockRepairJobs.push(newRepair)
+        // TODO: Implement repair creation API
         console.log('Created new repair:', newRepair)
         setConfirmDialog({ ...confirmDialog, open: false })
       }
@@ -236,19 +267,26 @@ export default function DeviceJobSheetPage() {
                 <span className="text-gray-600">Brand & Model</span>
                 <p className="font-medium">{device.brand} {device.model}</p>
               </div>
-              <div>
+              
+              <div className="flex flex-col">
                 <span className="text-gray-600">Color & Storage</span>
-                <p className="font-medium">{device.color} • {device.storage_capacity}</p>
+                {device?.color || device?.storage_capacity ? (
+                  <p className="font-medium">{device.color} • {device.storage_capacity}</p>
+                ) : (
+                  <span className="text-gray-400">No color or storage capacity</span>
+                )}
               </div>
               <div>
                 <span className="text-gray-600">Grade</span>
-                <p className="font-medium">
-                  {device.grade && device.grade !== 'ungraded' ? (
+                <div className="font-medium">
+                  {device.dr_phone_data?.qc_data?.selected_grade && device.dr_phone_data.qc_data.selected_grade !== 'ungraded' ? (
+                    <Badge variant="outline">Grade {device.dr_phone_data.qc_data.selected_grade}</Badge>
+                  ) : device.grade && device.grade !== 'ungraded' ? (
                     <Badge variant="outline">Grade {device.grade}</Badge>
                   ) : (
                     <span className="text-gray-400">Not graded</span>
                   )}
-                </p>
+                </div>
               </div>
               <div>
                 <span className="text-gray-600 flex items-center gap-1">
@@ -265,6 +303,23 @@ export default function DeviceJobSheetPage() {
                 <span className="text-gray-600">Serial Number</span>
                 <p className="font-mono text-xs">{device.serial_number || 'N/A'}</p>
               </div>
+              {device.dr_phone_data?.qc_data?.selected_repairs && device.dr_phone_data.qc_data.selected_repairs.length > 0 && (
+                <div className="md:col-span-3">
+                  <span className="text-gray-600">Required Repairs</span>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {device.dr_phone_data.qc_data.selected_repairs.map((repairId: string, index: number) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {repairId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Badge>
+                    ))}
+                  </div>
+                  {device.dr_phone_data.qc_data.other_description && (
+                    <p className="text-xs text-gray-600 mt-1 italic">
+                      &ldquo;{device.dr_phone_data.qc_data.other_description}&rdquo;
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -284,9 +339,15 @@ export default function DeviceJobSheetPage() {
                 </Link>
               </div>
             </div>
+            {batch?.supplier?.name && (
+              <div>
+                <span className="text-gray-600 text-sm">Supplier</span>
+                <p className="text-sm font-medium">{batch.supplier.name}</p>
+              </div>
+            )}
             <div>
               <span className="text-gray-600 text-sm">Received Date</span>
-              <p className="text-sm">{new Date(device.created_at).toLocaleDateString()}</p>
+              <p className="text-sm">{batch?.received_date ? new Date(batch.received_date).toLocaleDateString() : new Date(device.created_at).toLocaleDateString()}</p>
             </div>
           </CardContent>
         </Card>
@@ -303,19 +364,18 @@ export default function DeviceJobSheetPage() {
         <CardContent>
           {repairs.length > 0 ? (
             <div className="space-y-4">
-              {repairs.map((repair) => {
-                const technician = mockUsers.find(u => u.id === repair.assigned_to)
+              {repairs.map((repair: any) => {
                 return (
                   <div key={repair.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <h4 className="font-medium">
-                          {repair.repair_type.split('_').map(w => 
+                          {repair.repair_type.split('_').map((w: string) => 
                             w.charAt(0).toUpperCase() + w.slice(1)
                           ).join(' ')} Repair
                         </h4>
                         <p className="text-sm text-gray-600">
-                          Assigned to {technician?.full_name}
+                          Assigned to {repair.assigned_to_name || 'Unassigned'}
                         </p>
                       </div>
                       <Badge variant={
@@ -350,7 +410,7 @@ export default function DeviceJobSheetPage() {
                       <div className="mt-3 p-3 bg-gray-50 rounded">
                         <p className="text-sm font-medium mb-1">Parts Used:</p>
                         <ul className="text-sm text-gray-600">
-                          {repair.parts_used.map((part, idx) => (
+                          {repair.parts_used.map((part: any, idx: number) => (
                             <li key={idx}>• {part.part_name} (Qty: {part.quantity_used})</li>
                           ))}
                         </ul>
@@ -473,11 +533,7 @@ export default function DeviceJobSheetPage() {
                     <SelectValue placeholder="Choose a part" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockSpareParts.map(part => (
-                      <SelectItem key={part.id} value={part.id}>
-                        {part.name} (Stock: {part.quantity_in_stock})
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="placeholder">No parts available</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -535,5 +591,5 @@ export default function DeviceJobSheetPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

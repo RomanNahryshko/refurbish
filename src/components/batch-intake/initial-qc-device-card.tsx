@@ -56,7 +56,7 @@ interface InitialQCDeviceCardProps {
   qcApproach?: 'repairs' | 'grade' | ''
   onQcApproachChange?: (approach: 'repairs' | 'grade') => void
   // New prop for completing QC with device creation
-  onCompleteQCWithDevice?: (deviceData: DrPhoneData) => void
+  onCompleteQCWithDevice?: (deviceData: DrPhoneData, deviceIndex: number) => void
   // New prop for when QC is actually completed
   onQCCompleted?: () => void
 }
@@ -105,7 +105,7 @@ export function InitialQCDeviceCard({
       const qcData = {
         device_id: deviceIdToUse,
         check_type: 'initial' as const,
-        overall_result: qcApproach === 'repairs' ? 'failed' as const : 'passed' as const,
+        overall_result: qcApproach === 'repairs' ? 'fail' as const : 'pass' as const,
         grade_assigned: qcApproach === 'grade' ? selectedGrade as 'A' | 'B' | 'C' : undefined,
         notes: qcApproach === 'repairs' 
           ? `Initial QC: Repairs required. Selected repairs: ${selectedRepairs.map(getRepairLabel).join(', ')}${otherDescription ? ` Additional notes: ${otherDescription}` : ''}`
@@ -178,7 +178,7 @@ export function InitialQCDeviceCard({
           // Set flag to indicate QC data is ready to be saved once device is created
           setQcDataReady(true)
           // Call the callback to create device first
-          onCompleteQCWithDevice(device)
+          onCompleteQCWithDevice(device, deviceIndex)
           // Note: After device creation, the parent component will update the deviceId prop
           // and this component will re-render, allowing the QC check to be saved
           setIsSubmitting(false)
@@ -198,7 +198,7 @@ export function InitialQCDeviceCard({
       const qcData = {
         device_id: deviceId,
         check_type: 'initial' as const,
-        overall_result: qcApproach === 'repairs' ? 'failed' as const : 'passed' as const,
+        overall_result: qcApproach === 'repairs' ? 'fail' as const : 'pass' as const,
         grade_assigned: qcApproach === 'grade' ? selectedGrade as 'A' | 'B' | 'C' : undefined,
         notes: qcApproach === 'repairs' 
           ? `Initial QC: Repairs required. Selected repairs: ${selectedRepairs.map(getRepairLabel).join(', ')}${otherDescription ? ` Additional notes: ${otherDescription}` : ''}`

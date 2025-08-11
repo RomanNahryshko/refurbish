@@ -132,8 +132,7 @@ export default function BatchIntakePage() {
                         <Badge variant="outline">{expectedCount}</Badge>
                       </td>
                       <td className="p-3">
-                        <Badge variant={completedQCCount > 0 ? "default" : "outline"} 
-                               className={completedQCCount > 0 ? "bg-green-600" : ""}>
+                        <Badge variant="outline">
                           {completedQCCount}
                         </Badge>
                       </td>
