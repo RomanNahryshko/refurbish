@@ -10,6 +10,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Plus } from 'lucide-react'
 import { AddSupplierDialog } from '@/modules/suppliers/components/add-supplier-dialog'
 import { toast } from 'sonner'
+import { useDeviceSuppliers } from '@/lib/hooks/use-suppliers'
+import type { Supplier } from '@/lib/api/suppliers'
 
 interface BatchFormData {
   supplier_id: string
@@ -23,8 +25,6 @@ interface BatchFormData {
 
 interface BatchFormProps {
   initialData?: Partial<BatchFormData>
-  suppliers: any[]
-  onSuppliersChange: (suppliers: any[]) => void
   onSubmit: (data: BatchFormData) => void
   onCancel: () => void
   isEditing?: boolean
@@ -33,8 +33,6 @@ interface BatchFormProps {
 
 export function BatchForm({ 
   initialData, 
-  suppliers, 
-  onSuppliersChange, 
   onSubmit, 
   onCancel,
   isEditing = false,
@@ -52,13 +50,10 @@ export function BatchForm({
   
   const [isAddSupplierOpen, setIsAddSupplierOpen] = useState(false)
 
-  const deviceSuppliers = suppliers.filter(s => 
-    s.supplier_type === 'devices' || s.supplier_type === 'both'
-  )
+  // Get device suppliers from API
+  const { data: suppliers = [], isLoading: suppliersLoading } = useDeviceSuppliers()
 
-  const handleSupplierAdded = (newSupplier: any) => {
-    const updatedSuppliers = [...suppliers, newSupplier]
-    onSuppliersChange(updatedSuppliers)
+  const handleSupplierAdded = (newSupplier: Supplier) => {
     // Auto-select the newly added supplier if it's a device supplier
     if (newSupplier.supplier_type === 'devices' || newSupplier.supplier_type === 'both') {
       setFormData(prev => ({...prev, supplier_id: newSupplier.id}))
@@ -103,9 +98,10 @@ export function BatchForm({
                     setFormData({...formData, supplier_id: value})
                   }
                 }}
+                disabled={suppliersLoading}
               >
                 <SelectTrigger id="supplier">
-                  <SelectValue placeholder="Select a supplier" />
+                  <SelectValue placeholder={suppliersLoading ? "Loading suppliers..." : "Select a supplier"} />
                 </SelectTrigger>
                 <SelectContent>
                   {/* Add New Supplier Option */}
@@ -117,12 +113,12 @@ export function BatchForm({
                   </SelectItem>
                   
                   {/* Separator */}
-                  {deviceSuppliers.length > 0 && (
+                  {suppliers.length > 0 && (
                     <div className="border-t my-1" />
                   )}
                   
                   {/* Existing Suppliers */}
-                  {deviceSuppliers.map((supplier) => (
+                  {suppliers.map((supplier) => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.name}
                     </SelectItem>

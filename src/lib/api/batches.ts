@@ -3,7 +3,7 @@ import { Batch } from '@/lib/types/business-types'
 
 export const batchesApi = {
   /**
-   * Get all batches
+   * Get all batches with supplier information
    */
   async getAll() {
     const supabase = createClient()
@@ -11,15 +11,24 @@ export const batchesApi = {
 
     const { data, error } = await supabase
       .from('batches')
-      .select('*')
+      .select(`
+        *,
+        supplier:suppliers(name)
+      `)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data as Batch[]
+    
+    // Transform data to include supplier_name
+    return data?.map((batch: any) => ({
+      ...batch,
+      supplier_name: batch.supplier?.name
+    })) as Batch[]
   },
 
   /**
-   * Get a single batch by ID
+   * Get a single batch by ID with supplier information
    */
   async getById(id: string) {
     const supabase = createClient()
@@ -27,45 +36,217 @@ export const batchesApi = {
 
     const { data, error } = await supabase
       .from('batches')
-      .select('*')
+      .select(`
+        *,
+        supplier:suppliers(name)
+      `)
       .eq('id', id)
+      .is('deleted_at', null)
       .single()
 
     if (error) throw error
-    return data as Batch
+    
+    // Transform data to include supplier_name
+    return {
+      ...data,
+      supplier_name: data.supplier?.name
+    } as Batch
   },
 
   /**
    * Create a new batch
+   * Generates batch_number automatically
    */
-  async create(batch: Omit<Batch, 'id' | 'created_at'>) {
+  async create(batchData: {
+    supplier_id: string
+    invoice_number?: string
+    invoice_date?: string
+    invoice_amount?: number
+    device_count: number
+    received_date: string
+    notes?: string
+  }) {
     const supabase = createClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
+    // Generate batch number (format: BATCH-YYYY-MM-DD-HHMMSS)
+    const now = new Date()
+    const batchNumber = `BATCH-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
+
     const { data, error } = await supabase
       .from('batches')
-      .insert(batch)
-      .select()
+      .insert({
+        ...batchData,
+        batch_number: batchNumber,
+        received_date: batchData.received_date || new Date().toISOString().split('T')[0]
+      })
+      .select(`
+        *,
+        supplier:suppliers(name)
+      `)
       .single()
 
     if (error) throw error
-    return data as Batch
+    
+    // Transform data to include supplier_name
+    return {
+      ...data,
+      supplier_name: data.supplier?.name
+    } as Batch
   },
 
   /**
-   * Get batch with all its phones
+   * Update an existing batch
    */
-  async getBatchWithPhones(id: string) {
+  async update(id: string, batchData: Partial<{
+    supplier_id: string
+    invoice_number: string
+    invoice_date: string
+    invoice_amount: number
+    device_count: number
+    received_date: string
+    notes: string
+  }>) {
     const supabase = createClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
       .from('batches')
-      .select('*, phones(*)')
+      .update({
+        ...batchData,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id)
+      .select(`
+        *,
+        supplier:suppliers(name)
+      `)
       .single()
 
     if (error) throw error
-    return data
+    
+    // Transform data to include supplier_name
+    return {
+      ...data,
+      supplier_name: data.supplier?.name
+    } as Batch
   },
+
+  /**
+   * Delete a batch (soft delete)
+   */
+  async delete(id: string) {
+    const supabase = createClient()
+    if (!supabase) throw new Error('Supabase client not initialized')
+
+    const { error } = await supabase
+      .from('batches')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
+
+    if (error) throw error
+    return true
+  },
+
+  /**
+   * Get batch with all its devices
+   */
+  async getBatchWithDevices(id: string) {
+    const supabase = createClient()
+    if (!supabase) throw new Error('Supabase client not initialized')
+
+    const { data, error } = await supabase
+      .from('batches')
+      .select(`
+        *,
+        supplier:suppliers(name),
+        devices(*)
+      `)
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single()
+
+    if (error) throw error
+    
+    // Transform data to include supplier_name
+    return {
+      ...data,
+      supplier_name: data.supplier?.name
+    }
+  },
+
+  /**
+   * Get batches with device counts and completed QC counts
+   */
+  async getAllWithDeviceCounts() {
+    const supabase = createClient()
+    if (!supabase) throw new Error('Supabase client not initialized')
+
+    // Get all batches with supplier info
+    const { data: batches, error: batchesError } = await supabase
+      .from('batches')
+      .select(`
+        *,
+        supplier:suppliers(name)
+      `)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (batchesError) throw batchesError
+
+    // Get device counts for all batches in one query
+    const { data: deviceCounts, error: deviceCountsError } = await supabase
+      .from('devices')
+      .select('batch_id')
+      .is('deleted_at', null)
+
+    if (deviceCountsError) throw deviceCountsError
+
+    // Count devices per batch manually
+    const deviceCountMap = new Map<string, number>()
+    deviceCounts?.forEach((device: { batch_id: string }) => {
+      const currentCount = deviceCountMap.get(device.batch_id) || 0
+      deviceCountMap.set(device.batch_id, currentCount + 1)
+    })
+
+    // Get completed QC counts for all batches - use a simpler approach
+    const { data: qcChecks, error: qcChecksError } = await supabase
+      .from('qc_checks')
+      .select('device_id')
+      .eq('check_type', 'initial')
+      .in('overall_result', ['pass', 'fail'])
+
+    if (qcChecksError) throw qcChecksError
+
+    // Get device batch IDs for completed QC checks
+    const completedQCDeviceIds = qcChecks?.map((qc: { device_id: string }) => qc.device_id) || []
+    
+    // Get batch IDs for devices with completed QC
+    const { data: completedQCDevices, error: completedQCDevicesError } = await supabase
+      .from('devices')
+      .select('batch_id')
+      .in('id', completedQCDeviceIds)
+      .is('deleted_at', null)
+
+    if (completedQCDevicesError) throw completedQCDevicesError
+
+    // Count completed QC per batch manually
+    const qcCountMap = new Map<string, number>()
+    completedQCDevices?.forEach((device: { batch_id: string }) => {
+      if (device.batch_id) {
+        const currentCount = qcCountMap.get(device.batch_id) || 0
+        qcCountMap.set(device.batch_id, currentCount + 1)
+      }
+    })
+
+    // Combine the data
+    return batches?.map((batch: Batch & { supplier: { name: string } }) => ({
+      ...batch,
+      supplier_name: batch.supplier?.name,
+      completed_qc_count: deviceCountMap.get(batch.id) || 0
+    })) as (Batch & { 
+      device_count: number
+      completed_qc_count: number 
+    })[]
+  }
 }

@@ -2,37 +2,74 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { 
-  mockBatches, 
-  mockSuppliers,
-  mockDevices 
-} from '@/lib/mock-data'
 import Link from 'next/link'
 import { Plus, Search, Download, FileText, Package, Edit } from 'lucide-react'
+import { useBatchesWithDeviceCounts } from '@/lib/hooks/use-batches'
+import { LoadingSpinner } from '@/components/common/loading-spinner'
 
 export default function BatchIntakePage() {
   const [searchTerm, setSearchTerm] = useState('')
+  const { data: batches, isLoading, error } = useBatchesWithDeviceCounts()
   
-  const filteredBatches = mockBatches.filter(batch =>
+  const filteredBatches = batches?.filter(batch =>
     batch.batch_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     batch.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     batch.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  ) || []
 
 
   const headerList = [
     { label: 'Batch Number', key: 'batch_number' },
     { label: 'Supplier', key: 'supplier_name' },
     { label: 'Expected', key: 'device_count' },
-    { label: 'Imported', key: 'imported_devices_count' },
+    { label: 'Completed QC', key: 'completed_qc_count' },
     { label: 'Invoice', key: 'invoice_number' },
     { label: 'Date', key: 'received_date' },
     { label: 'Amount', key: 'invoice_amount' },
     { label: 'Actions', key: 'actions' }
   ]
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex justify-between items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Batch Intake</h1>
+            <p className="text-muted-foreground">Manage incoming phone batches and imports</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="flex justify-center items-center py-12">
+            <LoadingSpinner />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex justify-between items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Batch Intake</h1>
+            <p className="text-muted-foreground">Manage incoming phone batches and imports</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="text-center py-12">
+            <p className="text-red-600">Error loading batches: {error.message}</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
@@ -76,9 +113,8 @@ export default function BatchIntakePage() {
               </thead>
               <tbody>
                 {filteredBatches.map((batch, index) => {
-                  const supplier = mockSuppliers.find(s => s.id === batch.supplier_id)
-                  const importedDevicesCount = mockDevices.filter(d => d.batch_id === batch.id).length
                   const expectedCount = batch.device_count
+                  const completedQCCount = batch.completed_qc_count || 0
                   return (
                     <tr 
                       key={batch.id} 
@@ -91,12 +127,15 @@ export default function BatchIntakePage() {
                           {batch.batch_number}
                         </Link>
                       </td>
-                      <td className="p-3 text-sm">{supplier?.name || 'Unknown'}</td>
+                      <td className="p-3 text-sm">{batch.supplier_name || 'Unknown'}</td>
                       <td className="p-3">
                         <Badge variant="outline">{expectedCount}</Badge>
                       </td>
                       <td className="p-3">
-                        <Badge variant="outline">{importedDevicesCount}</Badge>
+                        <Badge variant={completedQCCount > 0 ? "default" : "outline"} 
+                               className={completedQCCount > 0 ? "bg-green-600" : ""}>
+                          {completedQCCount}
+                        </Badge>
                       </td>
                       <td className="p-3 text-sm font-mono">{batch.invoice_number || '-'}</td>
                       <td className="p-3 text-sm">

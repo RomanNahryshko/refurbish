@@ -1,8 +1,6 @@
 'use client'
 
-import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
@@ -38,6 +36,7 @@ export function RepairTaskSelector({
   showCard = true,
   className = ""
 }: RepairTaskSelectorProps) {
+  
   const content = (
     <div className={className}>
       {showCard && (
@@ -62,14 +61,20 @@ export function RepairTaskSelector({
           </div>
         )}
         
-        <div className="space-y-3">
-          {repairTypes.map((repair) => (
+        <div className="space-y-3">       
+         {repairTypes.map((repair) => (
             <div key={repair.id}>
               <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                <Checkbox
+                <input
+                  type="checkbox"
                   id={repair.id}
                   checked={selectedRepairs.includes(repair.id)}
-                  onCheckedChange={() => onRepairToggle(repair.id)}
+                  onChange={() => {
+                    if (typeof onRepairToggle === 'function') {
+                      onRepairToggle(repair.id)
+                    }
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <Label htmlFor={repair.id} className="cursor-pointer flex-1">
                   <div className="flex items-center justify-between">
@@ -77,6 +82,10 @@ export function RepairTaskSelector({
                     <Badge variant="outline">{repair.level} Technician</Badge>
                   </div>
                 </Label>
+                {/* Visual indicator of selection */}
+                <div className="text-xs text-gray-500">
+                  {selectedRepairs.includes(repair.id) ? '✓ Selected' : '○ Not Selected'}
+                </div>
               </div>
               {repair.requiresDescription && selectedRepairs.includes(repair.id) && (
                 <div className="ml-10 mt-2">

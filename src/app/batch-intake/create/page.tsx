@@ -3,27 +3,42 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { mockSuppliers } from '@/lib/mock-data'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { BatchForm } from '@/modules/batch-intake/components/batch-form'
+import { useCreateBatch } from '@/lib/hooks/use-batches'
 
 export default function CreateBatchPage() {
   const router = useRouter()
-  const [suppliers, setSuppliers] = useState(mockSuppliers)
   const [isLoading, setIsLoading] = useState(false)
+  const createBatch = useCreateBatch()
 
   const handleSubmit = async (formData: any) => {
     setIsLoading(true)
     
     try {
-      // Mock save - in real implementation, this would call the API
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
-      
+      // Validate required fields
+      if (!formData.supplier_id || !formData.device_count) {
+        toast.error('Please fill in all required fields')
+        return
+      }
+
+      // Call the create batch mutation
+      await createBatch.mutateAsync({
+        supplier_id: formData.supplier_id,
+        invoice_number: formData.invoice_number || undefined,
+        invoice_date: formData.invoice_date || undefined,
+        invoice_amount: formData.invoice_amount ? parseFloat(formData.invoice_amount) : undefined,
+        device_count: parseInt(formData.device_count),
+        received_date: formData.received_date,
+        notes: formData.notes || undefined
+      })
+
       toast.success('Batch created successfully!')
       router.push('/batch-intake')
     } catch (error) {
+      console.error('Error creating batch:', error)
       toast.error('Failed to create batch')
     } finally {
       setIsLoading(false)
@@ -32,10 +47,6 @@ export default function CreateBatchPage() {
 
   const handleCancel = () => {
     router.push('/batch-intake')
-  }
-
-  const handleSuppliersChange = (updatedSuppliers: any[]) => {
-    setSuppliers(updatedSuppliers)
   }
 
   return (
@@ -55,12 +66,10 @@ export default function CreateBatchPage() {
 
       {/* Form */}
       <BatchForm
-        suppliers={suppliers}
-        onSuppliersChange={handleSuppliersChange}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         isEditing={false}
-        isLoading={isLoading}
+        isLoading={isLoading || createBatch.isPending}
       />
     </div>
   )

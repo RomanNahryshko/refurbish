@@ -29,9 +29,22 @@ export type PhoneGrade = ValueOf<typeof PHONE_GRADES>
 // Business entity types
 export interface Batch {
   id: string
+  batch_number: string
+  supplier_id: string
+  supplier_name?: string // Joined from supplier
+  invoice_number?: string
+  invoice_date?: string
+  invoice_amount?: number
+  device_count: number
+  received_date: string
+  notes?: string
+  created_by?: string
   created_at: string
-  supplier?: string
-  phone_count?: number
+  updated_at?: string
+  deleted_at?: string
+  // Additional fields for API responses
+  imported_devices_count?: number
+  completed_qc_count?: number
 }
 
 export interface Phone {

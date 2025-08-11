@@ -2,35 +2,62 @@
 
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { BatchForm } from '@/modules/batch-intake/components/batch-form'
-import { mockBatches, mockSuppliers } from '@/lib/mock-data'
 import { toast } from 'sonner'
+import { useBatch, useUpdateBatch } from '@/lib/hooks/use-batches'
+import { LoadingSpinner } from '@/components/common/loading-spinner'
 
 export default function EditBatchPage() {
   const params = useParams()
   const router = useRouter()
   const batchId = params.id as string
   
-  const [suppliers, setSuppliers] = useState(mockSuppliers)
   const [isLoading, setIsLoading] = useState(false)
   
-  // Find the batch to edit
-  const batch = mockBatches.find(b => b.id === batchId)
+  // Get batch data from API
+  const { data: batch, isLoading: batchLoading, error: batchError } = useBatch(batchId)
+  const updateBatch = useUpdateBatch()
   
+  // Show loading state
+  if (batchLoading) {
+    return (
+      <div className="container mx-auto p-6 max-w-3xl">
+        <div className="flex justify-center items-center py-12">
+          <LoadingSpinner />
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (batchError) {
+    return (
+      <div className="container mx-auto p-6 max-w-3xl">
+        <div className="text-center py-12">
+          <AlertCircle className="mx-auto h-12 w-12 text-red-600 mb-3" />
+          <h3 className="text-lg font-semibold text-red-600">Error Loading Batch</h3>
+          <p className="text-gray-600 mb-4">{batchError.message}</p>
+          <Link href="/batch-intake">
+            <Button variant="outline">Back to Batches</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Show not found state
   if (!batch) {
     return (
       <div className="container mx-auto p-6 max-w-3xl">
         <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-destructive">Batch Not Found</h1>
-          <p className="text-muted-foreground mt-2">The batch you're looking for doesn't exist.</p>
-          <Link href="/batch-intake" className="cursor-pointer">
-            <Button variant="outline" className="mt-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Batches
-            </Button>
+          <AlertCircle className="mx-auto h-12 w-12 text-red-600 mb-3" />
+          <h3 className="text-lg font-semibold text-red-600">Batch Not Found</h3>
+          <p className="text-gray-600 mb-4">The batch you&apos;re looking for doesn&apos;t exist or has been deleted.</p>
+          <Link href="/batch-intake">
+            <Button variant="outline">Back to Batches</Button>
           </Link>
         </div>
       </div>
@@ -41,12 +68,30 @@ export default function EditBatchPage() {
     setIsLoading(true)
     
     try {
-      // Mock update - in real implementation, this would call the API
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
-      
+      // Validate required fields
+      if (!formData.supplier_id || !formData.device_count) {
+        toast.error('Please fill in all required fields')
+        return
+      }
+
+      // Call the update batch mutation
+      await updateBatch.mutateAsync({
+        id: batchId,
+        data: {
+          supplier_id: formData.supplier_id,
+          invoice_number: formData.invoice_number || undefined,
+          invoice_date: formData.invoice_date || undefined,
+          invoice_amount: formData.invoice_amount ? parseFloat(formData.invoice_amount) : undefined,
+          device_count: parseInt(formData.device_count),
+          received_date: formData.received_date,
+          notes: formData.notes || undefined
+        }
+      })
+
       toast.success('Batch updated successfully!')
       router.push('/batch-intake')
     } catch (error) {
+      console.error('Error updating batch:', error)
       toast.error('Failed to update batch')
     } finally {
       setIsLoading(false)
@@ -55,10 +100,6 @@ export default function EditBatchPage() {
 
   const handleCancel = () => {
     router.push('/batch-intake')
-  }
-
-  const handleSuppliersChange = (updatedSuppliers: any[]) => {
-    setSuppliers(updatedSuppliers)
   }
 
   // Prepare initial data for the form
@@ -92,12 +133,10 @@ export default function EditBatchPage() {
       {/* Form */}
       <BatchForm
         initialData={initialData}
-        suppliers={suppliers}
-        onSuppliersChange={handleSuppliersChange}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         isEditing={true}
-        isLoading={isLoading}
+        isLoading={isLoading || updateBatch.isPending}
       />
     </div>
   )

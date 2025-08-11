@@ -7,14 +7,16 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { useCreateSupplier, useUpdateSupplier } from '@/lib/hooks/use-suppliers'
+import type { Supplier } from '@/lib/api/suppliers'
 
 type SupplierType = 'devices' | 'parts' | 'both'
 
 interface AddSupplierDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSupplierAdded?: (supplier: any) => void
-  editingSupplier?: any
+  onSupplierAdded?: (supplier: Supplier) => void
+  editingSupplier?: Supplier
 }
 
 export function AddSupplierDialog({ 
@@ -32,7 +34,10 @@ export function AddSupplierDialog({
     supplier_type: (editingSupplier?.supplier_type || 'devices') as SupplierType
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const createSupplier = useCreateSupplier()
+  const updateSupplier = useUpdateSupplier()
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!formData.name) {
@@ -40,25 +45,27 @@ export function AddSupplierDialog({
       return
     }
 
-    // Mock save - in real implementation, this would call the API
-    const newSupplier = {
-      id: editingSupplier?.id || `supplier-${Date.now()}`,
-      ...formData,
-      created_at: new Date().toISOString()
+    try {
+      if (editingSupplier) {
+        // Update existing supplier
+        const updatedSupplier = await updateSupplier.mutateAsync({
+          id: editingSupplier.id,
+          data: formData
+        })
+        onSupplierAdded?.(updatedSupplier)
+      } else {
+        // Create new supplier
+        const newSupplier = await createSupplier.mutateAsync(formData)
+        onSupplierAdded?.(newSupplier)
+      }
+      
+      // Close dialog and reset form
+      onOpenChange(false)
+      resetForm()
+    } catch (error) {
+      // Error handling is done in the mutation hooks
+      console.error('Error saving supplier:', error)
     }
-
-    if (editingSupplier) {
-      toast.success('Supplier updated successfully')
-    } else {
-      toast.success('Supplier added successfully')
-    }
-
-    // Notify parent component
-    onSupplierAdded?.(newSupplier)
-    
-    // Close dialog and reset form
-    onOpenChange(false)
-    resetForm()
   }
 
   const resetForm = () => {

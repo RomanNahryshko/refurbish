@@ -523,7 +523,7 @@ DECLARE
 BEGIN
   LOOP
     -- Generate next sequential ID
-    SELECT LPAD(COALESCE(MAX(CAST(internal_id AS INTEGER)), 0) + 1, 8, '0')
+    SELECT LPAD((COALESCE(MAX(CAST(internal_id AS INTEGER)), 0) + 1)::TEXT, 8, '0')
     INTO new_id
     FROM devices
     WHERE internal_id ~ '^\d{8}$';
@@ -603,7 +603,7 @@ DECLARE
 BEGIN
   -- Format: BATCH-YYYYMMDD-XXX
   SELECT 'BATCH-' || TO_CHAR(NOW(), 'YYYYMMDD') || '-' || 
-         LPAD(COALESCE(COUNT(*), 0)::TEXT, 3, '0')
+         LPAD((COALESCE(COUNT(*), 0))::TEXT, 3, '0')
   INTO new_batch_number
   FROM batches
   WHERE DATE(created_at) = CURRENT_DATE;
