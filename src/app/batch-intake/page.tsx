@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { Plus, Search, Download, FileText, Package, Edit, RefreshCw } from 'lucide-react'
+import { Plus, Search, Download, FileText, Package, Edit } from 'lucide-react'
 import { useBatchesWithDeviceCounts } from '@/lib/hooks/use-batches'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 
