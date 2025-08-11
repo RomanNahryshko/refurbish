@@ -1,18 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { Plus, Search, Download, FileText, Package, Edit } from 'lucide-react'
+import { Plus, Search, Download, FileText, Package, Edit, RefreshCw } from 'lucide-react'
 import { useBatchesWithDeviceCounts } from '@/lib/hooks/use-batches'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 
 export default function BatchIntakePage() {
   const [searchTerm, setSearchTerm] = useState('')
-  const { data: batches, isLoading, error } = useBatchesWithDeviceCounts()
+  const { data: batches, isLoading, error, refetch, isFetching } = useBatchesWithDeviceCounts()
+  
+  // Refetch batches every time the component mounts
+  React.useEffect(() => {
+    refetch()
+  }, [refetch])
   
   const filteredBatches = batches?.filter(batch =>
     batch.batch_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -33,7 +38,7 @@ export default function BatchIntakePage() {
   ]
 
   // Show loading state
-  if (isLoading) {
+  if (isLoading || isFetching) {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex justify-between items-center gap-4">

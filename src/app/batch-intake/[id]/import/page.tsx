@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { InitialQCDeviceCard } from '@/components/batch-intake/initial-qc-device-card';
 import { useExcelParser } from '@/lib/hooks/use-excel-parser';
-import { useBatch } from '@/lib/hooks/use-batches';
+import { useBatchWithDevices } from '@/lib/hooks/use-batches';
 import { useCreateDevicesFromImport } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { createClient } from '@/lib/supabase/client';
@@ -31,8 +31,8 @@ export default function ImportDrPhonePage() {
   const router = useRouter()
   const batchId = params.id as string
   
-  // Get batch data from API
-  const { data: batch, isLoading: batchLoading, error: batchError } = useBatch(batchId)
+  // Get batch data with devices from API
+  const { data: batch, isLoading: batchLoading, error: batchError } = useBatchWithDevices(batchId)
   
   // Excel parser hook
   const { parsedData, isParsing, error, parseExcelFile, clearData } = useExcelParser()
@@ -62,6 +62,9 @@ export default function ImportDrPhonePage() {
 
   // Track when we're creating devices to prevent automatic refetches
   const [isCreatingDevice, setIsCreatingDevice] = useState(false)
+  
+  // Store the count of devices that already exist in the system
+  const [existingDevicesCount, setExistingDevicesCount] = useState(0)
   
   const createDevicesFromImport = useCreateDevicesFromImport()
   
@@ -218,7 +221,6 @@ export default function ImportDrPhonePage() {
       const { data: existingDevices, error } = await supabase
         .from('devices')
         .select('id, imei, brand, model, serial_number')
-        .eq('batch_id', batchId)
         .is('deleted_at', null)
       
       
@@ -264,6 +266,7 @@ export default function ImportDrPhonePage() {
         // Clear previous data when new file is selected
         if (parsedData) {
           clearData()
+          setExistingDevicesCount(0)
           // Force file input to re-render
           setFileInputKey(prev => prev + 1)
         }
@@ -396,6 +399,15 @@ export default function ImportDrPhonePage() {
         // First, filter out devices that already exist in the database
         fetchExistingDevicesAndFilter(convertedData)
           .then(filteredDevices => {
+            // Calculate how many devices already exist in the system
+            const existingCount = convertedData.length - filteredDevices.length
+            setExistingDevicesCount(existingCount)
+            
+            console.log(`📊 Excel Analysis Complete:`)
+            console.log(`- Total devices in Excel: ${convertedData.length}`)
+            console.log(`- Devices already in system: ${existingCount}`)
+            console.log(`- New devices for QC: ${filteredDevices.length}`)
+            
             // Store both the original and filtered data
             setImportedData(convertedData)
             setFilteredDevices(filteredDevices)
@@ -442,6 +454,13 @@ export default function ImportDrPhonePage() {
       toast.error(`Excel parsing error: ${error}`)
     }
   }, [error])
+
+  // Reset existing devices count when parsed data is cleared
+  React.useEffect(() => {
+    if (!parsedData) {
+      setExistingDevicesCount(0)
+    }
+  }, [parsedData])
 
   const handleCompleteDeviceQC = async (deviceIndex: number, deviceData?: DrPhoneData) => {
     
@@ -701,7 +720,7 @@ export default function ImportDrPhonePage() {
                       Preview of {filteredDevices.length} devices ready for Initial QC processing.
                       {importedData.length > filteredDevices.length && (
                         <span className="text-orange-600 font-medium">
-                          {' '}({importedData.length - filteredDevices.length} duplicate devices were filtered out)
+                          {' '}({existingDevicesCount} devices from Excel already exist in the system)
                         </span>
                       )}
                     </>
@@ -713,6 +732,7 @@ export default function ImportDrPhonePage() {
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => {
                   clearData()
+                  setExistingDevicesCount(0)
                   
                   // Reset file input value
                   const fileInput = document.getElementById('file-upload') as HTMLInputElement
@@ -732,9 +752,9 @@ export default function ImportDrPhonePage() {
                 {filteredDevices.length > 0 ? (
                   <>
                     <strong>Excel data converted:</strong> {filteredDevices.length} devices ready for QC
-                    {importedData.length > filteredDevices.length && (
+                    {existingDevicesCount > 0 && (
                       <span className="text-orange-600 font-medium">
-                        {' '}({importedData.length - filteredDevices.length} duplicate devices were automatically filtered out)
+                        {' '}({existingDevicesCount} devices from Excel already exist in the system)
                       </span>
                     )}
                   </>

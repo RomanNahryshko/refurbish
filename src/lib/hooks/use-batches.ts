@@ -16,7 +16,9 @@ export function useBatches() {
   return useQuery({
     queryKey: batchKeys.lists(),
     queryFn: () => batchesApi.getAll(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: true, // Refetch on every mount
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   })
 }
 
@@ -25,7 +27,9 @@ export function useBatchesWithDeviceCounts() {
   return useQuery({
     queryKey: [...batchKeys.lists(), 'with-counts'],
     queryFn: () => batchesApi.getAllWithDeviceCounts(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: true, // Refetch on every mount
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   })
 }
 
@@ -35,7 +39,9 @@ export function useBatch(id: string) {
     queryKey: batchKeys.detail(id),
     queryFn: () => batchesApi.getById(id),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: true, // Refetch on every mount
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   })
 }
 
@@ -45,7 +51,9 @@ export function useBatchWithDevices(id: string) {
     queryKey: [...batchKeys.detail(id), 'with-devices'],
     queryFn: () => batchesApi.getBatchWithDevices(id),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: true, // Refetch on every mount
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   })
 }
 
