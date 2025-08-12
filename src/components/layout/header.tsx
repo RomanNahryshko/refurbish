@@ -24,8 +24,8 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'Batch Intake', href: '/batch-intake' },
   { name: 'Devices', href: '/devices' },
-  { name: 'Quality Control', href: '/qc' },
   { name: 'Repair Jobs', href: '/repair-jobs' },
+  { name: 'Quality Control', href: '/qc' },
   { name: 'Inventory', href: '/inventory' },
   { name: 'Shipping', href: '/shipping' },
 ]

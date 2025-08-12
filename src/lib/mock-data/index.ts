@@ -321,10 +321,11 @@ const statusCycle: Device['status'][] = [
   'ready_to_ship'
 ]
 
-const gradeForStatus = (status: Device['status']): Device['grade'] => {
+const gradeForStatus = (status: Device['status'], index: number): Device['grade'] => {
   if (status === 'graded' || status === 'ready_to_ship') {
     const options: Device['grade'][] = ['A', 'B', 'C']
-    return options[Math.floor(Math.random() * options.length)]
+    // Use deterministic grade based on index to avoid hydration mismatch
+    return options[index % options.length]
   }
   return 'ungraded'
 }
@@ -336,7 +337,7 @@ const generatedDevices: Device[] = Array.from({ length: 51 }).map((_, idx) => {
   const color = colors[i % colors.length]
   const storage = storages[i % storages.length]
   const status = statusCycle[i % statusCycle.length]
-  const grade = gradeForStatus(status)
+  const grade = gradeForStatus(status, i)
   const batchId = ['batch-1', 'batch-2', 'batch-3'][i % 3]
 
   return {

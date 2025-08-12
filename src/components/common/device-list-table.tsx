@@ -58,6 +58,8 @@ interface DeviceListTableProps {
   title?: string
   renderFilters?: () => ReactNode
   pageKey?: string // For localStorage key (e.g., 'devices', 'qc', 'device-tracking')
+  renderCell?: (device: Device, column: DeviceTableColumn) => ReactNode | null // Custom cell renderer
+  customHeaders?: Record<DeviceTableColumn, string> // Custom column headers
 }
 
 export function DeviceListTable({
@@ -72,7 +74,9 @@ export function DeviceListTable({
   onPageChange,
   title = "Devices",
   renderFilters,
-  pageKey = "default"
+  pageKey = "default",
+  renderCell: customRenderCell,
+  customHeaders
 }: DeviceListTableProps) {
   const startIndex = (currentPage - 1) * itemsPerPage + 1
   const endIndex = Math.min(currentPage * itemsPerPage, totalResults)
@@ -96,6 +100,12 @@ export function DeviceListTable({
   }
 
   const getColumnHeader = (column: DeviceTableColumn): string => {
+    // Use custom header if provided
+    if (customHeaders && customHeaders[column]) {
+      return customHeaders[column]
+    }
+    
+    // Default headers
     switch (column) {
       case 'internal_id': return 'Internal ID'
       case 'device': return 'Device'
@@ -221,7 +231,7 @@ export function DeviceListTable({
                 <tr key={device.id} className="hover:bg-gray-50">
                   {columns.map((column) => (
                     <td key={column} className="py-3">
-                      {renderCell(device, column)}
+                      {customRenderCell ? customRenderCell(device, column) || renderCell(device, column) : renderCell(device, column)}
                     </td>
                   ))}
                 </tr>
