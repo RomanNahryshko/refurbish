@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { qcChecksApi } from '@/lib/api/qc-checks'
-import { QCCheck } from '@/lib/types/business-types'
+import { QCCheck, QCCheckFormData, TestResultData } from '@/lib/types/business-types'
 
 export function useQCChecksByDevice(deviceId: string) {
   return useQuery({
@@ -22,7 +22,7 @@ export function useCreateQCCheck() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ qcData, testResults }: { qcData: any; testResults?: any[] }) =>
+    mutationFn: ({ qcData, testResults }: { qcData: QCCheckFormData; testResults?: TestResultData[] }) =>
       qcChecksApi.create(qcData, testResults),
     onSuccess: (_, { qcData }) => {
       queryClient.invalidateQueries({ queryKey: ['qc-checks', 'device', qcData.device_id] })
@@ -35,7 +35,7 @@ export function useUpdateQCCheck() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, qcData, testResults }: { id: string; qcData: Partial<QCCheck>; testResults?: any[] }) =>
+    mutationFn: ({ id, qcData, testResults }: { id: string; qcData: Partial<QCCheck>; testResults?: TestResultData[] }) =>
       qcChecksApi.update(id, qcData, testResults),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['qc-checks', id] })

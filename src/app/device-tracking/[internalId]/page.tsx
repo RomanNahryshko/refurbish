@@ -1,5 +1,5 @@
 'use client';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,22 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ArrowLeft,
   Smartphone,
-  Package,
   Wrench,
   CheckCircle,
   XCircle,
-  AlertCircle,
-  Clock,
   Hash,
   ClipboardCheck,
-  Package2,
 } from 'lucide-react';
-import { mockDevices, mockBatches, mockRepairJobs, mockQCChecks, mockUsers, getDeviceByInternalId } from '@/lib/mock-data';
+import { mockBatches, mockRepairJobs, mockQCChecks, mockUsers, getDeviceByInternalId } from '@/lib/mock-data';
 import { statusConfig } from '@/components/common/device-list-table';
 
 export default function DeviceJobSheetPage() {
   const params = useParams()
-  const router = useRouter()
   const internalId = params.internalId as string
   
   const device = getDeviceByInternalId(internalId)

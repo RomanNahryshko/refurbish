@@ -130,15 +130,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate batch number (format: BATCH-YYYY-MM-DD-HHMMSS)
-    const now = new Date()
-    const batchNumber = `BATCH-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
-
     // Create batch
     const { data, error } = await supabase
       .from('batches')
       .insert({
-        batch_number: batchNumber,
         supplier_id,
         invoice_number,
         invoice_date,

@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { 
+import {
   ArrowLeft,
   ClipboardCheck
 } from 'lucide-react'
-import { mockDevices, mockBatches, mockRepairJobs, getDeviceByInternalId } from '@/lib/mock-data'
+import { mockBatches, mockRepairJobs, getDeviceByInternalId } from '@/lib/mock-data'
 import { toast } from 'sonner'
 import { FinalQCDeviceCard } from '@/components/quality-control/final-qc-device-card'
 
@@ -16,6 +16,11 @@ export default function FinalQCPage() {
   const params = useParams()
   const router = useRouter()
   const internalId = params.internalId as string
+  
+  // State for QC form - must be called before any early returns
+  const [qcNotes, setQcNotes] = useState<string>('')
+  const [selectedRepairs, setSelectedRepairs] = useState<string[]>([])
+  const [otherRepairDescription, setOtherRepairDescription] = useState<string>('')
   
   // Validate internal ID format (8 digits)
   if (!/^\d{8}$/.test(internalId)) {
@@ -53,11 +58,6 @@ export default function FinalQCPage() {
   const completedRepairs = mockRepairJobs.filter(r => 
     r.device_id === device.id && r.status === 'completed'
   )
-  
-  // State for QC form
-  const [qcNotes, setQcNotes] = useState('')
-  const [selectedRepairs, setSelectedRepairs] = useState<string[]>([])
-  const [otherRepairDescription, setOtherRepairDescription] = useState('')
   
   // Handle repair selection
   const handleRepairToggle = (repairId: string) => {

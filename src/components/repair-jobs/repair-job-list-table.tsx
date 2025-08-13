@@ -3,14 +3,14 @@
 import { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  Eye,
-  ClipboardCheck,
-  CheckCircle,
-  Clock,
-  Wrench,
-  Package,
-  AlertCircle
+import {
+    Eye,
+    ClipboardCheck,
+    CheckCircle,
+    Clock,
+    Wrench,
+    Package,
+    AlertCircle
 } from 'lucide-react'
 import { DeviceListTable, DeviceTableColumn } from '@/components/common/device-list-table'
 import { RepairJob, Batch, Device } from '@/types/mock-types'
@@ -231,7 +231,7 @@ export function RepairJobListTable({
         // Use grade column to show created date
         return (
           <div className="text-sm text-gray-600">
-            {new Date(repairJob.created_at).toLocaleDateString()}
+            {new Date(repairJob.created_at).toISOString().split('T')[0]}
           </div>
         )
       

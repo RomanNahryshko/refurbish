@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
@@ -8,19 +8,39 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { BatchForm } from '@/modules/batch-intake/components/batch-form'
 import { useCreateBatch } from '@/lib/hooks/use-batches'
+import { createClient } from '@/lib/supabase/client'
+import { BatchFormInputData } from '@/lib/types/business-types'
 
 export default function CreateBatchPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const createBatch = useCreateBatch()
 
-  const handleSubmit = async (formData: any) => {
+  // Get current user ID on component mount
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const supabase = createClient()
+      if (supabase) {
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUserId(user?.id || null)
+      }
+    }
+    getCurrentUser()
+  }, [])
+
+  const handleSubmit = async (formData: BatchFormInputData) => {
     setIsLoading(true)
     
     try {
       // Validate required fields
       if (!formData.supplier_id || !formData.device_count) {
         toast.error('Please fill in all required fields')
+        return
+      }
+
+      if (!currentUserId) {
+        toast.error('User not authenticated')
         return
       }
 
@@ -32,7 +52,8 @@ export default function CreateBatchPage() {
         invoice_amount: formData.invoice_amount ? parseFloat(formData.invoice_amount) : undefined,
         device_count: parseInt(formData.device_count),
         received_date: formData.received_date,
-        notes: formData.notes || undefined
+        notes: formData.notes || undefined,
+        created_by: currentUserId
       })
 
       toast.success('Batch created successfully!')

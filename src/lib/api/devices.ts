@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { Device, DeviceStatus, DeviceGrade } from '@/lib/types/business-types'
+import { Device, DeviceStatus, DeviceGrade, DrPhoneData } from '@/lib/types/business-types'
 
 export interface CreateDeviceData {
   batch_id: string
@@ -9,7 +9,7 @@ export interface CreateDeviceData {
   model?: string
   color?: string
   storage_capacity?: string
-  dr_phone_data?: any
+  dr_phone_data?: DrPhoneData
   notes?: string
 }
 
@@ -138,7 +138,7 @@ export const devicesApi = {
     brand?: string
     model?: string
     serial_number?: string
-    dr_phone_data?: any
+    dr_phone_data?: DrPhoneData
     grade?: string
     notes?: string
   }>) {

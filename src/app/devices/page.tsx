@@ -81,8 +81,8 @@ export default function DevicesPage() {
     
     // Filter by QC approach (repairs vs grade)
     const matchesQcApproach = qcApproachFilter === 'all' || 
-      (qcApproachFilter === 'repairs' && device.dr_phone_data?.qc_data?.selected_repairs && device.dr_phone_data.qc_data.selected_repairs.length > 0) ||
-      (qcApproachFilter === 'grade' && device.dr_phone_data?.qc_data?.selected_grade && device.dr_phone_data.qc_data.selected_grade !== 'ungraded');
+      (qcApproachFilter === 'repairs' && device.dr_phone_data?.required_repairs && device.dr_phone_data.required_repairs.length > 0) ||
+      (qcApproachFilter === 'grade' && device.dr_phone_data?.grade && device.dr_phone_data.grade !== 'ungraded');
 
     return matchesSearch && matchesStatus && matchesBatch && matchesBrand && matchesGrade && matchesQcApproach;
   });
@@ -101,8 +101,8 @@ export default function DevicesPage() {
   const readyCount = allDevices.filter(d => d.status === 'ready_to_ship').length;
   
   // Additional KPI counts for QC data
-  const repairsRequiredCount = allDevices.filter(d => d.dr_phone_data?.qc_data?.selected_repairs && d.dr_phone_data.qc_data.selected_repairs.length > 0).length;
-  const gradeAssignedCount = allDevices.filter(d => d.dr_phone_data?.qc_data?.selected_grade && d.dr_phone_data.qc_data.selected_grade !== 'ungraded').length;
+  const repairsRequiredCount = allDevices.filter(d => d.dr_phone_data?.required_repairs && d.dr_phone_data.required_repairs.length > 0).length;
+  const gradeAssignedCount = allDevices.filter(d => d.dr_phone_data?.grade && d.dr_phone_data.grade !== 'ungraded').length;
 
   // Loading state for devices
   const isLoading = batchFromUrl ? (batchLoading || devicesLoading) : allDevicesLoading;

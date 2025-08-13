@@ -107,7 +107,7 @@ export interface Device {
   storage_capacity?: string
   status: DeviceStatus
   grade: DeviceGrade
-  dr_phone_data?: any
+  dr_phone_data?: DrPhoneData
   dr_phone_imported_at?: string
   notes?: string
   created_at: string

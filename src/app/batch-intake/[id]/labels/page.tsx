@@ -14,6 +14,7 @@ import { useBatch } from '@/lib/hooks/use-batches'
 import { devicesApi } from '@/lib/api/devices'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { useLabelPrinter } from '@/lib/hooks/use-label-printer'
+import { Device } from '@/lib/types/business-types'
 
 export default function LabelGenerationPage() {
   const params = useParams()
@@ -21,7 +22,7 @@ export default function LabelGenerationPage() {
   const { data: batch, isLoading: batchLoading, error: batchError } = useBatch(batchId)
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [devices, setDevices] = useState<any[]>([])
+  const [devices, setDevices] = useState<Device[]>([])
   const [isLoadingDevices, setIsLoadingDevices] = useState(false)
 
   const { printLabel, printAllLabels } = useLabelPrinter(devices, batch)
@@ -36,7 +37,7 @@ export default function LabelGenerationPage() {
     }
   }, [batchId])
 
-  const filteredDevices = devices.filter((device: any) =>
+  const filteredDevices = devices.filter((device: Device) =>
     device.imei.includes(searchTerm) ||
     device.internal_id.includes(searchTerm) ||
     device.model?.toLowerCase().includes(searchTerm.toLowerCase())

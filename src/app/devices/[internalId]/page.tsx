@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useDeviceByInternalId } from '@/lib/hooks/use-devices';
 import { statusConfig } from '@/components/common/device-list-table';
+import { RepairTrackingData } from '@/lib/types/business-types';
 
 // Mock current user (for role-based actions)
 const mockCurrentUser = {
@@ -131,7 +132,7 @@ export default function DeviceJobSheetPage() {
   // Extract batch data from device response
   const batch = device.batch
   // For now, we'll use empty arrays for repairs until we implement those APIs
-  const repairs: any[] = []
+  const repairs: RepairTrackingData[] = []
   
 
 
@@ -364,7 +365,7 @@ export default function DeviceJobSheetPage() {
         <CardContent>
           {repairs.length > 0 ? (
             <div className="space-y-4">
-              {repairs.map((repair: any) => {
+              {repairs.map((repair: RepairTrackingData) => {
                 return (
                   <div key={repair.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-3">
@@ -410,7 +411,7 @@ export default function DeviceJobSheetPage() {
                       <div className="mt-3 p-3 bg-gray-50 rounded">
                         <p className="text-sm font-medium mb-1">Parts Used:</p>
                         <ul className="text-sm text-gray-600">
-                          {repair.parts_used.map((part: any, idx: number) => (
+                          {repair.parts_used.map((part, idx: number) => (
                             <li key={idx}>• {part.part_name} (Qty: {part.quantity_used})</li>
                           ))}
                         </ul>

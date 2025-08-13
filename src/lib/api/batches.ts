@@ -21,7 +21,7 @@ export const batchesApi = {
     if (error) throw error
     
     // Transform data to include supplier_name
-    return data?.map((batch: any) => ({
+    return data?.map((batch: Batch & { supplier: { name: string } }) => ({
       ...batch,
       supplier_name: batch.supplier?.name
     })) as Batch[]
@@ -65,6 +65,7 @@ export const batchesApi = {
     device_count: number
     received_date: string
     notes?: string
+    created_by: string
   }) {
     const supabase = createClient()
     if (!supabase) throw new Error('Supabase client not initialized')

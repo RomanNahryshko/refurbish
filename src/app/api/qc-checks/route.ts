@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requirePermission } from '@/lib/services/auth-helpers'
+import { TestResultData } from '@/lib/types/business-types'
 
 export async function POST(request: NextRequest) {
   // Check permission
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // Create test results if provided
     if (test_results && Array.isArray(test_results) && test_results.length > 0) {
-      const testResultsToInsert = test_results.map((test: any) => ({
+      const testResultsToInsert = test_results.map((test: TestResultData) => ({
         qc_check_id: qcCheck.id,
         test_name: test.test_name,
         test_result: test.test_result,

@@ -110,9 +110,9 @@ export default function ImportDrPhonePage() {
       }
 
       return null
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Check if it's a duplicate IMEI error
-      if (error?.message?.includes('duplicate key') || error?.message?.includes('already exists')) {
+      if ((error as Error)?.message?.includes('duplicate key') || (error as Error)?.message?.includes('already exists')) {
         
         try {
           // Device already exists, fetch its ID
@@ -212,7 +212,7 @@ export default function ImportDrPhonePage() {
       }
 
       // Filter out devices that already exist (by IMEI)
-      const existingIMEIs = new Set(existingDevices?.map((d: any) => d.imei?.toString()?.trim()) || [])
+      const existingIMEIs = new Set(existingDevices?.map((d: { imei: string }) => d.imei?.toString()?.trim()) || [])
       
       // Clean and validate parsed IMEIs
       const cleanedParsedDevices = parsedDevices.map(device => ({
@@ -261,12 +261,12 @@ export default function ImportDrPhonePage() {
         try {
           parseExcelFile(file)
           toast.info('Processing Excel file...')
-        } catch (error: any) {
-          toast.error(`Failed to start file processing: ${error.message}`)
+        } catch (error: unknown) {
+          toast.error(`Failed to start file processing: ${(error as Error).message}`)
         }
       }
-    } catch (error: any) {
-      toast.error(`Error processing file upload: ${error.message}`)
+    } catch (error: unknown) {
+      toast.error(`Error processing file upload: ${(error as Error).message}`)
     }
   }
 

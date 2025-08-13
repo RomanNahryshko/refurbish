@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { repairJobsApi } from '@/lib/api/repair-jobs'
-import { RepairJob } from '@/lib/types/business-types'
+import { RepairJob, RepairJobData, PartsData } from '@/lib/types/business-types'
 
 export function useRepairJobs() {
   return useQuery({
@@ -37,7 +37,7 @@ export function useCreateRepairJob() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ data, createdBy }: { data: any; createdBy: string }) =>
+    mutationFn: ({ data, createdBy }: { data: RepairJobData; createdBy: string }) =>
       repairJobsApi.create(data, createdBy),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
@@ -81,7 +81,7 @@ export function useRecordPartsUsage() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ partsData, recordedBy }: { partsData: any[]; recordedBy: string }) =>
+    mutationFn: ({ partsData, recordedBy }: { partsData: PartsData[]; recordedBy: string }) =>
       repairJobsApi.recordPartsUsage(partsData, recordedBy),
     onSuccess: (_, { partsData }) => {
       // Invalidate parts queries for the repair job

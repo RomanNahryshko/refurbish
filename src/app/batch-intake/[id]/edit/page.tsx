@@ -9,6 +9,7 @@ import { BatchForm } from '@/modules/batch-intake/components/batch-form'
 import { toast } from 'sonner'
 import { useBatch, useUpdateBatch } from '@/lib/hooks/use-batches'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
+import { BatchFormInputData } from '@/lib/types/business-types'
 
 export default function EditBatchPage() {
   const params = useParams()
@@ -64,7 +65,7 @@ export default function EditBatchPage() {
     )
   }
 
-  const handleSubmit = async (formData: any) => {
+  const handleSubmit = async (formData: BatchFormInputData) => {
     setIsLoading(true)
     
     try {

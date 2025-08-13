@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { devicesApi } from '@/lib/api/devices'
-import { Device, DeviceStatus, DeviceGrade } from '@/lib/types/business-types'
+import { Device, DeviceStatus, DeviceGrade, DeviceFormData } from '@/lib/types/business-types'
 
 export function useDevices() {
   return useQuery({
@@ -48,7 +48,7 @@ export function useCreateDevicesFromImport() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ batchId, devices }: { batchId: string; devices: any[] }) =>
+    mutationFn: ({ batchId, devices }: { batchId: string; devices: DeviceFormData[] }) =>
       devicesApi.createFromImport(batchId, devices),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })

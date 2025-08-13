@@ -15,7 +15,6 @@ import {
   Plus,
   Minus,
   X,
-  AlertTriangle,
   Info
 } from 'lucide-react'
 

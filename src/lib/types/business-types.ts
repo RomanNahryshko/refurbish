@@ -49,7 +49,7 @@ export interface Device {
   storage_capacity?: string
   status: DeviceStatus
   grade: DeviceGrade
-  dr_phone_data?: any // JSONB from Dr. Phone
+  dr_phone_data?: DrPhoneData // JSONB from Dr. Phone
   dr_phone_imported_at?: string
   notes?: string
   created_by?: string
@@ -276,3 +276,148 @@ export type User = UserProfile
 export type Phone = Device
 export type PhoneStatus = DeviceStatus
 export type PhoneGrade = DeviceGrade
+
+// Dr. Phone data structure
+export interface DrPhoneData {
+  device_info?: {
+    brand?: string
+    model?: string
+    color?: string
+    storage?: string
+    condition?: string
+  }
+  diagnostic_results?: {
+    battery_health?: number
+    screen_condition?: string
+    camera_condition?: string
+    speaker_condition?: string
+    overall_score?: number
+  }
+  qc_data?: {
+    selected_grade?: string
+  }
+  required_repairs?: string[]
+  other_repair_description?: string
+  repair_history?: Array<{
+    date: string
+    repair_type: string
+    description: string
+    cost: number
+  }>
+  notes?: string
+  [key: string]: unknown // For any additional fields from Dr. Phone
+}
+
+// Test result data structure
+export interface TestResultData {
+  qc_check_id: string
+  test_name: string
+  test_result: ValueOf<typeof TEST_RESULT>
+  notes?: string
+  score?: number
+  [key: string]: unknown
+}
+
+// Repair job data structure
+export interface RepairJobData {
+  device_id: string
+  repair_type: RepairType
+  description?: string
+  assigned_to?: string
+  priority?: 'low' | 'medium' | 'high'
+  estimated_duration?: number // in minutes
+  [key: string]: unknown
+}
+
+// Parts data structure
+export interface PartsData {
+  repair_job_id: string
+  spare_part_id: string
+  quantity_used: number
+  notes?: string
+  unit_cost?: number
+  [key: string]: unknown
+}
+
+// Form data types
+export interface BatchFormData {
+  supplier_id: string
+  invoice_number?: string
+  invoice_date?: string
+  invoice_amount?: number
+  device_count: number
+  received_date: string
+  notes?: string
+}
+
+// Form input types (for form components that use string inputs)
+export interface BatchFormInputData {
+  supplier_id: string
+  invoice_number: string
+  invoice_date: string
+  invoice_amount: string
+  device_count: string
+  received_date: string
+  notes: string
+}
+
+export interface DeviceFormData {
+  imei: string
+  serial_number?: string
+  brand?: string
+  model?: string
+  color?: string
+  storage_capacity?: string
+  notes?: string
+}
+
+export interface QCCheckFormData {
+  device_id: string
+  check_type: 'initial' | 'final'
+  overall_result: ValueOf<typeof TEST_RESULT>
+  grade_assigned?: DeviceGrade
+  notes?: string
+  test_results?: TestResultData[]
+}
+
+export interface SupplierFormData {
+  name: string
+  contact_person?: string
+  email?: string
+  phone?: string
+  address?: string
+  supplier_type: 'devices' | 'parts' | 'both'
+  notes?: string
+}
+
+// Repair tracking types for device pages
+export interface RepairTrackingData {
+  id: string
+  device_id: string
+  device_internal_id: string
+  device_model: string
+  repair_type: RepairType
+  description?: string
+  status: RepairJobStatus
+  assigned_to?: string
+  assigned_to_name?: string
+  assigned_at?: string
+  created_at: string
+  completed_at?: string
+  completion_notes?: string
+  parts_used?: Array<{
+    part_name: string
+    quantity_used: number
+  }>
+}
+
+export interface PartUsageData {
+  id: string
+  repair_job_id: string
+  spare_part_id: string
+  spare_part_name: string
+  quantity_used: number
+  notes?: string
+  recorded_by?: string
+  recorded_at: string
+}

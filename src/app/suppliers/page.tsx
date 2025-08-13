@@ -2,33 +2,31 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AddSupplierDialog } from '@/modules/suppliers/components/add-supplier-dialog'
-import { 
-  Plus, 
-  Search, 
-  Building2, 
-  Phone, 
-  Mail,
-  Edit,
-  Trash2,
-  Package,
-  Wrench
+import {
+    Plus,
+    Search,
+    Building2,
+    Phone,
+    Mail,
+    Edit,
+    Trash2,
+    Package,
+    Wrench
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { mockSuppliers } from '@/lib/mock-data'
+import { Supplier } from '@/lib/types/business-types'
 
-type SupplierType = 'devices' | 'parts' | 'both'
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState(mockSuppliers)
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingSupplier, setEditingSupplier] = useState<any>(null)
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
 
   const filteredSuppliers = suppliers.filter(supplier =>
     supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,7 +34,7 @@ export default function SuppliersPage() {
     supplier.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleSupplierAdded = (supplier: any) => {
+  const handleSupplierAdded = (supplier: Supplier) => {
     if (editingSupplier) {
       // Update existing
       setSuppliers(suppliers.map(s => 
@@ -51,7 +49,7 @@ export default function SuppliersPage() {
     setEditingSupplier(null)
   }
 
-  const handleEdit = (supplier: any) => {
+  const handleEdit = (supplier: Supplier) => {
     setEditingSupplier(supplier)
     setIsAddDialogOpen(true)
   }

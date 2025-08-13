@@ -4,26 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { 
-  Package, 
-  Smartphone, 
-  Wrench, 
-  ClipboardCheck, 
-  PackageSearch,
-  BarChart3,
-  Users,
-  FileText,
-  Upload,
-  QrCode,
-  Search,
-  Settings,
-  AlertCircle
-} from 'lucide-react'
+import { Package, Smartphone, Wrench, ClipboardCheck, PackageSearch, BarChart3 } from 'lucide-react';
 
 export default function MockupOverviewPage() {
   // Using batch-1 as demo batch for testing dynamic pages
   const demoBatchId = 'batch-1'
-  const demoDeviceId = 'device-1'
   const demoInternalId = '00000001'
   
   const modules = [

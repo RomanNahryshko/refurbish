@@ -6,10 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   Search,
-  Smartphone,
   Package,
   AlertCircle,
   CheckCircle,
@@ -299,7 +298,7 @@ export default function BatchDevicesPage() {
                         </Link>
                       </td>
                     </tr>
-                  )
+                  );
                 })}
               </tbody>
             </table>
@@ -314,5 +313,5 @@ export default function BatchDevicesPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
