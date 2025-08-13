@@ -140,8 +140,50 @@ export default function RepairJobsPage() {
   const batches = batchesData || []
   const spareParts = sparePartsData || []
 
-  // TEMPORARILY DISABLE ALL FILTERS - Show all repair jobs
-  const filteredRepairs = transformedRepairJobs
+  // Apply filters to repair jobs
+  const filteredRepairs = transformedRepairJobs.filter(repair => {
+    // Search filter - check IMEI and Internal ID
+    if (searchTerm && searchTerm.trim() !== '') {
+      const searchLower = searchTerm.toLowerCase()
+      const imeiMatch = repair.device?.imei?.toLowerCase().includes(searchLower)
+      const internalIdMatch = repair.device_internal_id?.toLowerCase().includes(searchLower)
+      if (!imeiMatch && !internalIdMatch) return false
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      switch (statusFilter) {
+        case 'available':
+          if (repair.status !== 'pending') return false
+          break
+        case 'my_active':
+          if (repair.status !== 'in_progress' || repair.assigned_to !== currentUserId) return false
+          break
+        case 'all_active':
+          if (repair.status !== 'in_progress') return false
+          break
+        case 'history':
+          if (!['completed', 'failed', 'cancelled'].includes(repair.status)) return false
+          break
+        default:
+          // 'all' status - no filtering
+          break
+      }
+    }
+
+    // Level filter - check technician level requirements for repair types
+    if (levelFilter !== 'all') {
+      const repairLevel = repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.level
+      if (repairLevel !== levelFilter && repairLevel !== 'Any') return false
+    }
+
+    // Type filter
+    if (typeFilter !== 'all' && repair.repair_type !== typeFilter) {
+      return false
+    }
+
+    return true
+  })
   
   // Group repairs by device_internal_id to show "1 of 3", "2 of 3" etc.
   const repairCountByDevice: Record<string, number> = {}
@@ -266,13 +308,13 @@ export default function RepairJobsPage() {
             setSearchTerm(e.target.value)
             setCurrentPage(1)
           }}
-          className="h-9 pl-8"
+          className={`h-9 pl-8 ${searchTerm.trim() !== '' ? 'border-blue-500 bg-blue-50' : ''}`}
         />
       </div>
       
       <div className="flex items-center gap-2 flex-wrap">
         <Select value={statusFilter} onValueChange={handleFilterChange(setStatusFilter)}>
-          <SelectTrigger className="h-9 w-[140px]">
+          <SelectTrigger className={`h-9 w-[140px] ${statusFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -285,7 +327,7 @@ export default function RepairJobsPage() {
         </Select>
 
         <Select value={levelFilter} onValueChange={handleFilterChange(setLevelFilter)}>
-          <SelectTrigger className="h-9 w-[120px]">
+          <SelectTrigger className={`h-9 w-[120px] ${levelFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
             <SelectValue placeholder="Level" />
           </SelectTrigger>
           <SelectContent>
@@ -297,7 +339,7 @@ export default function RepairJobsPage() {
         </Select>
 
         <Select value={typeFilter} onValueChange={handleFilterChange(setTypeFilter)}>
-          <SelectTrigger className="h-9 w-[140px]">
+          <SelectTrigger className={`h-9 w-[140px] ${typeFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
             <SelectValue placeholder="Repair Type" />
           </SelectTrigger>
           <SelectContent>
@@ -317,7 +359,7 @@ export default function RepairJobsPage() {
             setSearchTerm('')
             setLevelFilter('all')
             setTypeFilter('all')
-            setStatusFilter('pending')
+            setStatusFilter('available')
             setCurrentPage(1)
           }}
           className="h-9"
@@ -383,6 +425,9 @@ export default function RepairJobsPage() {
       {/* Repair Jobs Table */}
       <Card>
         <CardContent>
+          <div className="mb-4 text-sm text-gray-600">
+            Showing {filteredRepairs.length} of {transformedRepairJobs.length} repair jobs
+          </div>
           <RepairJobListTable
             repairJobs={paginatedRepairs}
             allRepairJobs={transformedRepairJobs}
