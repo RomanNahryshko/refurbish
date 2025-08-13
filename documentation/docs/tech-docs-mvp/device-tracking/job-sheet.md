@@ -19,12 +19,12 @@ Each device has a dedicated job sheet page that serves as the central hub for al
 - Serial Number
 - Internal ID
 - Current Grade (Ungraded, A, B, C)
-- Current Status
+- Current Status (see [Device Statuses](./device-statuses.md) for complete list)
 - Batch Information
 
 ### Repair History
 - List of all repair tasks/jobs
-- Task status (Pending, In Progress, Completed)
+- Task status (Pending, In Progress, Completed) - see [Device Statuses](./device-statuses.md#repair-task-statuses)
 - Assigned technician level
 - Completion timestamps
 
