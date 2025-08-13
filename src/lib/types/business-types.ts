@@ -1,35 +1,78 @@
-import { PHONE_GRADES, PHONE_STATUS, USER_ROLES } from '../constants'
+import {
+    USER_ROLES,
+    TECHNICIAN_LEVELS,
+    DEVICE_STATUS,
+    DEVICE_GRADES,
+    REPAIR_TYPES,
+    REPAIR_STATUS,
+    TEST_RESULT,
+    USER_STATUS
+} from '../constants'
 
 // Type utilities
 export type ValueOf<T> = T[keyof T]
 
-// User types
+// User types - matches database schema exactly
 export type UserRole = ValueOf<typeof USER_ROLES>
+export type TechnicianLevel = ValueOf<typeof TECHNICIAN_LEVELS>
+export type UserAccountStatus = ValueOf<typeof USER_STATUS>
 
-export interface User {
+export interface UserProfile {
   id: string
-  email: string
-  full_name?: string
-  avatar_url?: string
+  full_name: string
   role: UserRole
-  status?: string
-  must_change_password?: boolean
+  technician_level?: TechnicianLevel // Only for technicians
+  status: UserAccountStatus
+  must_change_password: boolean
+  phone_number?: string
+  employee_id?: string
   created_by?: string
   last_login?: string
   created_at: string
   updated_at?: string
+  deleted_at?: string
 }
 
-// UserAudit interface removed - not in MVP scope
+// Device types - matches database schema exactly
+export type DeviceStatus = ValueOf<typeof DEVICE_STATUS>
+export type DeviceGrade = ValueOf<typeof DEVICE_GRADES>
 
-// Phone status types
-export type PhoneStatus = ValueOf<typeof PHONE_STATUS>
-export type PhoneGrade = ValueOf<typeof PHONE_GRADES>
+export interface Device {
+  id: string
+  internal_id: string // 8-digit auto-generated
+  batch_id: string
+  imei: string
+  serial_number?: string
+  brand?: string
+  model?: string
+  color?: string
+  storage_capacity?: string
+  status: DeviceStatus
+  grade: DeviceGrade
+  dr_phone_data?: any // JSONB from Dr. Phone
+  dr_phone_imported_at?: string
+  notes?: string
+  created_by?: string
+  created_at: string
+  updated_at?: string
+  deleted_at?: string
+}
 
-// Business entity types
+// Device status history - matches database schema
+export interface DeviceStatusHistory {
+  id: string
+  device_id: string
+  old_status?: DeviceStatus
+  new_status: DeviceStatus
+  changed_by?: string
+  notes?: string
+  created_at: string
+}
+
+// Batch types - matches database schema exactly
 export interface Batch {
   id: string
-  batch_number: string
+  batch_number: string // Auto-generated format: BATCH-YYYYMMDD-XXX
   supplier_id: string
   supplier_name?: string // Joined from supplier
   invoice_number?: string
@@ -42,49 +85,150 @@ export interface Batch {
   created_at: string
   updated_at?: string
   deleted_at?: string
-  // Additional fields for API responses
-  imported_devices_count?: number
-  completed_qc_count?: number
 }
 
-export interface Phone {
+// Supplier types - matches database schema exactly
+export interface Supplier {
   id: string
-  imei: string
-  model?: string
-  status: PhoneStatus
-  batch_id?: string
-  grade?: PhoneGrade
-  created_at: string
-  updated_at?: string
-  // Additional fields to be added as needed
+  name: string
+  contact_person?: string
+  email?: string
+  phone?: string
+  address?: string
+  supplier_type: 'devices' | 'parts' | 'both'
   notes?: string
-  repair_status?: string
-  assigned_technician_id?: string
+  created_by?: string
+  created_at: string
+  updated_at?: string
+  deleted_at?: string
 }
 
-export interface SparePart {
+// Quality Control types - matches database schema exactly
+export interface QCCheck {
   id: string
-  part_name: string
-  quantity: number
-  min_quantity?: number
-  max_quantity?: number
-  unit_price?: number
+  device_id: string
+  check_type: 'initial' | 'final'
+  overall_result: ValueOf<typeof TEST_RESULT>
+  grade_assigned?: DeviceGrade
+  performed_by: string
+  performed_at: string
+  notes?: string
   created_at: string
   updated_at?: string
 }
+
+export interface QCTestResult {
+  id: string
+  qc_check_id: string
+  test_name: string // e.g., 'camera', 'screen', 'battery', 'speaker'
+  test_result: ValueOf<typeof TEST_RESULT>
+  notes?: string
+  created_at: string
+}
+
+// Repair types - matches database schema exactly
+export type RepairType = ValueOf<typeof REPAIR_TYPES>
+export type RepairJobStatus = ValueOf<typeof REPAIR_STATUS>
 
 export interface RepairJob {
   id: string
-  phone_id: string
-  technician_id: string
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
-  parts_used?: Array<{
-    part_id: string
-    quantity: number
-  }>
-  notes?: string
-  created_at: string
+  device_id: string
+  repair_type: RepairType
+  description?: string // Required for 'other' type
+  status: RepairJobStatus
+  assigned_to?: string
+  assigned_at?: string
   completed_at?: string
+  completion_notes?: string
+  created_by?: string
+  created_at: string
+  updated_at?: string
+  deleted_at?: string
+}
+
+// Inventory types - matches database schema exactly
+export interface SparePart {
+  id: string
+  sku: string // Stock keeping unit
+  name: string
+  description?: string
+  category?: string // e.g., 'battery', 'screen', 'housing'
+  compatible_models?: string[] // Array of model names
+  quantity_in_stock: number
+  minimum_stock_level?: number
+  unit_cost?: number
+  primary_supplier_id?: string
+  created_by?: string
+  created_at: string
+  updated_at?: string
+  deleted_at?: string
+}
+
+export interface RepairPartsUsed {
+  id: string
+  repair_job_id: string
+  spare_part_id: string
+  quantity_used: number
+  notes?: string
+  recorded_by?: string
+  recorded_at: string
+  created_at: string
+}
+
+export interface StockAdjustment {
+  id: string
+  spare_part_id: string
+  adjustment_type: 'add' | 'remove' | 'correction'
+  quantity: number // Positive for additions, negative for removals
+  reason?: string
+  reference_number?: string // Invoice number, PO number, etc.
+  performed_by?: string
+  created_at: string
+}
+
+// Production metrics - matches database schema
+export interface ProductionMetrics {
+  id: string
+  metric_date: string
+  devices_received: number
+  devices_in_repair: number
+  devices_completed: number
+  devices_shipped: number
+  housing_changes: number
+  glass_changes: number
+  battery_changes: number
+  software_updates: number
+  other_repairs: number
+  grade_a_count: number
+  grade_b_count: number
+  grade_c_count: number
+  created_at: string
+}
+
+// Permission types - matches database schema
+export interface Permission {
+  id: string
+  table_name: string // Actual database table name
+  action: 'create' | 'read' | 'update' | 'delete'
+  description?: string
+  created_at: string
+}
+
+export interface RolePermission {
+  id: string
+  role: UserRole
+  permission_id: string
+  created_at: string
+  created_by?: string
+}
+
+export interface UserPermission {
+  id: string
+  user_id: string
+  permission_id: string
+  granted: boolean // true = grant, false = revoke
+  created_at: string
+  created_by?: string
 }
 
 // API response types
@@ -115,14 +259,20 @@ export interface LoginFormData {
 }
 
 // Filter types
-export interface PhoneFilters {
-  status?: PhoneStatus
+export interface DeviceFilters {
+  status?: DeviceStatus
   batch_id?: string
   search?: string
-  grade?: PhoneGrade
+  grade?: DeviceGrade
 }
 
 export interface DateRange {
   from: Date
   to: Date
 }
+
+// Legacy types for backward compatibility (to be removed)
+export type User = UserProfile
+export type Phone = Device
+export type PhoneStatus = DeviceStatus
+export type PhoneGrade = DeviceGrade

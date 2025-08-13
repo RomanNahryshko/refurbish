@@ -9,11 +9,10 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { InitialQCDeviceCard } from '@/components/batch-intake/initial-qc-device-card';
 import { useExcelParser } from '@/lib/hooks/use-excel-parser';
-import { useBatchWithDevices } from '@/lib/hooks/use-batches';
+import { useBatch } from '@/lib/hooks/use-batches';
 import { useCreateDevicesFromImport } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { createClient } from '@/lib/supabase/client';
-
 
 // Mock Dr. Phone data format
 interface DrPhoneData {
@@ -24,20 +23,16 @@ interface DrPhoneData {
   faults: string
 }
 
-
-
 export default function ImportDrPhonePage() {
   const params = useParams()
   const router = useRouter()
   const batchId = params.id as string
   
   // Get batch data with devices from API
-  const { data: batch, isLoading: batchLoading, error: batchError } = useBatchWithDevices(batchId)
+  const { data: batch, isLoading: batchLoading, error: batchError } = useBatch(batchId)
   
   // Excel parser hook
   const { parsedData, isParsing, error, parseExcelFile, clearData } = useExcelParser()
-  
-
   
   const [importedData, setImportedData] = useState<DrPhoneData[]>([])
   const [createdDevices, setCreatedDevices] = useState<Array<{ id: string; imei: string }>>([])
@@ -61,7 +56,7 @@ export default function ImportDrPhonePage() {
   const [fileInputKey, setFileInputKey] = useState(0)
 
   // Track when we're creating devices to prevent automatic refetches
-  const [isCreatingDevice, setIsCreatingDevice] = useState(false)
+  const [_isCreatingDevice, setIsCreatingDevice] = useState(false)
   
   // Store the count of devices that already exist in the system
   const [existingDevicesCount, setExistingDevicesCount] = useState(0)
@@ -69,7 +64,7 @@ export default function ImportDrPhonePage() {
   const createDevicesFromImport = useCreateDevicesFromImport()
   
   // Function to create a single device when QC is completed
-  const createSingleDevice = async (deviceData: DrPhoneData, deviceIndex: number) => {
+  const createSingleDevice = async (deviceData: DrPhoneData, _deviceIndex: number) => {
     try {
       setIsCreatingDevice(true)
       
@@ -79,28 +74,18 @@ export default function ImportDrPhonePage() {
         return null
       }
 
-      // Get the selected repairs and grade for this device
-      const selectedRepairs = deviceRepairs[deviceIndex] || []
-      const selectedGrade = deviceGrades[deviceIndex] || ''
-      const otherDescription = deviceOtherDescriptions[deviceIndex] || ''
-      const qcApproach = deviceQcApproaches[deviceIndex] || ''
-
-      // Try to create the device directly - let the database handle conflicts
+      // Create device with status 'received' (according to schema)
       const deviceToCreate = {
+        batch_id: batchId,
         imei: deviceData.imei,
         brand: deviceData.brand,
         model: deviceData.model,
         serial_number: deviceData.serialNumber,
         dr_phone_data: {
           faults: deviceData.faults,
-          original_data: deviceData,
-          qc_data: {
-            approach: qcApproach,
-            selected_repairs: selectedRepairs,
-            selected_grade: selectedGrade,
-            other_description: otherDescription
-          }
-        }
+          original_data: deviceData
+        },
+        notes: `Imported from Dr. Phone Excel file`
       }
       
       const result = await createDevicesFromImport.mutateAsync({
@@ -162,7 +147,7 @@ export default function ImportDrPhonePage() {
               return existingDevice.id
             }
           }
-        } catch (_fetchError) {
+        } catch {
           // Handle fetch error silently
         }
       }
@@ -203,9 +188,9 @@ export default function ImportDrPhonePage() {
       }
       
       return completedIMEIs
-    } catch (_error) {
-      return new Set<string>()
-    }
+            } catch {
+          return new Set<string>()
+        }
   }
 
   // Function to fetch existing devices and filter out duplicates
@@ -252,11 +237,11 @@ export default function ImportDrPhonePage() {
 
 
       return filteredDevices
-    } catch (_error) {
-      console.error('❌ Error filtering existing devices:', _error)
-      toast.error('Error checking for existing devices. Please try again.')
-      return parsedDevices
-    }
+            } catch {
+          console.error('❌ Error filtering existing devices')
+          toast.error('Error checking for existing devices. Please try again.')
+          return parsedDevices
+        }
   }
 
       const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -441,7 +426,7 @@ export default function ImportDrPhonePage() {
             console.log('- Already completed QC:', completedIMEIsSet.size)
             console.log('- Available for QC:', filteredDevices.length - completedIMEIsSet.size)
           })
-          .catch(_error => {
+          .catch(() => {
             toast.error('Error processing Excel data. Please try again.')
           })
       }
@@ -472,7 +457,7 @@ export default function ImportDrPhonePage() {
       }
 
       if (deviceData) {
-        // Create device first, then complete QC
+        // Create device first with status 'received' (according to schema)
         const deviceId = await createSingleDevice(deviceData, deviceIndex)
         
         if (deviceId) {
@@ -481,7 +466,7 @@ export default function ImportDrPhonePage() {
             const newSet = new Set([...prev, deviceIndex])
             return newSet
           })
-          toast.success(`Initial QC completed for device ${deviceData.imei}`)
+          toast.success(`Device ${deviceData.imei} created and ready for Initial QC`)
           
           // Note: The QC check will be saved by the InitialQCDeviceCard component
           // after the device is created and it has a valid deviceId
@@ -506,12 +491,12 @@ export default function ImportDrPhonePage() {
         })
         toast.success(`Initial QC completed for device ${filteredDevices[deviceIndex].imei}`)
       }
-    } catch (_error) {
+    } catch {
       toast.error('Failed to complete device QC. Please try again.')
     }
   }
 
-  const proceedToBatchDevices = () => {
+  const _proceedToBatchDevices = () => {
     if (completedDevices.size === 0) {
       alert('Please complete Initial QC for at least one device before proceeding.')
       return
@@ -532,7 +517,7 @@ export default function ImportDrPhonePage() {
   }
 
   // Handle saving current state and quitting
-  const handleSaveAndQuit = () => {
+  const _handleSaveAndQuit = () => {
     const completedCount = completedDevices.size
     
     if (completedCount === 0) {

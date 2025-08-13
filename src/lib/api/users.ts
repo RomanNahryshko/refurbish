@@ -1,25 +1,26 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient, generateTemporaryPassword } from '@/lib/supabase/admin'
+import { UserRole, TechnicianLevel, UserAccountStatus } from '@/lib/types/business-types'
 
-// Types for user management
+// Types for user management - matches database schema exactly
 export interface CreateUserData {
   email: string
   full_name: string
-  role: 'admin' | 'general_manager' | 'ops_manager' | 'qc_controller' | 'technician'
-  technician_level?: 'L1' | 'L2' | 'L3'
+  role: UserRole
+  technician_level?: TechnicianLevel
   temporary_password?: string
 }
 
 export interface UpdateUserData {
   full_name?: string
-  role?: 'admin' | 'general_manager' | 'ops_manager' | 'qc_controller' | 'technician'
-  technician_level?: 'L1' | 'L2' | 'L3' | null
-  status?: string
+  role?: UserRole
+  technician_level?: TechnicianLevel | null
+  status?: UserAccountStatus
 }
 
 export interface UserFilters {
-  role?: string
-  status?: string
+  role?: UserRole
+  status?: UserAccountStatus
   search?: string
 }
 
@@ -39,7 +40,10 @@ export const usersApi = {
         full_name,
         role,
         status,
+        technician_level,
         must_change_password,
+        phone_number,
+        employee_id,
         created_by,
         last_login,
         created_at,
@@ -131,7 +135,10 @@ export const usersApi = {
         full_name,
         role,
         status,
+        technician_level,
         must_change_password,
+        phone_number,
+        employee_id,
         created_by,
         last_login,
         created_at,
@@ -229,8 +236,6 @@ export const usersApi = {
         throw new Error(`Failed to create user profile: ${profileError.message}`)
       }
 
-      // Audit logging removed - not in MVP scope
-
       return {
         user: {
           ...profile,
@@ -280,8 +285,6 @@ export const usersApi = {
       throw new Error(`Failed to update user: ${error.message}`)
     }
 
-    // Audit logging removed - not in MVP scope
-
     return updateData
   },
 
@@ -289,7 +292,7 @@ export const usersApi = {
    * Disable/Enable user account
    * Requires ops_manager role
    */
-  async updateStatus(userId: string, status: 'active' | 'disabled', performedBy: string) {
+  async updateStatus(userId: string, status: UserAccountStatus, performedBy: string) {
     const supabase = await createClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
@@ -306,8 +309,6 @@ export const usersApi = {
     if (error) {
       throw new Error(`Failed to update user status: ${error.message}`)
     }
-
-    // Audit logging removed - not in MVP scope
 
     return statusData
   },
@@ -344,8 +345,6 @@ export const usersApi = {
         })
         .eq('id', userId)
 
-      // Audit logging removed - not in MVP scope
-
       return {
         success: true,
         temporaryPassword: newPassword
@@ -353,9 +352,5 @@ export const usersApi = {
     } catch (error) {
       throw new Error(`Password reset failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
-  },
-
-  // Audit log methods removed - not in MVP scope
-  // Will be added in future phase if needed
-  // Methods removed: getAuditLogs(), logAuditAction()
+  }
 }

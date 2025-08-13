@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { SparePart } from '@/lib/types/business-types'
+import { SparePart, StockAdjustment } from '@/lib/types/business-types'
 
 export const inventoryApi = {
   /**
@@ -12,7 +12,8 @@ export const inventoryApi = {
     const { data, error } = await supabase
       .from('spare_parts')
       .select('*')
-      .order('part_name', { ascending: true })
+      .is('deleted_at', null)
+      .order('name', { ascending: true })
 
     if (error) throw error
     return data as SparePart[]
@@ -28,8 +29,9 @@ export const inventoryApi = {
     const { data, error } = await supabase
       .from('spare_parts')
       .select('*')
-      .lt('quantity', 'min_quantity')
-      .order('quantity', { ascending: true })
+      .lt('quantity_in_stock', 'minimum_stock_level')
+      .is('deleted_at', null)
+      .order('quantity_in_stock', { ascending: true })
 
     if (error) throw error
     return data as SparePart[]
@@ -45,7 +47,7 @@ export const inventoryApi = {
     const { data, error } = await supabase
       .from('spare_parts')
       .update({ 
-        quantity, 
+        quantity_in_stock: quantity, 
         updated_at: new Date().toISOString() 
       })
       .eq('id', id)
@@ -66,14 +68,14 @@ export const inventoryApi = {
     // First get current quantity
     const { data: part, error: fetchError } = await supabase
       .from('spare_parts')
-      .select('quantity')
+      .select('quantity_in_stock')
       .eq('id', id)
       .single()
 
     if (fetchError) throw fetchError
 
     // Update with new quantity
-    const newQuantity = (part.quantity || 0) + quantityToAdd
+    const newQuantity = (part.quantity_in_stock || 0) + quantityToAdd
     return this.updateQuantity(id, newQuantity)
   },
 
@@ -93,4 +95,38 @@ export const inventoryApi = {
     if (error) throw error
     return data as SparePart
   },
+
+  /**
+   * Get stock adjustments for a part
+   */
+  async getStockAdjustments(partId: string) {
+    const supabase = createClient()
+    if (!supabase) throw new Error('Supabase client not initialized')
+
+    const { data, error } = await supabase
+      .from('stock_adjustments')
+      .select('*')
+      .eq('spare_part_id', partId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as StockAdjustment[]
+  },
+
+  /**
+   * Create a stock adjustment
+   */
+  async createStockAdjustment(adjustment: Omit<StockAdjustment, 'id' | 'created_at'>) {
+    const supabase = createClient()
+    if (!supabase) throw new Error('Supabase client not initialized')
+
+    const { data, error } = await supabase
+      .from('stock_adjustments')
+      .insert(adjustment)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as StockAdjustment
+  }
 }

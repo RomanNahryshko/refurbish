@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { Plus, Search, Download, FileText, Package, Edit } from 'lucide-react'
 import { useBatchesWithDeviceCounts } from '@/lib/hooks/use-batches'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
+import { Batch } from '@/lib/types/business-types'
 
 export default function BatchIntakePage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -20,12 +21,11 @@ export default function BatchIntakePage() {
     refetch()
   }, [refetch])
   
-  const filteredBatches = batches?.filter(batch =>
+  const filteredBatches = batches?.filter((batch: Batch & { supplier_name?: string; completed_qc_count?: number }) =>
     batch.batch_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     batch.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     batch.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || []
-
 
   const headerList = [
     { label: 'Batch Number', key: 'batch_number' },
@@ -119,7 +119,7 @@ export default function BatchIntakePage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredBatches.map((batch, index) => {
+                {filteredBatches.map((batch: Batch & { supplier_name?: string; completed_qc_count?: number }, index) => {
                   const expectedCount = batch.device_count
                   const completedQCCount = batch.completed_qc_count || 0
                   return (

@@ -558,7 +558,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   IF OLD.status IS DISTINCT FROM NEW.status THEN
     INSERT INTO device_status_history (device_id, old_status, new_status, changed_by)
-    VALUES (NEW.id, OLD.status, NEW.status, NEW.updated_by);
+    VALUES (NEW.id, OLD.status, NEW.status, NEW.created_by);
   END IF;
   RETURN NEW;
 END;

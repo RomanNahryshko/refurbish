@@ -1,19 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-
-export interface Supplier {
-  id: string
-  name: string
-  contact_person?: string
-  email?: string
-  phone?: string
-  address?: string
-  supplier_type: 'devices' | 'parts' | 'both'
-  notes?: string
-  created_by?: string
-  created_at: string
-  updated_at?: string
-  deleted_at?: string
-}
+import { Supplier } from '@/lib/types/business-types'
 
 export interface CreateSupplierData {
   name: string
