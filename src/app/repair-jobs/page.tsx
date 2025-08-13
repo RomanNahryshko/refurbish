@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog'
 import { RepairJobListTable } from '@/components/repair-jobs/repair-job-list-table'
+import { Badge } from '@/components/ui/badge'
 
 import {
   Wrench,
@@ -76,6 +77,15 @@ export default function RepairJobsPage() {
   // Reset page when filters change
   const handleFilterChange = (setter: (value: string) => void) => (value: string) => {
     setter(value)
+    setCurrentPage(1)
+  }
+  
+  // Clear all filters function
+  const handleClearFilters = () => {
+    setSearchTerm('')
+    setLevelFilter('all')
+    setTypeFilter('all')
+    setStatusFilter('available')
     setCurrentPage(1)
   }
   
@@ -295,80 +305,115 @@ export default function RepairJobsPage() {
   }
 
   // Render filters for the table (consistent with devices/qc pages)
-  const renderFilters = () => (
-    <div className="flex flex-wrap items-center gap-3">
-      <div className="relative w-full md:w-64">
-        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-        <Input
-          id="search"
-          placeholder="Search IMEI / Internal ID"
-          aria-label="Search IMEI or Internal ID"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value)
-            setCurrentPage(1)
-          }}
-          className={`h-9 pl-8 ${searchTerm.trim() !== '' ? 'border-blue-500 bg-blue-50' : ''}`}
-        />
+  const renderFilters = () => {
+    const hasActiveFilters = searchTerm.trim() !== '' || 
+                           statusFilter !== 'available' || 
+                           levelFilter !== 'all' || 
+                           typeFilter !== 'all'
+    
+    return (
+      <div className="space-y-3">
+        {/* Active filters indicator */}
+        {hasActiveFilters && (
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span>Active filters:</span>
+            {searchTerm.trim() !== '' && (
+              <Badge variant="secondary" className="text-xs">
+                Search: "{searchTerm}"
+              </Badge>
+            )}
+            {statusFilter !== 'available' && (
+              <Badge variant="secondary" className="text-xs">
+                Status: {statusFilter}
+              </Badge>
+            )}
+            {levelFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs">
+                Level: {levelFilter}
+              </Badge>
+            )}
+            {typeFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs">
+                Type: {typeFilter}
+              </Badge>
+            )}
+          </div>
+        )}
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+            <Input
+              id="search"
+              placeholder="Search IMEI / Internal ID"
+              aria-label="Search IMEI or Internal ID"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setCurrentPage(1)
+              }}
+              className={`h-9 pl-8 ${searchTerm.trim() !== '' ? 'border-blue-500 bg-blue-50' : ''}`}
+            />
+          </div>
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={statusFilter} onValueChange={handleFilterChange(setStatusFilter)}>
+              <SelectTrigger className={`h-9 w-[140px] ${statusFilter !== 'available' ? 'border-blue-500 bg-blue-50' : ''}`}>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="my_active">My Active</SelectItem>
+                <SelectItem value="all_active">All Active</SelectItem>
+                <SelectItem value="history">History</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={levelFilter} onValueChange={handleFilterChange(setLevelFilter)}>
+              <SelectTrigger className={`h-9 w-[120px] ${levelFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
+                <SelectValue placeholder="Level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Levels</SelectItem>
+                <SelectItem value="L1">L1 Only</SelectItem>
+                <SelectItem value="L2">L2 Only</SelectItem>
+                <SelectItem value="L3">L3 Only</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={typeFilter} onValueChange={handleFilterChange(setTypeFilter)}>
+              <SelectTrigger className={`h-9 w-[140px] ${typeFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
+                <SelectValue placeholder="Repair Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="housing_change">Housing</SelectItem>
+                <SelectItem value="glass_change">Glass</SelectItem>
+                <SelectItem value="battery_change">Battery</SelectItem>
+                <SelectItem value="software_update">Software</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearFilters}
+              className={`h-9 ${hasActiveFilters ? 'border-red-300 bg-red-50 hover:bg-red-100' : ''}`}
+            >
+              Clear Filters
+              {hasActiveFilters && (
+                <span className="ml-1 text-xs text-red-600">
+                  ({[searchTerm.trim() !== '', statusFilter !== 'available', levelFilter !== 'all', typeFilter !== 'all'].filter(Boolean).length})
+                </span>
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
-      
-      <div className="flex items-center gap-2 flex-wrap">
-        <Select value={statusFilter} onValueChange={handleFilterChange(setStatusFilter)}>
-          <SelectTrigger className={`h-9 w-[140px] ${statusFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="available">Available</SelectItem>
-            <SelectItem value="my_active">My Active</SelectItem>
-            <SelectItem value="all_active">All Active</SelectItem>
-            <SelectItem value="history">History</SelectItem>
-            <SelectItem value="all">All Status</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={levelFilter} onValueChange={handleFilterChange(setLevelFilter)}>
-          <SelectTrigger className={`h-9 w-[120px] ${levelFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
-            <SelectValue placeholder="Level" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Levels</SelectItem>
-            <SelectItem value="L1">L1 Only</SelectItem>
-            <SelectItem value="L2">L2 Only</SelectItem>
-            <SelectItem value="L3">L3 Only</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={typeFilter} onValueChange={handleFilterChange(setTypeFilter)}>
-          <SelectTrigger className={`h-9 w-[140px] ${typeFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
-            <SelectValue placeholder="Repair Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="housing_change">Housing</SelectItem>
-            <SelectItem value="glass_change">Glass</SelectItem>
-            <SelectItem value="battery_change">Battery</SelectItem>
-            <SelectItem value="software_update">Software</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setSearchTerm('')
-            setLevelFilter('all')
-            setTypeFilter('all')
-            setStatusFilter('available')
-            setCurrentPage(1)
-          }}
-          className="h-9"
-        >
-          Clear Filters
-        </Button>
-      </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
