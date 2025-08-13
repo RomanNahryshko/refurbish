@@ -4,20 +4,20 @@ import { ReactNode, useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    Smartphone,
-    ChevronLeft,
-    ChevronRight,
-    ChevronDown,
-    ChevronUp,
-    Filter,
-    Package,
-    ClipboardCheck,
-    Clock,
-    Wrench,
-    CheckCircle,
-    XCircle,
-    AlertCircle,
-    Package2
+  Smartphone,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  Package,
+  ClipboardCheck,
+  Clock,
+  Wrench,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Package2
 } from 'lucide-react'
 import { Device, Batch } from '@/types/mock-types'
 import { repairTypes } from '@/components/common/repair-task-selector'
@@ -80,6 +80,10 @@ export function DeviceListTable({
   renderCell: customRenderCell,
   customHeaders
 }: DeviceListTableProps) {
+  
+  // Debug logging for repair jobs
+
+  
   const startIndex = (currentPage - 1) * itemsPerPage + 1
   const endIndex = Math.min(currentPage * itemsPerPage, totalResults)
 
@@ -127,10 +131,21 @@ export function DeviceListTable({
 
     switch (column) {
       case 'internal_id':
+        // Check if this is a repair job with position info
+        const repairPosition = (device as any)._repairPosition
+        const totalRepairs = (device as any)._totalRepairs
+        
         return (
           <div className="flex items-center">
             <Smartphone className="mr-2 h-4 w-4 text-gray-400" />
-            <span className="font-mono font-medium">{device.internal_id}</span>
+            <div className="flex flex-col">
+              <span className="font-mono font-medium">{device.internal_id}</span>
+              {repairPosition && totalRepairs && totalRepairs > 1 && (
+                <span className="text-xs text-blue-600 font-medium">
+                  {repairPosition} of {totalRepairs}
+                </span>
+              )}
+            </div>
           </div>
         )
       
@@ -257,15 +272,17 @@ export function DeviceListTable({
           </thead>
           <tbody className="divide-y">
             {devices.length > 0 ? (
-              devices.map((device) => (
-                <tr key={device.id} className="hover:bg-gray-50">
-                  {columns.map((column) => (
-                    <td key={column} className="py-3">
-                      {customRenderCell ? customRenderCell(device, column) || renderCell(device, column) : renderCell(device, column)}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              <>
+                {devices.map((device) => (
+                  <tr key={device.id} className="hover:bg-gray-50">
+                    {columns.map((column) => (
+                      <td key={column} className="py-3">
+                        {customRenderCell ? customRenderCell(device, column) || renderCell(device, column) : renderCell(device, column)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </>
             ) : (
               <tr>
                 <td colSpan={columns.length} className="py-12 text-center text-gray-500">

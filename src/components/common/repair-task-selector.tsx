@@ -8,9 +8,9 @@ import { Wrench } from 'lucide-react'
 
 // Available repair types based on MVP documentation
 export const repairTypes = [
-  { id: 'housing_replace', label: 'Housing Replace', level: 'L1' },
-  { id: 'glass_replace', label: 'Glass Replace', level: 'L2' },
-  { id: 'battery_replace', label: 'Battery Replace', level: 'L3' },
+  { id: 'housing_change', label: 'Housing Change', level: 'L1' },
+  { id: 'glass_change', label: 'Glass Change', level: 'L2' },
+  { id: 'battery_change', label: 'Battery Change', level: 'L3' },
   { id: 'software_update', label: 'Software Update', level: 'Any' },
   { id: 'other', label: 'Other', level: 'L3', requiresDescription: true }
 ]

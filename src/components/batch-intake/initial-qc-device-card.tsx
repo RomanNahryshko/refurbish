@@ -7,24 +7,24 @@ import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import {
-    ChevronDown,
-    ChevronUp,
-    Wrench,
-    Award,
-    CheckCircle,
-    Loader2,
-    AlertTriangle
+  ChevronDown,
+  ChevronUp,
+  Wrench,
+  Award,
+  CheckCircle,
+  Loader2,
+  AlertTriangle
 } from 'lucide-react'
 import { RepairTaskSelector } from '@/components/common/repair-task-selector'
 import { useCreateQCCheck } from '@/lib/hooks/use-qc-checks'
 import { toast } from 'sonner'
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
 
 // Import repair types to get human-readable labels

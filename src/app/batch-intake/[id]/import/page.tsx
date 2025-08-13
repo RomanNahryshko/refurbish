@@ -13,6 +13,8 @@ import { useBatch } from '@/lib/hooks/use-batches';
 import { useCreateDevicesFromImport } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { createClient } from '@/lib/supabase/client';
+import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
+import { REPAIR_TYPES } from '@/lib/constants';
 
 // Mock Dr. Phone data format
 interface DrPhoneData {
@@ -62,6 +64,18 @@ export default function ImportDrPhonePage() {
   const [existingDevicesCount, setExistingDevicesCount] = useState(0)
   
   const createDevicesFromImport = useCreateDevicesFromImport()
+  const createRepairJob = useCreateRepairJob()
+
+  // Helper function to get current user ID
+  const getCurrentUserId = async (): Promise<string> => {
+    const supabase = createClient()
+    if (supabase) {
+      const { data: { user } } = await supabase.auth.getUser()
+      return user?.id || 'unknown'
+    }
+    return 'unknown'
+  }
+
   
   // Function to create a single device when QC is completed
   const createSingleDevice = async (deviceData: DrPhoneData, deviceIndex: number, selectedRepairs: string[], otherDescription: string, selectedGrade: string) => {
@@ -96,18 +110,60 @@ export default function ImportDrPhonePage() {
         devices: [deviceToCreate]
       })
 
-      if (result && result.length > 0) {
-        const createdDevice = result[0]
-        setCreatedDevices(prev => {
-          const newState = [...prev, { id: createdDevice.id, imei: createdDevice.imei }]
-          return newState
-        })
-        
-        // Small delay to ensure state is updated before continuing
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
-        return createdDevice.id
-      }
+              if (result && result.length > 0) {
+          const createdDevice = result[0]
+          
+          // Create repair jobs for selected repairs
+          if (selectedRepairs.length > 0) {
+            try {
+                             for (const repairType of selectedRepairs) {
+                 // Map old values to new schema values (backward compatibility)
+                 const repairTypeMap: Record<string, keyof typeof REPAIR_TYPES> = {
+                   'housing_replace': 'housing_change',
+                   'glass_replace': 'glass_change',
+                   'battery_replace': 'battery_change',
+                   'housing_change': 'housing_change',
+                   'glass_change': 'glass_change',
+                   'battery_change': 'battery_change',
+                   'software_update': 'software_update',
+                   'other': 'other'
+                 }
+                 
+                 const mappedRepairType = repairTypeMap[repairType]
+                 
+                 if (!mappedRepairType) {
+                   console.error(`Invalid repair type: ${repairType}`)
+                   continue
+                 }
+                 
+                 const repairJobData = {
+                   device_id: createdDevice.id,
+                   repair_type: mappedRepairType,
+                   description: mappedRepairType === 'other' ? otherDescription : undefined
+                 }
+                 console.log('repairJobData', repairJobData)
+                 
+                 await createRepairJob.mutateAsync({
+                   data: repairJobData,
+                   createdBy: await getCurrentUserId()
+                 })
+               }
+            } catch (error) {
+              console.error('Failed to create repair jobs:', error)
+              // Continue even if repair jobs fail
+            }
+          }
+          
+          setCreatedDevices(prev => {
+            const newState = [...prev, { id: createdDevice.id, imei: createdDevice.imei }]
+            return newState
+          })
+          
+          // Small delay to ensure state is updated before continuing
+          await new Promise(resolve => setTimeout(resolve, 100))
+          
+          return createdDevice.id
+        }
 
       return null
     } catch (error: unknown) {
@@ -436,6 +492,8 @@ export default function ImportDrPhonePage() {
       if (deviceData) {
         // Create device first with status 'received' (according to schema)
         const deviceId = await createSingleDevice(deviceData, deviceIndex, deviceRepairs[deviceIndex] || [], deviceOtherDescriptions[deviceIndex] || '', deviceGrades[deviceIndex] || '')
+
+        
         
         if (deviceId) {
           // Now mark as completed

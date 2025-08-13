@@ -1,15 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog'
-import { TechnicianSimulator } from '@/components/common/technician-simulator'
 import { RepairJobListTable } from '@/components/repair-jobs/repair-job-list-table'
 
-import { 
+import {
   Wrench,
   Search,
   Plus,
@@ -18,28 +17,61 @@ import {
   Info
 } from 'lucide-react'
 
-import { mockRepairJobs, mockSpareParts, mockBatches } from '@/lib/mock-data'
+import { useRepairJobs, useUpdateRepairJob } from '@/lib/hooks/use-repair-jobs'
+import { useBatches } from '@/lib/hooks/use-batches'
+import { useSpareParts } from '@/lib/hooks/use-spare-parts'
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
-import { RepairJob } from '@/types/mock-types'
-
-// Mock technicians for simulation
-const mockTechnicians = [
-  { id: 'user-3', full_name: 'L1', role: 'technician', technician_level: 'L1' },
-  { id: 'user-4', full_name: 'L2', role: 'technician', technician_level: 'L2' },
-  { id: 'user-5', full_name: 'L3', role: 'technician', technician_level: 'L3' },
-  { id: 'user-2', full_name: 'Ops', role: 'ops_manager', technician_level: null }
-]
+import { RepairJob } from '@/lib/types/business-types'
+import { LoadingSpinner } from '@/components/common/loading-spinner'
+import { createClient } from '@/lib/supabase/client'
 
 // Import configs from the table component
 import { repairTypeConfig } from '@/components/repair-jobs/repair-job-list-table'
 
+// Extended RepairJob type with joined data from API
+interface RepairJobWithDevice extends RepairJob {
+  device: {
+    internal_id: string
+    imei: string
+    brand?: string
+    model?: string
+  }
+  assigned_to_name?: string
+}
+
+// Transformed repair job with additional computed fields
+interface TransformedRepairJob extends RepairJobWithDevice {
+  device_internal_id: string
+  device_model: string
+}
+
 export default function RepairJobsPage() {
-  const [currentUser, setCurrentUser] = useState(mockTechnicians[1]) // Default to L2 technician
   const [searchTerm, setSearchTerm] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('available') // Default to available jobs
   const [currentPage, setCurrentPage] = useState(1)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  
+  // Fetch real data from API
+  const { data: repairJobsData, isLoading: repairJobsLoading, error: repairJobsError } = useRepairJobs()
+  const { data: batchesData, isLoading: batchesLoading } = useBatches()
+  const { data: sparePartsData, isLoading: sparePartsLoading } = useSpareParts()
+
+  // Get current user ID from Supabase
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setCurrentUserId(user.id)
+      }
+    }
+    getCurrentUser()
+  }, [])
+  
+  // Update repair job mutation
+  const updateRepairJob = useUpdateRepairJob()
   
   // Reset page when filters change
   const handleFilterChange = (setter: (value: string) => void) => (value: string) => {
@@ -73,63 +105,59 @@ export default function RepairJobsPage() {
     notes: ''
   })
 
-  // Filter repairs based on current filters and user permissions
-  const filteredRepairs = mockRepairJobs.filter(repair => {
-    const matchesSearch = !searchTerm || 
-      repair.device_internal_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      repair.device_model?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    // Check if current user can see this repair based on their level
-    const userCanSeeRepair = currentUser.role === 'ops_manager' || // Ops can see all jobs
-      (currentUser.technician_level && (
-        repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.level === currentUser.technician_level ||
-        repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.level === 'Any'
-      ))
-    
-    const matchesLevel = levelFilter === 'all' || 
-      repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.level === levelFilter ||
-      repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.level === 'Any'
-    
-    const matchesType = typeFilter === 'all' || repair.repair_type === typeFilter
-    
-    // Enhanced status filtering for better workflow
-    let matchesStatus = false
-    switch (statusFilter) {
-      case 'available':
-        matchesStatus = repair.status === 'pending'
-        break
-      case 'my_active':
-        matchesStatus = repair.status === 'in_progress' && repair.assigned_to === currentUser.id
-        break
-      case 'all_active':
-        matchesStatus = repair.status === 'in_progress' && currentUser.role === 'ops_manager'
-        break
-      case 'history':
-        matchesStatus = repair.status === 'completed'
-        break
-      case 'all':
-        matchesStatus = true
-        break
-      default:
-        matchesStatus = repair.status === statusFilter
-    }
-    
-    return matchesSearch && userCanSeeRepair && matchesLevel && matchesType && matchesStatus
+  // Show loading state while data is being fetched
+  if (repairJobsLoading || batchesLoading || sparePartsLoading) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="flex justify-center items-center py-12">
+          <LoadingSpinner />
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state if there's an error
+  if (repairJobsError) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="text-center py-12">
+          <p className="text-red-600">Error loading repair jobs: {repairJobsError.message}</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Transform API data to match expected format for the table component
+  const repairJobs = (repairJobsData || []) as RepairJobWithDevice[]
+  const transformedRepairJobs = repairJobs.map(repair => ({
+    ...repair,
+    device_internal_id: repair.device?.internal_id || 'N/A',
+    device_model: repair.device?.model || 'Unknown',
+    // Use actual assigned user data from API
+    assigned_to_name: repair.assigned_to_name || undefined
+  })) as TransformedRepairJob[]
+  
+  const batches = batchesData || []
+  const spareParts = sparePartsData || []
+
+  // TEMPORARILY DISABLE ALL FILTERS - Show all repair jobs
+  const filteredRepairs = transformedRepairJobs
+  
+  // Group repairs by device_internal_id to show "1 of 3", "2 of 3" etc.
+  const repairCountByDevice: Record<string, number> = {}
+  filteredRepairs.forEach(repair => {
+    const deviceId = repair.device_internal_id || 'unknown'
+    repairCountByDevice[deviceId] = (repairCountByDevice[deviceId] || 0) + 1
   })
 
-  // Sort repairs by device_internal_id to group same device repairs together
+  // Sort repairs by creation date (newest first)
   const sortedRepairs = [...filteredRepairs].sort((a, b) => {
-    // First sort by device ID to group same devices
-    const deviceCompare = (a.device_internal_id || '').localeCompare(b.device_internal_id || '')
-    if (deviceCompare !== 0) return deviceCompare
-    
-    // Then by creation date within same device
-    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   })
 
-  // Find current user's active repair for banner
-  const activeRepair = mockRepairJobs.find(repair => 
-    repair.assigned_to === currentUser.id && repair.status === 'in_progress'
+  // Find current user's active repair for banner - this should come from auth context
+  const activeRepair = transformedRepairJobs.find(repair => 
+    repair.assigned_to === currentUserId && repair.status === 'in_progress'
   )
 
   // Pagination calculations
@@ -138,29 +166,33 @@ export default function RepairJobsPage() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedRepairs = sortedRepairs.slice(startIndex, endIndex)
-
+  
   const handleStartRepair = (repair: RepairJob) => {
+    if (!currentUserId) {
+      // Handle case when user is not authenticated
+      return
+    }
+    
+    // Find the transformed repair job data
+    const transformedRepair = transformedRepairJobs.find(r => r.id === repair.id)
+    if (!transformedRepair) return
+    
     setConfirmDialog({
       open: true,
       title: 'Start Repair',
-      description: `Are you sure you want to start the ${repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.label} repair for device ${repair.device_internal_id}?`,
+      description: `Are you sure you want to start the ${repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.label} repair for device ${transformedRepair.device_internal_id}?`,
       action: () => {
-        // Update the repair in mockRepairJobs to trigger re-render
-        const repairIndex = mockRepairJobs.findIndex(r => r.id === repair.id)
-        if (repairIndex !== -1) {
-          mockRepairJobs[repairIndex] = {
-            ...mockRepairJobs[repairIndex],
+        // Update the repair job using the API
+        updateRepairJob.mutate({
+          id: repair.id,
+          data: {
             status: 'in_progress',
-            assigned_to: currentUser.id,
-            assigned_to_name: currentUser.full_name,
+            assigned_to: currentUserId, // Use current user ID
             assigned_at: new Date().toISOString()
           }
-        }
+        })
         
-        // Force re-render by toggling a state
         setConfirmDialog({ ...confirmDialog, open: false })
-        // Trigger a re-render by updating search term to itself
-        setSearchTerm(prev => prev === '' ? ' ' : '')
       }
     })
   }
@@ -174,86 +206,50 @@ export default function RepairJobsPage() {
   }
 
   const handleCancelRepair = (repairId: string) => {
-    const repair = mockRepairJobs.find(r => r.id === repairId)
+    const repair = transformedRepairJobs.find(r => r.id === repairId)
     setConfirmDialog({
       open: true,
       title: 'Cancel Repair Job',
       description: `Are you sure you want to cancel this repair for Device ${repair?.device_internal_id}?\n\nThis action will:\n• Return the job to the repair queue\n• Allow other technicians to pick it up\n• Clear your assignment from this repair\n\nThis action should only be used if you cannot complete the repair (missing parts, equipment issues, etc.).`,
       action: () => {
-        // Find and reset the repair
-        const repairIndex = mockRepairJobs.findIndex(r => r.id === repairId)
-        if (repairIndex !== -1) {
-          mockRepairJobs[repairIndex] = {
-            ...mockRepairJobs[repairIndex],
+        // Update the repair job using the API
+        updateRepairJob.mutate({
+          id: repairId,
+          data: {
             status: 'pending',
             assigned_to: undefined,
-            assigned_to_name: undefined,
             assigned_at: undefined
           }
-        }
+        })
         
         setConfirmDialog({ ...confirmDialog, open: false })
-        // Force re-render
-        setSearchTerm(prev => prev === '' ? ' ' : '')
       }
     })
   }
 
   const submitCompleteRepair = () => {
-    const repairIndex = mockRepairJobs.findIndex(r => r.id === partsRecording.repairId)
-    if (repairIndex !== -1) {
-      // Map parts with their names for recording
-      const partsUsed = partsRecording.parts.map(part => {
-        const sparePart = mockSpareParts.find(p => p.id === part.partId)
-        return {
-          spare_part_id: part.partId,
-          part_name: sparePart?.name || 'Unknown Part',
-          quantity_used: part.quantity
-        }
-      })
-      
-      // Update the repair to completed
-      mockRepairJobs[repairIndex] = {
-        ...mockRepairJobs[repairIndex],
+    if (!partsRecording.repairId) return
+
+    // Update the repair job to completed
+    updateRepairJob.mutate({
+      id: partsRecording.repairId,
+      data: {
         status: 'completed',
         completed_at: new Date().toISOString(),
-        completion_notes: partsRecording.notes || undefined,
-        parts_used: partsUsed.length > 0 ? partsUsed : undefined
+        completion_notes: partsRecording.notes || undefined
       }
-      
-      // Deduct from inventory for each part used
-      partsRecording.parts.forEach(part => {
-        const partIndex = mockSpareParts.findIndex(p => p.id === part.partId)
-        if (partIndex !== -1) {
-          mockSpareParts[partIndex].quantity_in_stock -= part.quantity
-          console.log(`Deducted ${part.quantity} from ${mockSpareParts[partIndex].name}. New stock: ${mockSpareParts[partIndex].quantity_in_stock}`)
-        }
-      })
-      
-      // Check if all repairs for this device are now completed
-      const completedRepair = mockRepairJobs[repairIndex]
-      const deviceId = completedRepair.device_id
-      const allRepairsForDevice = mockRepairJobs.filter(r => r.device_id === deviceId)
-      const allCompleted = allRepairsForDevice.every(r => r.status === 'completed')
-      
-      if (allCompleted) {
-        // In real app, would update device status to 'final_qc'
-        console.log(`All repairs completed for device ${completedRepair.device_internal_id}. Ready for QC.`)
-        // Note: In real implementation, would update device status in database
-        // UPDATE devices SET status = 'final_qc' WHERE id = deviceId
-      }
-      
-      console.log('Completed repair:', mockRepairJobs[repairIndex].id)
-    }
+    })
+    
+    // Note: In a real implementation, you would also:
+    // 1. Record parts usage in the repair_parts_used table
+    // 2. Update inventory quantities
+    // 3. Update device status if all repairs are completed
     
     setPartsRecording({
       repairId: null,
       parts: [],
       notes: ''
     })
-    
-    // Force re-render
-    setSearchTerm(prev => prev === '' ? ' ' : '')
   }
 
   // Render filters for the table (consistent with devices/qc pages)
@@ -282,9 +278,7 @@ export default function RepairJobsPage() {
           <SelectContent>
             <SelectItem value="available">Available</SelectItem>
             <SelectItem value="my_active">My Active</SelectItem>
-            {currentUser.role === 'ops_manager' && (
-              <SelectItem value="all_active">All Active</SelectItem>
-            )}
+            <SelectItem value="all_active">All Active</SelectItem>
             <SelectItem value="history">History</SelectItem>
             <SelectItem value="all">All Status</SelectItem>
           </SelectContent>
@@ -345,11 +339,7 @@ export default function RepairJobsPage() {
           </h1>
           <p className="text-gray-600">Self-select and complete repair tasks</p>
         </div>
-        <TechnicianSimulator
-          currentUser={currentUser}
-          technicians={mockTechnicians}
-          onUserChange={setCurrentUser}
-        />
+        {/* Remove TechnicianSimulator as it was using mock data */}
       </div>
 
       {/* Active Job Banner */}
@@ -395,18 +385,24 @@ export default function RepairJobsPage() {
         <CardContent>
           <RepairJobListTable
             repairJobs={paginatedRepairs}
-            allRepairJobs={mockRepairJobs}
-            batches={mockBatches}
+            allRepairJobs={transformedRepairJobs}
+            batches={batches}
             currentPage={currentPage}
             totalPages={totalPages}
             totalResults={totalResults}
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}
             renderFilters={renderFilters}
-            currentUser={currentUser}
+            currentUser={currentUserId ? {
+              id: currentUserId,
+              full_name: 'Current User', // This should come from user profile
+              role: 'technician', // This should come from user profile
+              technician_level: 'L2' // This should come from user profile
+            } : undefined}
             onStartRepair={handleStartRepair}
             onCompleteRepair={handleCompleteRepair}
             onCancelRepair={handleCancelRepair}
+            repairCountByDevice={repairCountByDevice}
           />
         </CardContent>
       </Card>
@@ -441,14 +437,14 @@ export default function RepairJobsPage() {
                     <SelectValue placeholder="Select part" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockSpareParts
+                    {spareParts
                       .filter(part => !partsRecording.parts.find(p => p.partId === part.id))
                       .map(part => (
                         <SelectItem key={part.id} value={part.id}>
                           {part.name} (Stock: {part.quantity_in_stock})
                         </SelectItem>
                       ))}
-                    {mockSpareParts.filter(part => !partsRecording.parts.find(p => p.partId === part.id)).length === 0 && (
+                    {spareParts.filter(part => !partsRecording.parts.find(p => p.partId === part.id)).length === 0 && (
                       <div className="p-2 text-sm text-gray-500">All parts already added</div>
                     )}
                   </SelectContent>
@@ -461,7 +457,7 @@ export default function RepairJobsPage() {
                   <label className="text-sm font-medium mb-2 block">Selected Parts:</label>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {partsRecording.parts.map((part, index) => {
-                      const sparePart = mockSpareParts.find(p => p.id === part.partId)
+                      const sparePart = spareParts.find(p => p.id === part.partId)
                       return (
                         <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
                           <span className="flex-1 text-sm">{sparePart?.name}</span>

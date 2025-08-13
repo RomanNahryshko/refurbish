@@ -38,8 +38,7 @@ export const repairJobsApi = {
       .from('repair_jobs')
       .select(`
         *,
-        device:devices(internal_id, imei, brand, model),
-        assigned_user:user_profiles(full_name, technician_level)
+        device:devices(internal_id, imei, brand, model)
       `)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
@@ -47,7 +46,6 @@ export const repairJobsApi = {
     if (error) throw error
     return data as (RepairJob & {
       device: { internal_id: string; imei: string; brand?: string; model?: string }
-      assigned_user?: { full_name: string; technician_level?: string }
     })[]
   },
 
@@ -60,18 +58,13 @@ export const repairJobsApi = {
 
     const { data, error } = await supabase
       .from('repair_jobs')
-      .select(`
-        *,
-        assigned_user:user_profiles(full_name, technician_level)
-      `)
+      .select('*')
       .eq('device_id', deviceId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data as (RepairJob & {
-      assigned_user?: { full_name: string; technician_level?: string }
-    })[]
+    return data as RepairJob[]
   },
 
   /**
@@ -108,8 +101,7 @@ export const repairJobsApi = {
       .from('repair_jobs')
       .select(`
         *,
-        device:devices(internal_id, imei, brand, model),
-        assigned_user:user_profiles(full_name, technician_level)
+        device:devices(internal_id, imei, brand, model)
       `)
       .eq('id', id)
       .is('deleted_at', null)
@@ -118,7 +110,6 @@ export const repairJobsApi = {
     if (error) throw error
     return data as RepairJob & {
       device: { internal_id: string; imei: string; brand?: string; model?: string }
-      assigned_user?: { full_name: string; technician_level?: string }
     }
   },
 

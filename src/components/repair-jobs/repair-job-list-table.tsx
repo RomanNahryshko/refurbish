@@ -4,13 +4,13 @@ import { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    Eye,
-    ClipboardCheck,
-    CheckCircle,
-    Clock,
-    Wrench,
-    Package,
-    AlertCircle
+  Eye,
+  ClipboardCheck,
+  CheckCircle,
+  Clock,
+  Wrench,
+  Package,
+  AlertCircle
 } from 'lucide-react'
 import { DeviceListTable, DeviceTableColumn } from '@/components/common/device-list-table'
 import { RepairJob, Batch, Device } from '@/types/mock-types'
@@ -42,7 +42,7 @@ interface RepairJobListTableProps {
   itemsPerPage: number
   onPageChange: (page: number) => void
   renderFilters: () => ReactNode
-  currentUser: {
+  currentUser?: {
     id: string
     full_name: string
     role: string
@@ -51,28 +51,38 @@ interface RepairJobListTableProps {
   onStartRepair: (repair: RepairJob) => void
   onCompleteRepair: (repairId: string) => void
   onCancelRepair: (repairId: string) => void
+  repairCountByDevice?: Record<string, number> // Count of repairs per device
 }
 
 // Convert RepairJob to Device-like structure for table compatibility
-const convertRepairJobToDevice = (repairJob: RepairJob): Device & { _repairJobData: RepairJob } => ({
-  id: repairJob.id,
-  internal_id: repairJob.device_internal_id || 'N/A',
-  model: repairJob.device_model || 'Unknown',
-  repair_type: repairJob.repair_type,
-  status: repairJob.status as any, // Allow repair status to be used
-  assigned_to_name: repairJob.assigned_to_name,
-  assigned_to: repairJob.assigned_to,
-  created_at: repairJob.created_at,
-  batch_id: repairJob.device_id, // Use device_id as batch reference
-  // Required fields for Device interface compatibility
-  imei: '', 
-  serial_number: '',
-  brand: '',
-  grade: null,
-  updated_at: repairJob.updated_at,
-  // Add repair-specific data
-  _repairJobData: repairJob
-})
+const convertRepairJobToDevice = (repairJob: RepairJob, allRepairJobs: RepairJob[], repairCountByDevice?: Record<string, number>): Device & { _repairJobData: RepairJob; _repairPosition: number; _totalRepairs: number } => {
+  const deviceId = repairJob.device_internal_id || 'unknown'
+  const totalRepairs = repairCountByDevice?.[deviceId] || 1
+  
+  // Find position of this repair job among repairs for the same device
+  const deviceRepairs = allRepairJobs.filter(r => r.device_internal_id === deviceId)
+  const repairPosition = deviceRepairs.findIndex(r => r.id === repairJob.id) + 1
+  
+  return {
+    id: repairJob.id,
+    internal_id: repairJob.device_internal_id || 'N/A',
+    model: repairJob.device_model || 'Unknown',
+    status: repairJob.status as Device['status'], // Cast to Device status type
+    created_at: repairJob.created_at,
+    batch_id: repairJob.device_id, // Use device_id as batch reference
+    // Required fields for Device interface compatibility
+    imei: '', 
+    serial_number: '',
+    brand: '',
+    grade: 'ungraded',
+    updated_at: repairJob.updated_at,
+    // Add repair-specific data
+    _repairJobData: repairJob,
+    // Add repair position info
+    _repairPosition: repairPosition,
+    _totalRepairs: totalRepairs
+  }
+}
 
 export function RepairJobListTable({
   repairJobs,
@@ -87,23 +97,13 @@ export function RepairJobListTable({
   currentUser,
   onStartRepair,
   onCompleteRepair,
-  onCancelRepair
+  onCancelRepair,
+  repairCountByDevice
 }: RepairJobListTableProps) {
   
-  // Count repairs per device for badges
-  const repairCountByDevice = allRepairJobs.reduce((acc, repair) => {
-    const deviceId = repair.device_internal_id
-    if (deviceId) {
-      acc[deviceId] = (acc[deviceId] || 0) + 1
-    }
-    return acc
-  }, {} as Record<string, number>)
-
   // Convert repair jobs to device-like format
-  const deviceLikeData = repairJobs.map(convertRepairJobToDevice)
-  
-  // Track previous device ID for visual grouping
-  let previousDeviceId: string | undefined = undefined
+  // Each repair job should be displayed as a separate row
+  const deviceLikeData = repairJobs.map(repair => convertRepairJobToDevice(repair, allRepairJobs, repairCountByDevice))
   
   // Define columns specific to repair jobs (MVP scope only)
   const columns: DeviceTableColumn[] = [
@@ -114,18 +114,20 @@ export function RepairJobListTable({
     'grade',       // Created date (using grade column)
     'actions'
   ]
+  
+  // Create a type for our extended device data
+  type ExtendedDevice = Device & { _repairJobData: RepairJob; _repairPosition: number; _totalRepairs: number }
 
-  const renderActions = (device: Device & { _repairJobData: RepairJob }) => {
+  // Create wrapper functions that cast the device to ExtendedDevice
+  const renderActionsWrapper = (device: Device) => renderActions(device as ExtendedDevice)
+  const renderCellWrapper = (device: Device, column: DeviceTableColumn) => renderCell(device as ExtendedDevice, column)
+
+  const renderActions = (device: ExtendedDevice) => {
     const repairJob = device._repairJobData
-    const repairConfig = repairTypeConfig[repairJob.repair_type as keyof typeof repairTypeConfig]
-    
-    const canStartRepair = currentUser.role === 'ops_manager' || 
-      (currentUser.technician_level && 
-        (repairConfig?.level === currentUser.technician_level || repairConfig?.level === 'Any'))
     
     // Check if user already has an active repair
     const hasActiveRepair = repairJobs.some(r => 
-      r.assigned_to === currentUser.id && r.status === 'in_progress'
+      r.assigned_to === currentUser?.id && r.status === 'in_progress'
     )
 
     return (
@@ -137,7 +139,7 @@ export function RepairJobListTable({
           </Button>
         </Link>
         
-        {repairJob.status === 'pending' && canStartRepair && (
+        {repairJob.status === 'pending'  && (
           <Button 
             size="sm"
             onClick={() => onStartRepair(repairJob)}
@@ -149,7 +151,7 @@ export function RepairJobListTable({
           </Button>
         )}
         
-        {repairJob.status === 'in_progress' && repairJob.assigned_to === currentUser.id && (
+        {repairJob.status === 'in_progress' && repairJob.assigned_to === currentUser?.id && (
           <>
             <Button 
               size="sm"
@@ -173,33 +175,33 @@ export function RepairJobListTable({
   }
 
   // Custom cell renderer to override specific columns
-  const renderCell = (device: Device & { _repairJobData: RepairJob }, column: DeviceTableColumn) => {
+  const renderCell = (device: ExtendedDevice, column: DeviceTableColumn) => {
     const repairJob = device._repairJobData
     const repairConfig = repairTypeConfig[repairJob.repair_type as keyof typeof repairTypeConfig]
     const statusInfo = repairStatusConfig[repairJob.status as keyof typeof repairStatusConfig]
     
     switch (column) {
       case 'internal_id':
+        // Check if this is a repair job with position info
+        const repairPosition = device._repairPosition
+        const totalRepairs = device._totalRepairs
+        
         return (
-          <div className="font-medium">{device.internal_id}</div>
+          <div className="flex items-center gap-[3px]">
+            <div className="font-medium">{device.internal_id}</div>
+            {repairPosition && totalRepairs && totalRepairs > 1 && (
+              <Badge variant="secondary" className="text-xs">
+                {repairPosition} of {totalRepairs}
+              </Badge>
+            )}
+          </div>
         )
       
       case 'device':
-        // Show device model with repair count badge
-        const totalRepairs = repairCountByDevice[repairJob.device_internal_id || ''] || 1
-        const currentRepairIndex = allRepairJobs
-          .filter(r => r.device_internal_id === repairJob.device_internal_id)
-          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-          .findIndex(r => r.id === repairJob.id) + 1
-        
+        // Show device model without grouping
         return (
           <div className="flex items-center gap-2">
             <span className="font-medium">{device.model}</span>
-            {totalRepairs > 1 && (
-              <Badge variant="secondary" className="text-xs">
-                {currentRepairIndex} of {totalRepairs}
-              </Badge>
-            )}
           </div>
         )
       
@@ -245,23 +247,26 @@ export function RepairJobListTable({
       devices={deviceLikeData}
       batches={batches}
       columns={columns}
-      renderActions={renderActions}
+      renderActions={renderActionsWrapper}
       currentPage={currentPage}
       totalPages={totalPages}
       totalResults={totalResults}
       itemsPerPage={itemsPerPage}
       onPageChange={onPageChange}
-      title={`Repair Queue (${totalResults} jobs)`}
+      title={`Repair Queue (${totalResults} individual repairs)`}
       renderFilters={renderFilters}
       pageKey="repair-jobs"
-      renderCell={renderCell}
+      renderCell={renderCellWrapper}
       customHeaders={{
         'internal_id': 'Internal ID',
         'device': 'Device',
         'imei': 'Repair Type',  // Custom header
         'status': 'Status',
         'grade': 'Created',     // Custom header
-        'actions': 'Actions'
+        'actions': 'Actions',
+        'batch': 'Batch',
+        'serial_number': 'Serial Number',
+        'required_repairs': 'Required Repairs'
       }}
     />
   )
