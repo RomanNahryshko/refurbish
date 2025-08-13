@@ -1,57 +1,54 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog'
+import { TechnicianSimulator } from '@/components/common/technician-simulator'
+import { RepairJobListTable } from '@/components/repair-jobs/repair-job-list-table'
 
 import { 
   Wrench,
   Search,
-  Eye,
-  ClipboardCheck,
-  Clock,
-  User,
-  Smartphone,
-  Package,
-  CheckCircle,
-  XCircle,
-  AlertCircle
+  Plus,
+  Minus,
+  X,
+  AlertTriangle,
+  Info
 } from 'lucide-react'
 
-import { mockRepairJobs, mockSpareParts, mockDevices, mockBatches } from '@/lib/mock-data'
+import { mockRepairJobs, mockSpareParts, mockBatches } from '@/lib/mock-data'
+import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
+import { RepairJob } from '@/types/mock-types'
 
-// Mock current user (for MVP - simulates logged in technician)
-const mockCurrentUser = {
-  id: 'user-tech-1',
-  full_name: 'Current Technician',
-  role: 'technician',
-  technician_level: 'L2' // L1 (Housing), L2 (Glass), L3 (Battery + Others)
-}
+// Mock technicians for simulation
+const mockTechnicians = [
+  { id: 'user-3', full_name: 'L1', role: 'technician', technician_level: 'L1' },
+  { id: 'user-4', full_name: 'L2', role: 'technician', technician_level: 'L2' },
+  { id: 'user-5', full_name: 'L3', role: 'technician', technician_level: 'L3' },
+  { id: 'user-2', full_name: 'Ops', role: 'ops_manager', technician_level: null }
+]
 
-const repairTypeConfig = {
-  'housing_change': { label: 'Housing Change', level: 'L1', icon: Package },
-  'glass_change': { label: 'Glass Change', level: 'L2', icon: AlertCircle },
-  'battery_change': { label: 'Battery Change', level: 'L3', icon: Package },
-  'software_update': { label: 'Software Update', level: 'Any', icon: CheckCircle },
-  'other': { label: 'Other Repair', level: 'Any', icon: Wrench }
-}
-
-const statusConfig = {
-  'pending': { label: 'Pending', variant: 'outline' as const, icon: Clock },
-  'in_progress': { label: 'In Progress', variant: 'secondary' as const, icon: User },
-  'completed': { label: 'Completed', variant: 'default' as const, icon: CheckCircle }
-}
+// Import configs from the table component
+import { repairTypeConfig } from '@/components/repair-jobs/repair-job-list-table'
 
 export default function RepairJobsPage() {
+  const [currentUser, setCurrentUser] = useState(mockTechnicians[1]) // Default to L2 technician
   const [searchTerm, setSearchTerm] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('pending')
+  const [statusFilter, setStatusFilter] = useState('available') // Default to available jobs
+  const [currentPage, setCurrentPage] = useState(1)
+  
+  // Reset page when filters change
+  const handleFilterChange = (setter: (value: string) => void) => (value: string) => {
+    setter(value)
+    setCurrentPage(1)
+  }
+  
+  const itemsPerPage = DEFAULT_ITEMS_PER_PAGE
   
   // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -69,45 +66,102 @@ export default function RepairJobsPage() {
   // Parts recording state
   const [partsRecording, setPartsRecording] = useState<{
     repairId: string | null
-    selectedPart: string
-    quantity: number
+    parts: Array<{ partId: string; quantity: number }>
     notes: string
   }>({
     repairId: null,
-    selectedPart: '',
-    quantity: 1,
+    parts: [],
     notes: ''
   })
 
-  // Filter repairs based on current filters
+  // Filter repairs based on current filters and user permissions
   const filteredRepairs = mockRepairJobs.filter(repair => {
     const matchesSearch = !searchTerm || 
       repair.device_internal_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       repair.device_model?.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    // Check if current user can see this repair based on their level
+    const userCanSeeRepair = currentUser.role === 'ops_manager' || // Ops can see all jobs
+      (currentUser.technician_level && (
+        repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.level === currentUser.technician_level ||
+        repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.level === 'Any'
+      ))
     
     const matchesLevel = levelFilter === 'all' || 
       repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.level === levelFilter ||
       repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.level === 'Any'
     
     const matchesType = typeFilter === 'all' || repair.repair_type === typeFilter
-    const matchesStatus = statusFilter === 'all' || repair.status === statusFilter
     
-    return matchesSearch && matchesLevel && matchesType && matchesStatus
+    // Enhanced status filtering for better workflow
+    let matchesStatus = false
+    switch (statusFilter) {
+      case 'available':
+        matchesStatus = repair.status === 'pending'
+        break
+      case 'my_active':
+        matchesStatus = repair.status === 'in_progress' && repair.assigned_to === currentUser.id
+        break
+      case 'all_active':
+        matchesStatus = repair.status === 'in_progress' && currentUser.role === 'ops_manager'
+        break
+      case 'history':
+        matchesStatus = repair.status === 'completed'
+        break
+      case 'all':
+        matchesStatus = true
+        break
+      default:
+        matchesStatus = repair.status === statusFilter
+    }
+    
+    return matchesSearch && userCanSeeRepair && matchesLevel && matchesType && matchesStatus
   })
 
-  const handleStartRepair = (repair: any) => {
+  // Sort repairs by device_internal_id to group same device repairs together
+  const sortedRepairs = [...filteredRepairs].sort((a, b) => {
+    // First sort by device ID to group same devices
+    const deviceCompare = (a.device_internal_id || '').localeCompare(b.device_internal_id || '')
+    if (deviceCompare !== 0) return deviceCompare
+    
+    // Then by creation date within same device
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  })
+
+  // Find current user's active repair for banner
+  const activeRepair = mockRepairJobs.find(repair => 
+    repair.assigned_to === currentUser.id && repair.status === 'in_progress'
+  )
+
+  // Pagination calculations
+  const totalResults = sortedRepairs.length
+  const totalPages = Math.ceil(totalResults / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedRepairs = sortedRepairs.slice(startIndex, endIndex)
+
+  const handleStartRepair = (repair: RepairJob) => {
     setConfirmDialog({
       open: true,
       title: 'Start Repair',
       description: `Are you sure you want to start the ${repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.label} repair for device ${repair.device_internal_id}?`,
       action: () => {
-        // In real app, this would update the database
-        console.log('Starting repair:', repair.id)
-        repair.status = 'in_progress'
-        repair.assigned_to = mockCurrentUser.id
-        repair.assigned_to_name = mockCurrentUser.full_name
-        repair.assigned_at = new Date().toISOString()
+        // Update the repair in mockRepairJobs to trigger re-render
+        const repairIndex = mockRepairJobs.findIndex(r => r.id === repair.id)
+        if (repairIndex !== -1) {
+          mockRepairJobs[repairIndex] = {
+            ...mockRepairJobs[repairIndex],
+            status: 'in_progress',
+            assigned_to: currentUser.id,
+            assigned_to_name: currentUser.full_name,
+            assigned_at: new Date().toISOString()
+          }
+        }
+        
+        // Force re-render by toggling a state
         setConfirmDialog({ ...confirmDialog, open: false })
+        // Trigger a re-render by updating search term to itself
+        setSearchTerm(prev => prev === '' ? ' ' : '')
       }
     })
   }
@@ -115,38 +169,171 @@ export default function RepairJobsPage() {
   const handleCompleteRepair = (repairId: string) => {
     setPartsRecording({
       repairId,
-      selectedPart: '',
-      quantity: 1,
+      parts: [],
       notes: ''
     })
   }
 
+  const handleCancelRepair = (repairId: string) => {
+    const repair = mockRepairJobs.find(r => r.id === repairId)
+    setConfirmDialog({
+      open: true,
+      title: 'Cancel Repair Job',
+      description: `Are you sure you want to cancel this repair for Device ${repair?.device_internal_id}?\n\nThis action will:\n• Return the job to the repair queue\n• Allow other technicians to pick it up\n• Clear your assignment from this repair\n\nThis action should only be used if you cannot complete the repair (missing parts, equipment issues, etc.).`,
+      action: () => {
+        // Find and reset the repair
+        const repairIndex = mockRepairJobs.findIndex(r => r.id === repairId)
+        if (repairIndex !== -1) {
+          mockRepairJobs[repairIndex] = {
+            ...mockRepairJobs[repairIndex],
+            status: 'pending',
+            assigned_to: undefined,
+            assigned_to_name: undefined,
+            assigned_at: undefined
+          }
+        }
+        
+        setConfirmDialog({ ...confirmDialog, open: false })
+        // Force re-render
+        setSearchTerm(prev => prev === '' ? ' ' : '')
+      }
+    })
+  }
+
   const submitCompleteRepair = () => {
-    const repair = mockRepairJobs.find(r => r.id === partsRecording.repairId)
-    if (repair) {
-      repair.status = 'completed'
-      repair.completed_at = new Date().toISOString()
-      repair.completion_notes = partsRecording.notes || undefined
+    const repairIndex = mockRepairJobs.findIndex(r => r.id === partsRecording.repairId)
+    if (repairIndex !== -1) {
+      // Map parts with their names for recording
+      const partsUsed = partsRecording.parts.map(part => {
+        const sparePart = mockSpareParts.find(p => p.id === part.partId)
+        return {
+          spare_part_id: part.partId,
+          part_name: sparePart?.name || 'Unknown Part',
+          quantity_used: part.quantity
+        }
+      })
       
-      if (partsRecording.selectedPart) {
-        const selectedPart = mockSpareParts.find(p => p.id === partsRecording.selectedPart)
-        repair.parts_used = [{
-          spare_part_id: partsRecording.selectedPart,
-          part_name: selectedPart?.name || 'Unknown Part',
-          quantity_used: partsRecording.quantity
-        }]
+      // Update the repair to completed
+      mockRepairJobs[repairIndex] = {
+        ...mockRepairJobs[repairIndex],
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        completion_notes: partsRecording.notes || undefined,
+        parts_used: partsUsed.length > 0 ? partsUsed : undefined
       }
       
-      console.log('Completed repair:', repair.id)
+      // Deduct from inventory for each part used
+      partsRecording.parts.forEach(part => {
+        const partIndex = mockSpareParts.findIndex(p => p.id === part.partId)
+        if (partIndex !== -1) {
+          mockSpareParts[partIndex].quantity_in_stock -= part.quantity
+          console.log(`Deducted ${part.quantity} from ${mockSpareParts[partIndex].name}. New stock: ${mockSpareParts[partIndex].quantity_in_stock}`)
+        }
+      })
+      
+      // Check if all repairs for this device are now completed
+      const completedRepair = mockRepairJobs[repairIndex]
+      const deviceId = completedRepair.device_id
+      const allRepairsForDevice = mockRepairJobs.filter(r => r.device_id === deviceId)
+      const allCompleted = allRepairsForDevice.every(r => r.status === 'completed')
+      
+      if (allCompleted) {
+        // In real app, would update device status to 'final_qc'
+        console.log(`All repairs completed for device ${completedRepair.device_internal_id}. Ready for QC.`)
+        // Note: In real implementation, would update device status in database
+        // UPDATE devices SET status = 'final_qc' WHERE id = deviceId
+      }
+      
+      console.log('Completed repair:', mockRepairJobs[repairIndex].id)
     }
     
     setPartsRecording({
       repairId: null,
-      selectedPart: '',
-      quantity: 1,
+      parts: [],
       notes: ''
     })
+    
+    // Force re-render
+    setSearchTerm(prev => prev === '' ? ' ' : '')
   }
+
+  // Render filters for the table (consistent with devices/qc pages)
+  const renderFilters = () => (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="relative w-full md:w-64">
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+        <Input
+          id="search"
+          placeholder="Search IMEI / Internal ID"
+          aria-label="Search IMEI or Internal ID"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value)
+            setCurrentPage(1)
+          }}
+          className="h-9 pl-8"
+        />
+      </div>
+      
+      <div className="flex items-center gap-2 flex-wrap">
+        <Select value={statusFilter} onValueChange={handleFilterChange(setStatusFilter)}>
+          <SelectTrigger className="h-9 w-[140px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="available">Available</SelectItem>
+            <SelectItem value="my_active">My Active</SelectItem>
+            {currentUser.role === 'ops_manager' && (
+              <SelectItem value="all_active">All Active</SelectItem>
+            )}
+            <SelectItem value="history">History</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={levelFilter} onValueChange={handleFilterChange(setLevelFilter)}>
+          <SelectTrigger className="h-9 w-[120px]">
+            <SelectValue placeholder="Level" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Levels</SelectItem>
+            <SelectItem value="L1">L1 Only</SelectItem>
+            <SelectItem value="L2">L2 Only</SelectItem>
+            <SelectItem value="L3">L3 Only</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={typeFilter} onValueChange={handleFilterChange(setTypeFilter)}>
+          <SelectTrigger className="h-9 w-[140px]">
+            <SelectValue placeholder="Repair Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="housing_change">Housing</SelectItem>
+            <SelectItem value="glass_change">Glass</SelectItem>
+            <SelectItem value="battery_change">Battery</SelectItem>
+            <SelectItem value="software_update">Software</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setSearchTerm('')
+            setLevelFilter('all')
+            setTypeFilter('all')
+            setStatusFilter('pending')
+            setCurrentPage(1)
+          }}
+          className="h-9"
+        >
+          Clear Filters
+        </Button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -159,177 +346,69 @@ export default function RepairJobsPage() {
           </h1>
           <p className="text-gray-600">Self-select and complete repair tasks</p>
         </div>
-        <div className="text-sm text-gray-600">
-          Current User: <span className="font-medium">{mockCurrentUser.full_name}</span> 
-          <Badge variant="outline" className="ml-2">{mockCurrentUser.technician_level}</Badge>
-        </div>
+        <TechnicianSimulator
+          currentUser={currentUser}
+          technicians={mockTechnicians}
+          onUserChange={setCurrentUser}
+        />
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Search IMEI / Internal ID"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 pl-8"
-              />
+      {/* Active Job Banner */}
+      {activeRepair && (
+        <Card className="border-l-4 border-l-blue-500 bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Info className="h-5 w-5 text-blue-600" />
+                <div>
+                  <h3 className="font-medium text-blue-900">
+                    Currently working on: Device {activeRepair.device_internal_id} - {repairTypeConfig[activeRepair.repair_type as keyof typeof repairTypeConfig]?.label}
+                  </h3>
+                  <p className="text-sm text-blue-700">
+                    Started {activeRepair.assigned_at ? new Date(activeRepair.assigned_at).toLocaleString() : 'recently'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => handleCompleteRepair(activeRepair.id)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Complete Job
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleCancelRepair(activeRepair.id)}
+                  className="text-gray-600 hover:bg-gray-100 text-xs px-2"
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 w-[140px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
+          </CardContent>
+        </Card>
+      )}
 
-            <Select value={levelFilter} onValueChange={setLevelFilter}>
-              <SelectTrigger className="h-9 w-[120px]">
-                <SelectValue placeholder="Level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                <SelectItem value="L1">L1 Only</SelectItem>
-                <SelectItem value="L2">L2 Only</SelectItem>
-                <SelectItem value="L3">L3 Only</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="h-9 w-[140px]">
-                <SelectValue placeholder="Repair Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="housing_change">Housing</SelectItem>
-                <SelectItem value="glass_change">Glass</SelectItem>
-                <SelectItem value="battery_change">Battery</SelectItem>
-                <SelectItem value="software_update">Software</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSearchTerm('')
-                setLevelFilter('all')
-                setTypeFilter('all')
-                setStatusFilter('pending')
-              }}
-              className="h-9"
-            >
-              Clear
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Repair Jobs Queue */}
+      {/* Repair Jobs Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">
-            Available Repairs ({filteredRepairs.length} jobs)
-          </CardTitle>
-        </CardHeader>
         <CardContent>
-          {filteredRepairs.length > 0 ? (
-            <div className="space-y-4">
-              {filteredRepairs.map((repair) => {
-                const repairConfig = repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]
-                const statusInfo = statusConfig[repair.status as keyof typeof statusConfig]
-                const RepairIcon = repairConfig?.icon || Wrench
-                const StatusIcon = statusInfo?.icon || Clock
-                
-                return (
-                  <div key={repair.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-gray-100 rounded">
-                          <RepairIcon className="h-5 w-5 text-gray-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium flex items-center gap-2">
-                            {repairConfig?.label}
-                            <Badge variant="outline">{repairConfig?.level}</Badge>
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            <Smartphone className="inline h-3 w-3 mr-1" />
-                            {repair.device_model} • {repair.device_internal_id}
-                          </p>
-                          {repair.assigned_to_name && (
-                            <p className="text-sm text-gray-600">
-                              <User className="inline h-3 w-3 mr-1" />
-                              Assigned to {repair.assigned_to_name}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Badge variant={statusInfo?.variant}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {statusInfo?.label}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm text-gray-600">
-                        Created: {new Date(repair.created_at).toLocaleDateString()}
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Link href={`/devices/${repair.device_internal_id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4 mr-1" />
-                            View Device
-                          </Button>
-                        </Link>
-                        
-                        {repair.status === 'pending' && (
-                          <Button 
-                            size="sm"
-                            onClick={() => handleStartRepair(repair)}
-                            className="cursor-pointer"
-                          >
-                            <ClipboardCheck className="h-4 w-4 mr-1" />
-                            Start Repair
-                          </Button>
-                        )}
-                        
-                        {repair.status === 'in_progress' && repair.assigned_to === mockCurrentUser.id && (
-                          <Button 
-                            size="sm"
-                            onClick={() => handleCompleteRepair(repair.id)}
-                            className="cursor-pointer"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Complete
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="py-12 text-center">
-              <Wrench className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No repairs found</h3>
-              <p className="text-gray-600">Try adjusting your filters to see more repair jobs.</p>
-            </div>
-          )}
+          <RepairJobListTable
+            repairJobs={paginatedRepairs}
+            allRepairJobs={mockRepairJobs}
+            batches={mockBatches}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalResults={totalResults}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            renderFilters={renderFilters}
+            currentUser={currentUser}
+            onStartRepair={handleStartRepair}
+            onCompleteRepair={handleCompleteRepair}
+            onCancelRepair={handleCancelRepair}
+          />
         </CardContent>
       </Card>
 
@@ -346,43 +425,96 @@ export default function RepairJobsPage() {
       {/* Parts Recording Dialog */}
       {partsRecording.repairId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
+          <Card className="w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>Complete Repair</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Parts Used (Optional)</label>
-                <Select value={partsRecording.selectedPart} onValueChange={(value) => 
-                  setPartsRecording({ ...partsRecording, selectedPart: value })
-                }>
+                <label className="text-sm font-medium mb-2 block">Add Parts (Optional):</label>
+                <Select value="" onValueChange={(partId) => {
+                  if (partId && !partsRecording.parts.find(p => p.partId === partId)) {
+                    const newParts = [...partsRecording.parts, { partId, quantity: 1 }]
+                    setPartsRecording({ ...partsRecording, parts: newParts })
+                  }
+                }}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select part" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No parts used</SelectItem>
-                    {mockSpareParts.map(part => (
-                      <SelectItem key={part.id} value={part.id}>
-                        {part.name} (Stock: {part.quantity_in_stock})
-                      </SelectItem>
-                    ))}
+                    {mockSpareParts
+                      .filter(part => !partsRecording.parts.find(p => p.partId === part.id))
+                      .map(part => (
+                        <SelectItem key={part.id} value={part.id}>
+                          {part.name} (Stock: {part.quantity_in_stock})
+                        </SelectItem>
+                      ))}
+                    {mockSpareParts.filter(part => !partsRecording.parts.find(p => p.partId === part.id)).length === 0 && (
+                      <div className="p-2 text-sm text-gray-500">All parts already added</div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
               
-              {partsRecording.selectedPart && (
+              {/* Parts list will be displayed here */}
+              {partsRecording.parts.length > 0 && (
                 <div>
-                  <label className="text-sm font-medium">Quantity</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={partsRecording.quantity}
-                    onChange={(e) => setPartsRecording({ 
-                      ...partsRecording, 
-                      quantity: parseInt(e.target.value) || 1 
+                  <label className="text-sm font-medium mb-2 block">Selected Parts:</label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {partsRecording.parts.map((part, index) => {
+                      const sparePart = mockSpareParts.find(p => p.id === part.partId)
+                      return (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                          <span className="flex-1 text-sm">{sparePart?.name}</span>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                const newParts = [...partsRecording.parts]
+                                if (newParts[index].quantity > 1) {
+                                  newParts[index].quantity--
+                                  setPartsRecording({ ...partsRecording, parts: newParts })
+                                }
+                              }}
+                              disabled={part.quantity <= 1}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-8 text-center text-sm font-medium">{part.quantity}</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                const newParts = [...partsRecording.parts]
+                                const maxStock = sparePart?.quantity_in_stock || 999
+                                if (newParts[index].quantity < maxStock) {
+                                  newParts[index].quantity++
+                                  setPartsRecording({ ...partsRecording, parts: newParts })
+                                }
+                              }}
+                              disabled={part.quantity >= (sparePart?.quantity_in_stock || 999)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              const newParts = partsRecording.parts.filter((_, i) => i !== index)
+                              setPartsRecording({ ...partsRecording, parts: newParts })
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )
                     })}
-                    className="mt-1"
-                  />
+                  </div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    Total parts: {partsRecording.parts.reduce((sum, p) => sum + p.quantity, 0)}
+                  </div>
                 </div>
               )}
               
@@ -404,8 +536,7 @@ export default function RepairJobsPage() {
                   variant="outline" 
                   onClick={() => setPartsRecording({ 
                     repairId: null, 
-                    selectedPart: '', 
-                    quantity: 1, 
+                    parts: [], 
                     notes: '' 
                   })}
                   className="flex-1"
@@ -413,7 +544,7 @@ export default function RepairJobsPage() {
                   Cancel
                 </Button>
                 <Button onClick={submitCompleteRepair} className="flex-1">
-                  Complete Repair
+                  Complete Repair {partsRecording.parts.length > 0 && `(${partsRecording.parts.length} parts)`}
                 </Button>
               </div>
             </CardContent>

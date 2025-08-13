@@ -39,16 +39,16 @@ const navigationItems: NavigationItem[] = [
           allowedRoles: ['qc_controller', 'technician', 'ops_manager', 'general_manager'],
   },
   {
-    title: 'Quality Control',
-    href: '/qc',
-    description: 'Final QC and grading',
-    allowedRoles: ['qc_controller', 'ops_manager', 'general_manager'],
-  },
-  {
     title: 'Repair Jobs',
     href: '/repair-jobs',
     description: 'Manage repair assignments',
     allowedRoles: ['technician', 'ops_manager'],
+  },
+  {
+    title: 'Quality Control',
+    href: '/qc',
+    description: 'Final QC and grading',
+    allowedRoles: ['qc_controller', 'ops_manager', 'general_manager'],
   },
   {
     title: 'Inventory',
