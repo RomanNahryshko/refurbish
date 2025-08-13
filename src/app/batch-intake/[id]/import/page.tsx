@@ -736,13 +736,6 @@ export default function ImportDrPhonePage() {
                     />
                   )
                 })
-              ) : importedData.length > 0 ? (
-                // Show message when data is being processed
-                <div className="text-center py-8">
-                  <Loader2 className="mx-auto h-12 w-12 text-muted-foreground mb-3 animate-spin" />
-                  <h3 className="text-lg font-semibold text-muted-foreground">Processing Excel Data...</h3>
-                  <p className="text-gray-600 mb-4">Filtering out duplicate devices and preparing for QC.</p>
-                </div>
               ) : (
                 // Show message when no Excel data is available
                 <div className="text-center py-8">
