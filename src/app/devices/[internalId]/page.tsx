@@ -303,19 +303,19 @@ export default function DeviceJobSheetPage() {
                 <span className="text-gray-600">Serial Number</span>
                 <p className="font-mono text-xs">{device.serial_number || 'N/A'}</p>
               </div>
-              {device.dr_phone_data?.qc_data?.selected_repairs && device.dr_phone_data.qc_data.selected_repairs.length > 0 && (
+              {device.dr_phone_data?.required_repairs && device.dr_phone_data.required_repairs.length > 0 && (
                 <div className="md:col-span-3">
                   <span className="text-gray-600">Required Repairs</span>
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {device.dr_phone_data.qc_data.selected_repairs.map((repairId: string, index: number) => (
+                    {device.dr_phone_data.required_repairs.map((repairId: string, index: number) => (
                       <Badge key={index} variant="secondary" className="text-xs">
                         {repairId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </Badge>
                     ))}
                   </div>
-                  {device.dr_phone_data.qc_data.other_description && (
+                  {device.dr_phone_data.other_repair_description && (
                     <p className="text-xs text-gray-600 mt-1 italic">
-                      &ldquo;{device.dr_phone_data.qc_data.other_description}&rdquo;
+                      &ldquo;{device.dr_phone_data.other_repair_description}&rdquo;
                     </p>
                   )}
                 </div>

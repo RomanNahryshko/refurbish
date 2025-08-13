@@ -205,30 +205,28 @@ export const batchesApi = {
       deviceCountMap.set(device.batch_id, currentCount + 1)
     })
 
-    // Get completed QC counts for all batches - use a simpler approach
+    // Get completed QC counts for all batches
     const { data: qcChecks, error: qcChecksError } = await supabase
       .from('qc_checks')
-      .select('device_id')
+      .select('device_id, check_type, overall_result')
       .eq('check_type', 'initial')
       .in('overall_result', ['pass', 'fail'])
 
     if (qcChecksError) throw qcChecksError
 
     // Get device batch IDs for completed QC checks
-    const completedQCDeviceIds = qcChecks?.map((qc: { device_id: string }) => qc.device_id) || []
     
     // Get batch IDs for devices with completed QC
     const { data: completedQCDevices, error: completedQCDevicesError } = await supabase
       .from('devices')
-      .select('batch_id')
-      .in('id', completedQCDeviceIds)
-      .is('deleted_at', null)
+      .select( 'batch_id')
+
 
     if (completedQCDevicesError) throw completedQCDevicesError
 
     // Count completed QC per batch manually
     const qcCountMap = new Map<string, number>()
-    completedQCDevices?.forEach((device: { batch_id: string }) => {
+    completedQCDevices?.forEach((device: { id: string; batch_id: string }) => {
       if (device.batch_id) {
         const currentCount = qcCountMap.get(device.batch_id) || 0
         qcCountMap.set(device.batch_id, currentCount + 1)
@@ -236,12 +234,14 @@ export const batchesApi = {
     })
 
     // Combine the data
-    return batches?.map((batch: Batch & { supplier: { name: string } }) => ({
+    const result = batches?.map((batch: Batch & { supplier: { name: string } }) => ({
       ...batch,
       supplier_name: batch.supplier?.name,
       completed_qc_count: qcCountMap.get(batch.id) || 0
     })) as (Batch & { 
       completed_qc_count: number 
     })[]
+
+    return result
   }
 }

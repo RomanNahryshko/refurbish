@@ -175,7 +175,7 @@ export function DeviceListTable({
         return <span className="font-mono text-sm">{device.serial_number || '-'}</span>
       
       case 'required_repairs':
-        const repairs = device.dr_phone_data?.qc_data?.selected_repairs
+        const repairs = device.dr_phone_data?.required_repairs
         if (!repairs || repairs.length === 0) return <span className="text-gray-400">-</span>
         
         return (
@@ -189,9 +189,9 @@ export function DeviceListTable({
                 </Badge>
               )
             })}
-            {device.dr_phone_data?.qc_data?.other_description && (
+            {device.dr_phone_data?.other_repair_description && (
               <div className="text-xs text-gray-600 mt-1 italic">
-                "{device.dr_phone_data.qc_data.other_description}"
+                "{device.dr_phone_data.other_repair_description}"
               </div>
             )}
           </div>

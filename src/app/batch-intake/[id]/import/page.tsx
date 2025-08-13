@@ -64,7 +64,7 @@ export default function ImportDrPhonePage() {
   const createDevicesFromImport = useCreateDevicesFromImport()
   
   // Function to create a single device when QC is completed
-  const createSingleDevice = async (deviceData: DrPhoneData, _deviceIndex: number) => {
+  const createSingleDevice = async (deviceData: DrPhoneData, deviceIndex: number, selectedRepairs: string[], otherDescription: string, selectedGrade: string) => {
     try {
       setIsCreatingDevice(true)
       
@@ -83,8 +83,11 @@ export default function ImportDrPhonePage() {
         serial_number: deviceData.serialNumber,
         dr_phone_data: {
           faults: deviceData.faults,
-          original_data: deviceData
+          original_data: deviceData,
+          required_repairs: selectedRepairs,
+          other_repair_description: otherDescription
         },
+        grade: selectedGrade || 'ungraded', // Use selected grade or default to 'ungraded'
         notes: `Imported from Dr. Phone Excel file`
       }
       
@@ -108,14 +111,6 @@ export default function ImportDrPhonePage() {
 
       return null
     } catch (error: any) {
-      console.error('❌ Error creating device:', error)
-      console.error('❌ Error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint
-      })
-      
       // Check if it's a duplicate IMEI error
       if (error?.message?.includes('duplicate key') || error?.message?.includes('already exists')) {
         
@@ -212,12 +207,9 @@ export default function ImportDrPhonePage() {
 
 
       if (error) {
-        console.error('❌ Error fetching existing devices:', error)
         toast.error('Failed to check for existing devices. Please try again.')
         return parsedDevices
       }
-
-    
 
       // Filter out devices that already exist (by IMEI)
       const existingIMEIs = new Set(existingDevices?.map((d: any) => d.imei?.toString()?.trim()) || [])
@@ -228,20 +220,17 @@ export default function ImportDrPhonePage() {
         imei: device.imei?.toString()?.trim() || ''
       }))
       
-      
-      // Detailed filtering with logging
+      // Filter out duplicates
       const filteredDevices = cleanedParsedDevices.filter(device => {
         const isDuplicate = existingIMEIs.has(device.imei)
         return !isDuplicate
       })
 
-
       return filteredDevices
-            } catch {
-          console.error('❌ Error filtering existing devices')
-          toast.error('Error checking for existing devices. Please try again.')
-          return parsedDevices
-        }
+    } catch {
+      toast.error('Error checking for existing devices. Please try again.')
+      return parsedDevices
+    }
   }
 
       const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -388,11 +377,6 @@ export default function ImportDrPhonePage() {
             const existingCount = convertedData.length - filteredDevices.length
             setExistingDevicesCount(existingCount)
             
-            console.log(`📊 Excel Analysis Complete:`)
-            console.log(`- Total devices in Excel: ${convertedData.length}`)
-            console.log(`- Devices already in system: ${existingCount}`)
-            console.log(`- New devices for QC: ${filteredDevices.length}`)
-            
             // Store both the original and filtered data
             setImportedData(convertedData)
             setFilteredDevices(filteredDevices)
@@ -418,13 +402,6 @@ export default function ImportDrPhonePage() {
               setCompletedDevices(completedIndices)
               toast.info(`${completedIndices.size} devices already have completed QC and will be hidden`)
             }
-            
-            // Log final state
-            console.log('Final state after filtering:')
-            console.log('- Total parsed:', convertedData.length)
-            console.log('- Filtered (no duplicates):', filteredDevices.length)
-            console.log('- Already completed QC:', completedIMEIsSet.size)
-            console.log('- Available for QC:', filteredDevices.length - completedIMEIsSet.size)
           })
           .catch(() => {
             toast.error('Error processing Excel data. Please try again.')
@@ -458,7 +435,7 @@ export default function ImportDrPhonePage() {
 
       if (deviceData) {
         // Create device first with status 'received' (according to schema)
-        const deviceId = await createSingleDevice(deviceData, deviceIndex)
+        const deviceId = await createSingleDevice(deviceData, deviceIndex, deviceRepairs[deviceIndex] || [], deviceOtherDescriptions[deviceIndex] || '', deviceGrades[deviceIndex] || '')
         
         if (deviceId) {
           // Now mark as completed
@@ -542,28 +519,6 @@ export default function ImportDrPhonePage() {
     }, 100)
     
     toast.success(`Initial QC completed for device ${filteredDevices[deviceIndex].imei}`)
-  }
-
-  // Test function to verify filtering logic
-  const _testFilteringLogic = () => {
-    const sampleParsedDevices = [
-      { imei: '123456789', brand: 'Samsung', model: 'Galaxy', serialNumber: 'SN1', faults: 'None' },
-      { imei: '987654321', brand: 'Apple', model: 'iPhone', serialNumber: 'SN2', faults: 'None' },
-      { imei: '555666777', brand: 'Huawei', model: 'P30', serialNumber: 'SN3', faults: 'None' }
-    ]
-    
-    const sampleExistingDevices = [
-      { id: '1', imei: '123456789', brand: 'Samsung', model: 'Galaxy', serial_number: 'SN1' }
-    ]
-    
-    const existingIMEIs = new Set(sampleExistingDevices.map(d => d.imei?.toString()?.trim()))
-    const filteredDevices = sampleParsedDevices.filter(device => !existingIMEIs.has(device.imei?.toString()?.trim()))
-          
-    if (filteredDevices.length === 2) {
-      // Test passed
-    } else {
-      // Test failed
-    }
   }
 
   // Show loading state

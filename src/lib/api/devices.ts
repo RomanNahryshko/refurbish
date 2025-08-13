@@ -75,6 +75,7 @@ export const devicesApi = {
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
+      .from('devices')
       .select(`
         *,
         batch:batches(
@@ -85,7 +86,6 @@ export const devicesApi = {
           notes
         )
       `)
-      .from('devices')
       .eq('internal_id', internalId)
       .is('deleted_at', null)
       .single()
@@ -139,6 +139,7 @@ export const devicesApi = {
     model?: string
     serial_number?: string
     dr_phone_data?: any
+    grade?: string
     notes?: string
   }>) {
     const supabase = createClient()
@@ -155,9 +156,9 @@ export const devicesApi = {
       model: device.model,
       serial_number: device.serial_number,
       dr_phone_data: device.dr_phone_data,
+      grade: device.grade || 'ungraded', // Use provided grade or default to 'ungraded'
       notes: device.notes,
       status: 'received' as DeviceStatus,
-      grade: 'ungraded' as DeviceGrade,
       created_by: user.id,
       dr_phone_imported_at: new Date().toISOString()
     }))

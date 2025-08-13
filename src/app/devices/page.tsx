@@ -20,7 +20,7 @@ import { DEVICE_STATUS_LABELS, DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants';
 import { useBatch } from '@/lib/hooks/use-batches';
 import { useDevices, useDevicesByBatch } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
-import type { Device as ApiDevice } from '@/lib/api/devices';
+import { Device } from '@/lib/types/business-types';
 
 export default function DevicesPage() {
   const searchParams = useSearchParams();
@@ -55,18 +55,14 @@ export default function DevicesPage() {
   // Use real devices from batch if available, otherwise use all devices from API
   // Convert API devices to mock device format for compatibility
   const allDevices = batchFromUrl && batchDevices 
-    ? batchDevices.map((device: ApiDevice) => ({
+    ? batchDevices.map((device: Device) => ({
         ...device,
-        status: device.status === 'qc_passed' ? 'graded' : 
-                device.status === 'qc_failed' ? 'failed' : 
-                device.status as any,
+        status: device.status,
         grade: device.grade || 'ungraded'
       }))
-    : (allDevicesData || []).map((device: ApiDevice) => ({
+    : (allDevicesData || []).map((device: Device) => ({
         ...device,
-        status: device.status === 'qc_passed' ? 'graded' : 
-                device.status === 'qc_failed' ? 'failed' : 
-                device.status as any,
+        status: device.status,
         grade: device.grade || 'ungraded'
       }));
 

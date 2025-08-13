@@ -7,24 +7,24 @@ import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import {
-  ChevronDown,
-  ChevronUp,
-  Wrench,
-  Award,
-  CheckCircle,
-  Loader2,
-  AlertTriangle
+    ChevronDown,
+    ChevronUp,
+    Wrench,
+    Award,
+    CheckCircle,
+    Loader2,
+    AlertTriangle
 } from 'lucide-react'
 import { RepairTaskSelector } from '@/components/common/repair-task-selector'
 import { useCreateQCCheck } from '@/lib/hooks/use-qc-checks'
 import { toast } from 'sonner'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog'
 
 // Import repair types to get human-readable labels
@@ -112,15 +112,11 @@ export function InitialQCDeviceCard({
           : `Initial QC: Grade assigned. Grade: ${selectedGrade}`
       }
 
-      console.log('QC data prepared:', qcData)
-
       // Save to database
       const result = await createQCCheck.mutateAsync({
         qcData,
         repairTaskIds: qcApproach === 'repairs' ? selectedRepairs : undefined
       })
-
-      console.log('QC save successful:', result)
 
       // Call the callback to update UI
       onCompleteQC?.()
@@ -131,7 +127,6 @@ export function InitialQCDeviceCard({
       // Reset the ready state
       setQcDataReady(false)
     } catch (error) {
-      console.error('Error saving QC data:', error)
       toast.error('Failed to save QC data. Please try again.')
     } finally {
       setIsSubmitting(false)
@@ -162,7 +157,6 @@ export function InitialQCDeviceCard({
     }
 
     // Show confirmation dialog
-    console.log('Setting showConfirmation to true')
     setShowConfirmation(true)
   }
 
@@ -173,7 +167,6 @@ export function InitialQCDeviceCard({
     try {
       // If no device ID is provided, try to create device first
       if (!deviceId) {
-        console.log('No device ID provided, attempting to create device')
         if (onCompleteQCWithDevice) {
           // Set flag to indicate QC data is ready to be saved once device is created
           setQcDataReady(true)
@@ -185,14 +178,11 @@ export function InitialQCDeviceCard({
           return
         } else {
           // Fallback to demo mode
-          console.log('No device creation callback, using demo mode')
           onCompleteQC?.()
           setIsSubmitting(false)
           return
         }
       }
-
-      console.log('Starting QC save with device ID:', deviceId)
 
       // Prepare QC data
       const qcData = {
@@ -205,19 +195,11 @@ export function InitialQCDeviceCard({
           : `Initial QC: Grade assigned. Grade: ${selectedGrade}`
       }
 
-      console.log('QC data prepared:', qcData)
-      console.log('Repair task IDs:', qcApproach === 'repairs' ? selectedRepairs : undefined)
-      console.log('Repair task labels:', qcApproach === 'repairs' ? selectedRepairs.map(getRepairLabel) : undefined)
-      console.log('Selected repairs array:', selectedRepairs)
-      console.log('Other description:', otherDescription)
-
       // Save to database
       const result = await createQCCheck.mutateAsync({
         qcData,
         repairTaskIds: qcApproach === 'repairs' ? selectedRepairs : undefined
       })
-
-      console.log('QC save successful:', result)
 
       // Call the callback to update UI
       onCompleteQC?.()
@@ -225,7 +207,6 @@ export function InitialQCDeviceCard({
       // Call the QC completed callback to mark device as completed
       onQCCompleted?.()
     } catch (error) {
-      console.error('Error completing QC:', error)
       toast.error('Failed to save QC data. Please try again.')
     } finally {
       setIsSubmitting(false)
@@ -390,13 +371,6 @@ export function InitialQCDeviceCard({
         <div className="flex justify-end pt-3 border-t">
           <Button 
             onClick={() => {
-              console.log('Complete Initial QC button clicked')
-              console.log('Button state:', {
-                qcApproach,
-                isSubmitting,
-                isPending: createQCCheck.isPending,
-                disabled: !qcApproach || isSubmitting || createQCCheck.isPending
-              })
               handleCompleteQC()
             }}
             disabled={!qcApproach || isSubmitting || createQCCheck.isPending}
@@ -419,7 +393,6 @@ export function InitialQCDeviceCard({
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmation} onOpenChange={(open) => {
-        console.log('Dialog onOpenChange:', open)
         setShowConfirmation(open)
       }}>
         <DialogContent>
