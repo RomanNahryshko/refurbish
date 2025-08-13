@@ -12,7 +12,7 @@ This document defines all device statuses used throughout the refurbishment work
 The device status progression follows the main refurbishment workflow:
 
 ```
-received → initial_qc → awaiting_repair → in_repair → final_qc → graded → ready_to_ship → shipped
+received → initial_qc → awaiting_repair → in_repair → final_qc → graded
                                               ↑                        ↓
                                               ←────────────────────────
                                             (loop back if QC fails)
@@ -63,18 +63,8 @@ received → initial_qc → awaiting_repair → in_repair → final_qc → grade
 ### 6. **Graded**
 - **Description**: Device has passed final QC and received a grade
 - **Grade Options**: A, B, or C (see Grading System below)
-- **Next Status**: `ready_to_ship`
+- **Final Status**: Yes (for MVP)
 - **User Role**: Quality Control
-
-### 7. **Ready to Ship** *(Optional for MVP)*
-- **Description**: Device is ready for packaging and shipping
-- **Next Status**: `shipped`
-- **User Role**: Shipping team (if implemented)
-
-### 8. **Shipped** *(Optional for MVP)*
-- **Description**: Device has been shipped to customer
-- **Final Status**: Yes
-- **User Role**: Shipping team (if implemented)
 
 ## Loop Back to Repair
 
@@ -109,12 +99,10 @@ Within the `in_repair` device status, individual repair tasks have their own sta
 | in_repair → final_qc | Technician (when all tasks completed) |
 | final_qc → graded | Quality Control |
 | final_qc → awaiting_repair | Quality Control |
-| graded → ready_to_ship | Quality Control / Operations Manager |
-| ready_to_ship → shipped | Shipping team |
 
 ## MVP Limitations
 
 - **No custom statuses**: Status list is fixed for MVP
 - **No status history tracking**: Only current status is stored
 - **Manual transitions**: All status changes require user action
-- **Limited shipping statuses**: Shipping module is optional for MVP
+- **No shipping module**: Shipping and related statuses not implemented in MVP

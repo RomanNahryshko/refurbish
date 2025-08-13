@@ -23,7 +23,6 @@ import {
 export default function MockupOverviewPage() {
   // Using batch-1 as demo batch for testing dynamic pages
   const demoBatchId = 'batch-1'
-  const demoDeviceId = 'device-1'
   const demoInternalId = '00000001'
   
   const modules = [
@@ -35,19 +34,21 @@ export default function MockupOverviewPage() {
       pages: [
         { name: 'Batch List', href: '/batch-intake', status: 'ready' },
         { name: 'Create Batch', href: '/batch-intake/create', status: 'ready' },
-        { name: 'Import Dr. Phone Data (Demo Batch)', href: `/batch-intake/${demoBatchId}/import`, status: 'ready' },
-        { name: 'Generate Labels (Demo Batch)', href: `/batch-intake/${demoBatchId}/labels`, status: 'ready' },
-        { name: 'View Batch Devices (Demo Batch)', href: `/devices?batch=${demoBatchId}`, status: 'ready' },
+        { name: 'Edit Batch (Demo)', href: `/batch-intake/${demoBatchId}/edit`, status: 'ready' },
+        { name: 'Import Dr. Phone Data (Demo)', href: `/batch-intake/${demoBatchId}/import`, status: 'ready' },
+        { name: 'Generate Labels (Demo)', href: `/batch-intake/${demoBatchId}/labels`, status: 'ready' },
+        { name: 'View Batch Devices (Demo)', href: `/batch-intake/${demoBatchId}/devices`, status: 'ready' },
       ]
     },
     {
-      title: 'Devices',
-      description: 'Track devices through the refurbishment process',
+      title: 'Device Tracking',
+      description: 'Central device management, status tracking and job sheets',
       icon: Smartphone,
       color: 'bg-green-500',
       pages: [
-        { name: 'Device List & Search', href: '/devices', status: 'ready' },
-        { name: 'Device Job Sheet (Demo)', href: `/devices/${demoInternalId}`, status: 'ready' },
+        { name: 'Device List', href: '/devices', status: 'ready' },
+        { name: 'Device Search', href: '/device-tracking', status: 'ready' },
+        { name: 'Device Job Sheet (Demo)', href: `/device-tracking/${demoInternalId}`, status: 'ready' },
       ]
     },
     {
@@ -58,105 +59,97 @@ export default function MockupOverviewPage() {
       pages: [
         { name: 'QC Queue', href: '/qc', status: 'ready' },
         { name: 'Final QC Form (Demo)', href: `/qc/${demoInternalId}`, status: 'ready' },
-        { name: 'Initial QC (in Batch Intake)', href: `/batch-intake/${demoBatchId}/import`, status: 'ready' },
       ]
     },
     {
-      title: 'Repair Management',
-      description: 'Create and manage repair jobs with queue system',
+      title: 'Repair Jobs',
+      description: 'Queue-based repair management',
       icon: Wrench,
       color: 'bg-orange-500',
       pages: [
         { name: 'Repair Queue', href: '/repair-jobs', status: 'ready' },
-        { name: 'Create Repairs', href: '/create-repairs-demo', status: 'pending' },
-        { name: 'Technician View', href: '/technician-view', status: 'pending' },
-        { name: 'Parts Usage', href: '/parts-usage-demo', status: 'pending' },
       ]
     },
     {
       title: 'Inventory',
-      description: 'Manage spare parts and stock levels',
+      description: 'Spare parts and stock management',
       icon: PackageSearch,
       color: 'bg-indigo-500',
       pages: [
-        { name: 'Parts List', href: '/inventory', status: 'partial' },
-        { name: 'Supplier Management', href: '/suppliers', status: 'ready' },
-        { name: 'Add Stock', href: '/add-stock-demo', status: 'pending' },
-        { name: 'Low Stock Alert', href: '/low-stock-demo', status: 'pending' },
-        { name: 'Stock History', href: '/stock-history-demo', status: 'pending' },
+        { name: 'Parts Inventory', href: '/inventory', status: 'minimal' },
+      ]
+    },
+    {
+      title: 'Suppliers',
+      description: 'Supplier management',
+      icon: Users,
+      color: 'bg-cyan-500',
+      pages: [
+        { name: 'Supplier List', href: '/suppliers', status: 'ready' },
       ]
     },
     {
       title: 'Admin & Reporting',
-      description: 'User management and KPI dashboards',
+      description: 'User management, KPIs and production metrics',
       icon: BarChart3,
       color: 'bg-red-500',
       pages: [
-        { name: 'Dashboard', href: '/dashboard', status: 'pending' },
+        { name: 'Dashboard', href: '/dashboard', status: 'partial' },
+        { name: 'Admin Panel', href: '/admin', status: 'ready' },
         { name: 'User Management', href: '/admin/users', status: 'ready' },
-        { name: 'Production Metrics', href: '/metrics-demo', status: 'pending' },
-        { name: 'Reports', href: '/reports-demo', status: 'pending' },
+        { name: 'Create User', href: '/admin/users/create', status: 'ready' },
       ]
     }
   ]
 
-  const workflows = [
-    {
-      title: 'Device Intake Flow',
-      steps: [
-        'Create new batch',
-        'Import Dr. Phone data (CSV/Excel)',
-        'Review and modify faults',
-        'Generate and print labels',
-        'Physical labeling of devices'
-      ]
-    },
-    {
-      title: 'Repair Flow',
-      steps: [
-        'Initial QC identifies issues',
-        'Operations Manager creates repair tasks',
-        'Technicians self-select from queue',
-        'Record parts usage',
-        'Mark repair complete'
-      ]
-    },
-    {
-      title: 'Quality Control Flow',
-      steps: [
-        'Initial QC after intake',
-        'Identify and document faults',
-        'After repairs: Final QC',
-        'Grade assignment (A/B/C)',
-        'Loop back to repair if needed'
-      ]
-    }
+  const deviceStatuses = [
+    { status: 'received', description: 'Device received in batch' },
+    { status: 'initial_qc', description: 'Undergoing initial quality control' },
+    { status: 'awaiting_repair', description: 'Waiting for repair assignment' },
+    { status: 'in_repair', description: 'Active repair in progress' },
+    { status: 'final_qc', description: 'Undergoing final quality control' },
+    { status: 'graded', description: 'QC passed, grade assigned' },
   ]
 
-  const dataValidation = [
-    { item: 'User roles match schema', status: 'valid' },
-    { item: 'Technician levels (L1/L2/L3)', status: 'valid' },
-    { item: 'Device status workflow', status: 'valid' },
-    { item: 'Repair types match requirements', status: 'valid' },
-    { item: 'QC test tracking', status: 'valid' },
-    { item: 'Internal ID generation (8-digit)', status: 'valid' },
-    { item: 'Soft deletes on critical tables', status: 'valid' },
-    { item: 'Stock level tracking', status: 'valid' },
+  const repairTaskStatuses = [
+    { status: 'pending', description: 'Task created, not started' },
+    { status: 'in_progress', description: 'Technician working on task' },
+    { status: 'completed', description: 'Task successfully finished' },
+  ]
+
+  const userRoles = [
+    { role: 'admin', description: 'System administrator' },
+    { role: 'general_manager', description: 'Full system access, metrics' },
+    { role: 'ops_manager', description: 'Intake, QC, task assignment' },
+    { role: 'qc_controller', description: 'Quality control and grading' },
+    { role: 'technician', description: 'Repair execution (L1/L2/L3)' },
   ]
 
   return (
     <div className="container mx-auto p-6 space-y-8">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold">ReMobile Refurbish - System Overview</h1>
+        <h1 className="text-4xl font-bold">System Overview - MVP</h1>
         <p className="text-xl text-muted-foreground">
-          Complete mockup of all modules and workflows
+          All modules, pages and their implementation status
         </p>
-        <Badge variant="outline" className="text-lg px-4 py-1">
-          MVP Scope - UI Validation Phase
-        </Badge>
       </div>
 
+      {/* Status Legend */}
+      <div className="flex justify-center gap-4">
+        <div className="flex items-center gap-2">
+          <Badge variant="default">ready</Badge>
+          <span className="text-sm text-muted-foreground">Full UI/UX implementation</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">partial</Badge>
+          <span className="text-sm text-muted-foreground">Partial implementation</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">minimal</Badge>
+          <span className="text-sm text-muted-foreground">Placeholder only</span>
+        </div>
+      </div>
 
 
       {/* Modules Grid */}
@@ -204,49 +197,61 @@ export default function MockupOverviewPage() {
         </div>
       </div>
 
-      {/* Workflows */}
+      {/* System Configuration */}
       <div>
-        <h2 className="text-2xl font-bold mb-4">Key Workflows</h2>
+        <h2 className="text-2xl font-bold mb-4">System Configuration</h2>
         <div className="grid md:grid-cols-3 gap-6">
-          {workflows.map((workflow) => (
-            <Card key={workflow.title}>
-              <CardHeader>
-                <CardTitle className="text-lg">{workflow.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ol className="space-y-2">
-                  {workflow.steps.map((step, index) => (
-                    <li key={index} className="flex gap-2 text-sm">
-                      <span className="font-semibold text-muted-foreground">
-                        {index + 1}.
-                      </span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+          {/* Device Statuses */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Device Statuses</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {deviceStatuses.map((item) => (
+                  <div key={item.status} className="flex justify-between text-sm">
+                    <code className="font-mono">{item.status}</code>
+                    <span className="text-muted-foreground text-xs">{item.description}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Schema Validation */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Schema Validation Checklist</h2>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid md:grid-cols-2 gap-4">
-              {dataValidation.map((item) => (
-                <div key={item.item} className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${
-                    item.status === 'valid' ? 'bg-green-500' : 'bg-yellow-500'
-                  }`} />
-                  <span className="text-sm">{item.item}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+          {/* Repair Task Statuses */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Repair Task Statuses</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {repairTaskStatuses.map((item) => (
+                  <div key={item.status} className="flex justify-between text-sm">
+                    <code className="font-mono">{item.status}</code>
+                    <span className="text-muted-foreground text-xs">{item.description}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* User Roles */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">User Roles</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {userRoles.map((item) => (
+                  <div key={item.role} className="flex justify-between text-sm">
+                    <code className="font-mono">{item.role}</code>
+                    <span className="text-muted-foreground text-xs">{item.description}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
 

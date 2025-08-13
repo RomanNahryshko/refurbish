@@ -10,7 +10,7 @@ Welcome to the MVP documentation for the ReMobile Refurbish ERP system. This sec
 ## Project Overview
 
 ### Business Context
-ReMobile Refurbish is an internal ERP system designed to manage the complete lifecycle of phone refurbishment operations, from batch intake to final shipping.
+ReMobile Refurbish is an internal ERP system designed to manage the complete lifecycle of phone refurbishment operations, from batch intake through quality control and grading.
 
 ### Core Business Goals
 - Streamline phone refurbishment workflow
@@ -37,9 +37,6 @@ ReMobile Refurbish is an internal ERP system designed to manage the complete lif
    - Complete QC re-run after repairs
    - Grade assignment (Ungraded, A, B, C)
    - Loop back to repair if needed
-
-4. **Packaging & Shipping** *(optional for MVP)*
-   - Ready-to-ship status tracking
 
 ## Grading System
 - **Ungraded (UG)** - Initial state
