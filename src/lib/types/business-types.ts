@@ -51,13 +51,50 @@ export interface Phone {
 
 export interface SparePart {
   id: string
-  part_name: string
-  quantity: number
-  min_quantity?: number
-  max_quantity?: number
-  unit_price?: number
+  sku: string
+  name: string
+  description?: string
+  category?: string
+  compatible_models?: string[]
+  quantity_in_stock: number
+  minimum_stock_level?: number
+  unit_cost?: number
+  primary_supplier_id?: string
+  created_by?: string
   created_at: string
   updated_at?: string
+  deleted_at?: string | null
+  // Joined data
+  suppliers?: {
+    id: string
+    name: string
+  }
+}
+
+export interface StockAdjustment {
+  id: string
+  spare_part_id: string
+  adjustment_type: 'add' | 'remove' | 'correction'
+  quantity: number
+  reason?: string
+  reference_number?: string
+  performed_by?: string
+  created_at: string
+}
+
+export interface Supplier {
+  id: string
+  name: string
+  contact_person?: string
+  email?: string
+  phone?: string
+  address?: string
+  supplier_type: 'devices' | 'parts' | 'both'
+  notes?: string
+  created_by?: string
+  created_at: string
+  updated_at?: string
+  deleted_at?: string | null
 }
 
 export interface RepairJob {

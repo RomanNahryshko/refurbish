@@ -19,7 +19,10 @@ import {
   Info
 } from 'lucide-react'
 
-import { mockRepairJobs, mockSpareParts, mockBatches } from '@/lib/mock-data'
+import { mockRepairJobs, mockBatches } from '@/lib/mock-data'
+import { usePartsQuery } from '@/modules/inventory/hooks/use-inventory'
+import { recordPartsUsage } from '@/lib/api/inventory-client'
+import { toast } from 'sonner'
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
 import { RepairJob } from '@/types/mock-types'
 
@@ -41,6 +44,9 @@ export default function RepairJobsPage() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('available') // Default to available jobs
   const [currentPage, setCurrentPage] = useState(1)
+  
+  // Fetch real inventory data
+  const { data: spareParts = [], isLoading: partsLoading } = usePartsQuery()
   
   // Reset page when filters change
   const handleFilterChange = (setter: (value: string) => void) => (value: string) => {
@@ -72,6 +78,19 @@ export default function RepairJobsPage() {
     repairId: null,
     parts: [],
     notes: ''
+  })
+
+  // Validation for parts availability
+  const validatePartsAvailability = () => {
+    return partsRecording.parts.every(part => {
+      const sparePart = spareParts.find(p => p.id === part.partId)
+      return sparePart && sparePart.quantity_in_stock >= part.quantity
+    })
+  }
+  
+  const hasInsufficientParts = partsRecording.parts.some(part => {
+    const sparePart = spareParts.find(p => p.id === part.partId)
+    return !sparePart || sparePart.quantity_in_stock < part.quantity
   })
 
   // Filter repairs based on current filters and user permissions
@@ -200,12 +219,39 @@ export default function RepairJobsPage() {
     })
   }
 
-  const submitCompleteRepair = () => {
-    const repairIndex = mockRepairJobs.findIndex(r => r.id === partsRecording.repairId)
-    if (repairIndex !== -1) {
-      // Map parts with their names for recording
-      const partsUsed = partsRecording.parts.map(part => {
-        const sparePart = mockSpareParts.find(p => p.id === part.partId)
+  const submitCompleteRepair = async () => {
+    if (!partsRecording.repairId) return
+    
+    // Validate parts availability first
+    if (!validatePartsAvailability()) {
+      toast.error('Cannot complete repair: insufficient parts in stock')
+      return
+    }
+    
+    try {
+      const repairIndex = mockRepairJobs.findIndex(r => r.id === partsRecording.repairId)
+      if (repairIndex === -1) {
+        toast.error('Repair job not found')
+        return
+      }
+      
+      // Record parts usage if any parts were used
+      if (partsRecording.parts.length > 0) {
+        const partsUsed = partsRecording.parts.map(part => ({
+          spare_part_id: part.partId,
+          quantity_used: part.quantity,
+          notes: partsRecording.notes || undefined
+        }))
+        
+        // This will trigger DB triggers to automatically deduct stock
+        await recordPartsUsage(partsRecording.repairId, partsUsed)
+        
+        toast.success(`Parts usage recorded: ${partsUsed.length} parts deducted from inventory`)
+      }
+      
+      // Update the repair to completed (in real app, this would be an API call)
+      const partsUsedForDisplay = partsRecording.parts.map(part => {
+        const sparePart = spareParts.find(p => p.id === part.partId)
         return {
           spare_part_id: part.partId,
           part_name: sparePart?.name || 'Unknown Part',
@@ -213,23 +259,13 @@ export default function RepairJobsPage() {
         }
       })
       
-      // Update the repair to completed
       mockRepairJobs[repairIndex] = {
         ...mockRepairJobs[repairIndex],
         status: 'completed',
         completed_at: new Date().toISOString(),
         completion_notes: partsRecording.notes || undefined,
-        parts_used: partsUsed.length > 0 ? partsUsed : undefined
+        parts_used: partsUsedForDisplay.length > 0 ? partsUsedForDisplay : undefined
       }
-      
-      // Deduct from inventory for each part used
-      partsRecording.parts.forEach(part => {
-        const partIndex = mockSpareParts.findIndex(p => p.id === part.partId)
-        if (partIndex !== -1) {
-          mockSpareParts[partIndex].quantity_in_stock -= part.quantity
-          console.log(`Deducted ${part.quantity} from ${mockSpareParts[partIndex].name}. New stock: ${mockSpareParts[partIndex].quantity_in_stock}`)
-        }
-      })
       
       // Check if all repairs for this device are now completed
       const completedRepair = mockRepairJobs[repairIndex]
@@ -238,15 +274,19 @@ export default function RepairJobsPage() {
       const allCompleted = allRepairsForDevice.every(r => r.status === 'completed')
       
       if (allCompleted) {
-        // In real app, would update device status to 'final_qc'
         console.log(`All repairs completed for device ${completedRepair.device_internal_id}. Ready for QC.`)
-        // Note: In real implementation, would update device status in database
-        // UPDATE devices SET status = 'final_qc' WHERE id = deviceId
+        // TODO: In real implementation, update device status to 'final_qc'
       }
       
-      console.log('Completed repair:', mockRepairJobs[repairIndex].id)
+      toast.success('Repair completed successfully!')
+      
+    } catch (error) {
+      console.error('Error completing repair:', error)
+      toast.error('Failed to complete repair. Please try again.')
+      return
     }
     
+    // Reset form
     setPartsRecording({
       repairId: null,
       parts: [],
@@ -442,15 +482,27 @@ export default function RepairJobsPage() {
                     <SelectValue placeholder="Select part" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockSpareParts
-                      .filter(part => !partsRecording.parts.find(p => p.partId === part.id))
-                      .map(part => (
-                        <SelectItem key={part.id} value={part.id}>
-                          {part.name} (Stock: {part.quantity_in_stock})
-                        </SelectItem>
-                      ))}
-                    {mockSpareParts.filter(part => !partsRecording.parts.find(p => p.partId === part.id)).length === 0 && (
-                      <div className="p-2 text-sm text-gray-500">All parts already added</div>
+                    {partsLoading ? (
+                      <div className="p-2 text-sm text-gray-500">Loading parts...</div>
+                    ) : (
+                      <>
+                        {spareParts
+                          .filter(part => part.quantity_in_stock > 0) // Only show parts with stock
+                          .filter(part => !partsRecording.parts.find(p => p.partId === part.id))
+                          .map(part => (
+                            <SelectItem key={part.id} value={part.id}>
+                              {part.name} (Stock: {part.quantity_in_stock})
+                              {part.quantity_in_stock <= (part.minimum_stock_level || 0) && (
+                                <span className="text-red-500 ml-1">⚠️ Low</span>
+                              )}
+                            </SelectItem>
+                          ))}
+                        {spareParts.filter(part => part.quantity_in_stock > 0 && !partsRecording.parts.find(p => p.partId === part.id)).length === 0 && (
+                          <div className="p-2 text-sm text-gray-500">
+                            {spareParts.length === 0 ? "No parts available" : "All available parts already added"}
+                          </div>
+                        )}
+                      </>
                     )}
                   </SelectContent>
                 </Select>
@@ -462,10 +514,20 @@ export default function RepairJobsPage() {
                   <label className="text-sm font-medium mb-2 block">Selected Parts:</label>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {partsRecording.parts.map((part, index) => {
-                      const sparePart = mockSpareParts.find(p => p.id === part.partId)
+                      const sparePart = spareParts.find(p => p.id === part.partId)
+                      const isLowStock = sparePart && sparePart.quantity_in_stock <= (sparePart.minimum_stock_level || 0)
+                      const willGoNegative = sparePart && (sparePart.quantity_in_stock - part.quantity) < 0
+                      
                       return (
                         <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                          <span className="flex-1 text-sm">{sparePart?.name}</span>
+                          <div className="flex-1">
+                            <span className="text-sm">{sparePart?.name}</span>
+                            <div className="text-xs text-gray-500">
+                              Available: {sparePart?.quantity_in_stock || 0}
+                              {isLowStock && <span className="text-red-500 ml-1">⚠️ Low Stock</span>}
+                              {willGoNegative && <span className="text-red-600 ml-1">❌ Insufficient Stock</span>}
+                            </div>
+                          </div>
                           <div className="flex items-center gap-1">
                             <Button
                               size="sm"
@@ -487,13 +549,13 @@ export default function RepairJobsPage() {
                               variant="ghost"
                               onClick={() => {
                                 const newParts = [...partsRecording.parts]
-                                const maxStock = sparePart?.quantity_in_stock || 999
+                                const maxStock = sparePart?.quantity_in_stock || 0
                                 if (newParts[index].quantity < maxStock) {
                                   newParts[index].quantity++
                                   setPartsRecording({ ...partsRecording, parts: newParts })
                                 }
                               }}
-                              disabled={part.quantity >= (sparePart?.quantity_in_stock || 999)}
+                              disabled={part.quantity >= (sparePart?.quantity_in_stock || 0)}
                             >
                               <Plus className="h-3 w-3" />
                             </Button>
@@ -531,6 +593,16 @@ export default function RepairJobsPage() {
                 />
               </div>
               
+              {/* Warning for insufficient parts */}
+              {hasInsufficientParts && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <span className="text-sm text-red-700">
+                    Cannot complete repair: insufficient stock for selected parts
+                  </span>
+                </div>
+              )}
+              
               <div className="flex gap-2 pt-4">
                 <Button 
                   variant="outline" 
@@ -543,7 +615,11 @@ export default function RepairJobsPage() {
                 >
                   Cancel
                 </Button>
-                <Button onClick={submitCompleteRepair} className="flex-1">
+                <Button 
+                  onClick={submitCompleteRepair} 
+                  className="flex-1"
+                  disabled={hasInsufficientParts}
+                >
                   Complete Repair {partsRecording.parts.length > 0 && `(${partsRecording.parts.length} parts)`}
                 </Button>
               </div>

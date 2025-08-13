@@ -29,4 +29,4 @@ The following repair tasks are available in the MVP:
 - Must be manually added as a separate task (no automatic dependencies in MVP)
 - **Assumption**: Any technician can perform software updates (to be confirmed with Hassib)
 
-After repairs are completed, each device undergoes a [final quality control check](../device-tracking/quality-control.md#final-qc). 
+After repairs are completed, each device undergoes a final quality control check. 

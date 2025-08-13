@@ -26,7 +26,22 @@ export async function checkPermission(
       return false
     }
     
-    // First, get the user's role
+    // Get the auth user to check for superadmin status
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    
+    // Check if this is a Supabase superadmin
+    if (authUser && authUser.id === userId) {
+      const isSuperAdmin = authUser.app_metadata?.role === 'service_role' || 
+                          authUser.user_metadata?.role === 'superadmin' ||
+                          authUser.email?.endsWith('@supabase.io')
+      
+      if (isSuperAdmin) {
+        console.log('Superadmin access granted for:', authUser.email)
+        return true
+      }
+    }
+    
+    // Get the user's role from profile
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
       .select('role')
@@ -35,7 +50,17 @@ export async function checkPermission(
     
     if (profileError || !userProfile) {
       console.error('Error fetching user profile in checkPermission:', profileError)
+      // If no profile exists but user is authenticated, check if they're a superadmin
+      if (authUser && authUser.id === userId) {
+        // Already checked above, so this user has no permissions
+        console.log('No user profile found for:', authUser.email)
+      }
       return false
+    }
+    
+    // Special case: admin role has all permissions
+    if (userProfile.role === 'admin') {
+      return true
     }
     
     // Check if the role has this permission

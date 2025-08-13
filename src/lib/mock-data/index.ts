@@ -641,60 +641,303 @@ export const mockQCChecks: QCCheck[] = [
 // =====================================================
 
 export const mockSpareParts: SparePart[] = [
+  // Batteries - Good stock
   {
-    id: 'part-1',
-    sku: 'BAT-IPH12',
+    id: 'part-001',
+    sku: 'SKU-001',
     name: 'iPhone 12 Battery',
+    description: 'High-quality replacement battery for iPhone 12 series',
     category: 'battery',
     compatible_models: ['iPhone 12', 'iPhone 12 Pro'],
     quantity_in_stock: 45,
     minimum_stock_level: 10,
-    unit_cost: 25.00,
-    supplier_name: 'Parts Wholesale Inc'
+    unit_cost: 25.99,
+    primary_supplier_id: 'supplier-2',
+    created_at: '2024-01-01T00:00:00Z',
+    // Mock joined data
+    suppliers: { id: 'supplier-2', name: 'Parts Wholesale Inc' }
   },
   {
-    id: 'part-2',
-    sku: 'SCR-IPH11',
-    name: 'iPhone 11 Screen',
+    id: 'part-002',
+    sku: 'SKU-002',
+    name: 'iPhone 13 Battery',
+    description: 'Genuine replacement battery with warranty',
+    category: 'battery',
+    compatible_models: ['iPhone 13', 'iPhone 13 Pro', 'iPhone 13 Pro Max'],
+    quantity_in_stock: 32,
+    minimum_stock_level: 15,
+    unit_cost: 28.50,
+    primary_supplier_id: 'supplier-2',
+    created_at: '2024-01-02T00:00:00Z',
+    suppliers: { id: 'supplier-2', name: 'Parts Wholesale Inc' }
+  },
+  {
+    id: 'part-003',
+    sku: 'SKU-003',
+    name: 'Samsung Galaxy S22 Battery',
+    description: 'OEM compatible battery',
+    category: 'battery',
+    compatible_models: ['Galaxy S22', 'Galaxy S22+'],
+    quantity_in_stock: 3,
+    minimum_stock_level: 10,
+    unit_cost: 32.00,
+    primary_supplier_id: 'supplier-3',
+    created_at: '2024-01-03T00:00:00Z',
+    suppliers: { id: 'supplier-3', name: 'Mobile Traders' }
+  },
+
+  // Screens - Mixed stock levels
+  {
+    id: 'part-004',
+    sku: 'SKU-004',
+    name: 'iPhone 11 OLED Screen Assembly',
+    description: 'Complete screen assembly with digitizer',
     category: 'screen',
     compatible_models: ['iPhone 11'],
     quantity_in_stock: 12,
-    minimum_stock_level: 5,
-    unit_cost: 85.00,
-    supplier_name: 'Parts Wholesale Inc'
+    minimum_stock_level: 8,
+    unit_cost: 89.99,
+    primary_supplier_id: 'supplier-2',
+    created_at: '2024-01-04T00:00:00Z',
+    suppliers: { id: 'supplier-2', name: 'Parts Wholesale Inc' }
   },
   {
-    id: 'part-3',
-    sku: 'HSG-SAM-S21',
-    name: 'Samsung S21 Housing',
+    id: 'part-005',
+    sku: 'SKU-005',
+    name: 'iPhone 13 Pro Screen',
+    description: 'Premium OLED display with True Tone',
+    category: 'screen',
+    compatible_models: ['iPhone 13 Pro', 'iPhone 13 Pro Max'],
+    quantity_in_stock: 18,
+    minimum_stock_level: 12,
+    unit_cost: 149.99,
+    primary_supplier_id: 'supplier-2',
+    created_at: '2024-01-05T00:00:00Z',
+    suppliers: { id: 'supplier-2', name: 'Parts Wholesale Inc' }
+  },
+  {
+    id: 'part-006',
+    sku: 'SKU-006',
+    name: 'Samsung S21 AMOLED Display',
+    description: 'Original quality AMOLED screen',
+    category: 'screen',
+    compatible_models: ['Galaxy S21', 'Galaxy S21 5G'],
+    quantity_in_stock: 5,
+    minimum_stock_level: 6,
+    unit_cost: 95.50,
+    primary_supplier_id: 'supplier-3',
+    created_at: '2024-01-06T00:00:00Z',
+    suppliers: { id: 'supplier-3', name: 'Mobile Traders' }
+  },
+
+  // Housing - Various stock levels
+  {
+    id: 'part-007',
+    sku: 'SKU-007',
+    name: 'iPhone 12 Back Housing - Space Gray',
+    description: 'Aluminum back housing with camera lens',
     category: 'housing',
+    compatible_models: ['iPhone 12'],
+    quantity_in_stock: 15,
+    minimum_stock_level: 8,
+    unit_cost: 45.00,
+    primary_supplier_id: 'supplier-2',
+    created_at: '2024-01-07T00:00:00Z',
+    suppliers: { id: 'supplier-2', name: 'Parts Wholesale Inc' }
+  },
+  {
+    id: 'part-008',
+    sku: 'SKU-008',
+    name: 'Samsung S22 Frame Assembly',
+    description: 'Metal frame with buttons and ports',
+    category: 'housing',
+    compatible_models: ['Galaxy S22'],
+    quantity_in_stock: 4,
+    minimum_stock_level: 10,
+    unit_cost: 52.99,
+    primary_supplier_id: 'supplier-3',
+    created_at: '2024-01-08T00:00:00Z',
+    suppliers: { id: 'supplier-3', name: 'Mobile Traders' }
+  },
+
+  // Glass - Critical low stock
+  {
+    id: 'part-009',
+    sku: 'SKU-009',
+    name: 'iPhone 12 Pro Front Glass',
+    description: 'Tempered glass with oleophobic coating',
+    category: 'glass',
+    compatible_models: ['iPhone 12 Pro', 'iPhone 12 Pro Max'],
+    quantity_in_stock: 2,
+    minimum_stock_level: 15,
+    unit_cost: 22.50,
+    primary_supplier_id: 'supplier-2',
+    created_at: '2024-01-09T00:00:00Z',
+    suppliers: { id: 'supplier-2', name: 'Parts Wholesale Inc' }
+  },
+  {
+    id: 'part-010',
+    sku: 'SKU-010',
+    name: 'Samsung S21 Back Glass',
+    description: 'Gorilla Glass back panel',
+    category: 'glass',
     compatible_models: ['Galaxy S21', 'Galaxy S21+'],
     quantity_in_stock: 8,
     minimum_stock_level: 5,
-    unit_cost: 45.00,
-    supplier_name: 'Mobile Traders'
+    unit_cost: 18.00,
+    primary_supplier_id: 'supplier-3',
+    created_at: '2024-01-10T00:00:00Z',
+    suppliers: { id: 'supplier-3', name: 'Mobile Traders' }
   },
+
+  // Cameras - Good stock
   {
-    id: 'part-4',
-    sku: 'BAT-SAM-S22',
-    name: 'Samsung S22 Battery',
-    category: 'battery',
-    compatible_models: ['Galaxy S22'],
-    quantity_in_stock: 3,
-    minimum_stock_level: 10,
-    unit_cost: 35.00,
-    supplier_name: 'Parts Wholesale Inc'
-  },
-  {
-    id: 'part-5',
-    sku: 'SCR-IPH13',
-    name: 'iPhone 13 Screen',
-    category: 'screen',
-    compatible_models: ['iPhone 13', 'iPhone 13 Pro'],
-    quantity_in_stock: 20,
+    id: 'part-011',
+    sku: 'SKU-011',
+    name: 'iPhone 13 Main Camera Module',
+    description: '12MP wide camera with optical stabilization',
+    category: 'camera',
+    compatible_models: ['iPhone 13', 'iPhone 13 mini'],
+    quantity_in_stock: 25,
     minimum_stock_level: 8,
-    unit_cost: 120.00,
-    supplier_name: 'Parts Wholesale Inc'
+    unit_cost: 75.00,
+    primary_supplier_id: 'supplier-2',
+    created_at: '2024-01-11T00:00:00Z',
+    suppliers: { id: 'supplier-2', name: 'Parts Wholesale Inc' }
+  },
+  {
+    id: 'part-012',
+    sku: 'SKU-012',
+    name: 'Samsung S22 Ultra Camera Array',
+    description: 'Complete camera module set',
+    category: 'camera',
+    compatible_models: ['Galaxy S22 Ultra'],
+    quantity_in_stock: 6,
+    minimum_stock_level: 4,
+    unit_cost: 125.00,
+    primary_supplier_id: 'supplier-3',
+    created_at: '2024-01-12T00:00:00Z',
+    suppliers: { id: 'supplier-3', name: 'Mobile Traders' }
+  },
+
+  // Speakers - Medium stock
+  {
+    id: 'part-013',
+    sku: 'SKU-013',
+    name: 'iPhone 12 Earpiece Speaker',
+    description: 'Top speaker for calls and audio',
+    category: 'speaker',
+    compatible_models: ['iPhone 12', 'iPhone 12 Pro', 'iPhone 12 mini'],
+    quantity_in_stock: 20,
+    minimum_stock_level: 12,
+    unit_cost: 15.99,
+    primary_supplier_id: 'supplier-2',
+    created_at: '2024-01-13T00:00:00Z',
+    suppliers: { id: 'supplier-2', name: 'Parts Wholesale Inc' }
+  },
+  {
+    id: 'part-014',
+    sku: 'SKU-014',
+    name: 'Samsung S21 Loud Speaker',
+    description: 'Bottom speaker assembly',
+    category: 'speaker',
+    compatible_models: ['Galaxy S21'],
+    quantity_in_stock: 10,
+    minimum_stock_level: 8,
+    unit_cost: 12.50,
+    primary_supplier_id: 'supplier-3',
+    created_at: '2024-01-14T00:00:00Z',
+    suppliers: { id: 'supplier-3', name: 'Mobile Traders' }
+  },
+
+  // Charging Ports - Critical low
+  {
+    id: 'part-015',
+    sku: 'SKU-015',
+    name: 'iPhone 13 Lightning Port Assembly',
+    description: 'Complete charging port with flex cable',
+    category: 'charging_port',
+    compatible_models: ['iPhone 13', 'iPhone 13 Pro'],
+    quantity_in_stock: 1,
+    minimum_stock_level: 10,
+    unit_cost: 25.00,
+    primary_supplier_id: 'supplier-2',
+    created_at: '2024-01-15T00:00:00Z',
+    suppliers: { id: 'supplier-2', name: 'Parts Wholesale Inc' }
+  },
+  {
+    id: 'part-016',
+    sku: 'SKU-016',
+    name: 'Samsung S22 USB-C Port',
+    description: 'USB-C charging port module',
+    category: 'charging_port',
+    compatible_models: ['Galaxy S22', 'Galaxy S22+'],
+    quantity_in_stock: 7,
+    minimum_stock_level: 6,
+    unit_cost: 18.99,
+    primary_supplier_id: 'supplier-3',
+    created_at: '2024-01-16T00:00:00Z',
+    suppliers: { id: 'supplier-3', name: 'Mobile Traders' }
+  },
+
+  // Buttons - Good stock
+  {
+    id: 'part-017',
+    sku: 'SKU-017',
+    name: 'iPhone 12 Volume Button Set',
+    description: 'Volume up/down buttons with flex cable',
+    category: 'button',
+    compatible_models: ['iPhone 12', 'iPhone 12 Pro'],
+    quantity_in_stock: 35,
+    minimum_stock_level: 15,
+    unit_cost: 8.50,
+    primary_supplier_id: 'supplier-2',
+    created_at: '2024-01-17T00:00:00Z',
+    suppliers: { id: 'supplier-2', name: 'Parts Wholesale Inc' }
+  },
+  {
+    id: 'part-018',
+    sku: 'SKU-018',
+    name: 'Samsung S21 Power Button',
+    description: 'Side power button assembly',
+    category: 'button',
+    compatible_models: ['Galaxy S21', 'Galaxy S21+', 'Galaxy S21 Ultra'],
+    quantity_in_stock: 14,
+    minimum_stock_level: 10,
+    unit_cost: 6.99,
+    primary_supplier_id: 'supplier-3',
+    created_at: '2024-01-18T00:00:00Z',
+    suppliers: { id: 'supplier-3', name: 'Mobile Traders' }
+  },
+
+  // Other parts - Mixed
+  {
+    id: 'part-019',
+    sku: 'SKU-019',
+    name: 'iPhone 13 Wireless Charging Coil',
+    description: 'MagSafe compatible charging coil',
+    category: 'other',
+    compatible_models: ['iPhone 13', 'iPhone 13 Pro', 'iPhone 13 Pro Max'],
+    quantity_in_stock: 22,
+    minimum_stock_level: 8,
+    unit_cost: 12.00,
+    primary_supplier_id: 'supplier-2',
+    created_at: '2024-01-19T00:00:00Z',
+    suppliers: { id: 'supplier-2', name: 'Parts Wholesale Inc' }
+  },
+  {
+    id: 'part-020',
+    sku: 'SKU-020',
+    name: 'Samsung S22 Vibration Motor',
+    description: 'Haptic feedback motor',
+    category: 'other',
+    compatible_models: ['Galaxy S22'],
+    quantity_in_stock: 0,
+    minimum_stock_level: 5,
+    unit_cost: 9.99,
+    primary_supplier_id: 'supplier-3',
+    created_at: '2024-01-20T00:00:00Z',
+    suppliers: { id: 'supplier-3', name: 'Mobile Traders' }
   }
 ]
 

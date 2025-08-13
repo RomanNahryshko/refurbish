@@ -57,7 +57,7 @@ interface DeviceListTableProps {
   onPageChange: (page: number) => void
   title?: string
   renderFilters?: () => ReactNode
-  pageKey?: string // For localStorage key (e.g., 'devices', 'qc', 'device-tracking')
+  pageKey?: string // For localStorage key (e.g., 'devices', 'qc', 'batch-intake')
   renderCell?: (device: Device, column: DeviceTableColumn) => ReactNode | null // Custom cell renderer
   customHeaders?: Record<DeviceTableColumn, string> // Custom column headers
 }

@@ -47,8 +47,7 @@ export default function MockupOverviewPage() {
       color: 'bg-green-500',
       pages: [
         { name: 'Device List', href: '/devices', status: 'ready' },
-        { name: 'Device Search', href: '/device-tracking', status: 'ready' },
-        { name: 'Device Job Sheet (Demo)', href: `/device-tracking/${demoInternalId}`, status: 'ready' },
+        { name: 'Device Job Sheet (Demo)', href: `/devices/${demoInternalId}`, status: 'ready' },
       ]
     },
     {
