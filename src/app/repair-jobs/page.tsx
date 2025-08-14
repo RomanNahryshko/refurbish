@@ -18,7 +18,7 @@ import {
   Info
 } from 'lucide-react'
 
-import { useRepairJobs, useUpdateRepairJob } from '@/lib/hooks/use-repair-jobs'
+import { useRepairJobs, useUpdateRepairJob, useCompleteRepairJob } from '@/lib/hooks/use-repair-jobs'
 import { useBatches } from '@/lib/hooks/use-batches'
 import { useSpareParts } from '@/lib/hooks/use-spare-parts'
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
@@ -50,7 +50,7 @@ export default function RepairJobsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('available') // Default to available jobs
+  const [statusFilter, setStatusFilter] = useState('all') // Default to all jobs
   const [currentPage, setCurrentPage] = useState(1)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   
@@ -74,6 +74,9 @@ export default function RepairJobsPage() {
   // Update repair job mutation
   const updateRepairJob = useUpdateRepairJob()
   
+  // Complete repair job mutation (sends device to QC)
+  const completeRepairJob = useCompleteRepairJob()
+  
   // Reset page when filters change
   const handleFilterChange = (setter: (value: string) => void) => (value: string) => {
     setter(value)
@@ -85,7 +88,7 @@ export default function RepairJobsPage() {
     setSearchTerm('')
     setLevelFilter('all')
     setTypeFilter('all')
-    setStatusFilter('available')
+    setStatusFilter('all')
     setCurrentPage(1)
   }
   
@@ -165,12 +168,6 @@ export default function RepairJobsPage() {
       switch (statusFilter) {
         case 'available':
           if (repair.status !== 'pending') return false
-          break
-        case 'my_active':
-          if (repair.status !== 'in_progress' || repair.assigned_to !== currentUserId) return false
-          break
-        case 'all_active':
-          if (repair.status !== 'in_progress') return false
           break
         case 'history':
           if (!['completed', 'failed', 'cancelled'].includes(repair.status)) return false
@@ -282,20 +279,16 @@ export default function RepairJobsPage() {
   const submitCompleteRepair = () => {
     if (!partsRecording.repairId) return
 
-    // Update the repair job to completed
-    updateRepairJob.mutate({
-      id: partsRecording.repairId,
-      data: {
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        completion_notes: partsRecording.notes || undefined
-      }
+    // Complete the repair job and send device to QC
+    completeRepairJob.mutate({
+      repairJobId: partsRecording.repairId,
+      completionNotes: partsRecording.notes || undefined,
+      partsUsed: partsRecording.parts.map(part => ({
+        spare_part_id: part.partId,
+        quantity_used: part.quantity,
+        notes: undefined
+      }))
     })
-    
-    // Note: In a real implementation, you would also:
-    // 1. Record parts usage in the repair_parts_used table
-    // 2. Update inventory quantities
-    // 3. Update device status if all repairs are completed
     
     setPartsRecording({
       repairId: null,
@@ -307,7 +300,7 @@ export default function RepairJobsPage() {
   // Render filters for the table (consistent with devices/qc pages)
   const renderFilters = () => {
     const hasActiveFilters = searchTerm.trim() !== '' || 
-                           statusFilter !== 'available' || 
+                           statusFilter !== 'all' || 
                            levelFilter !== 'all' || 
                            typeFilter !== 'all'
     
@@ -319,10 +312,10 @@ export default function RepairJobsPage() {
             <span>Active filters:</span>
             {searchTerm.trim() !== '' && (
               <Badge variant="secondary" className="text-xs">
-                Search: "{searchTerm}"
+                Search: &quot;{searchTerm}&quot;
               </Badge>
             )}
-            {statusFilter !== 'available' && (
+            {statusFilter !== 'all' && (
               <Badge variant="secondary" className="text-xs">
                 Status: {statusFilter}
               </Badge>
@@ -358,15 +351,13 @@ export default function RepairJobsPage() {
           
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={statusFilter} onValueChange={handleFilterChange(setStatusFilter)}>
-              <SelectTrigger className={`h-9 w-[140px] ${statusFilter !== 'available' ? 'border-blue-500 bg-blue-50' : ''}`}>
+              <SelectTrigger className={`h-9 w-[140px] ${statusFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All</SelectItem>
                 <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="my_active">My Active</SelectItem>
-                <SelectItem value="all_active">All Active</SelectItem>
                 <SelectItem value="history">History</SelectItem>
-                <SelectItem value="all">All Status</SelectItem>
               </SelectContent>
             </Select>
 
@@ -404,9 +395,9 @@ export default function RepairJobsPage() {
             >
               Clear Filters
               {hasActiveFilters && (
-                <span className="ml-1 text-xs text-red-600">
-                  ({[searchTerm.trim() !== '', statusFilter !== 'available', levelFilter !== 'all', typeFilter !== 'all'].filter(Boolean).length})
-                </span>
+                              <span className="ml-1 text-xs text-red-600">
+                ({[searchTerm.trim() !== '', statusFilter !== 'all', levelFilter !== 'all', typeFilter !== 'all'].filter(Boolean).length})
+              </span>
               )}
             </Button>
           </div>
