@@ -59,6 +59,8 @@ interface InitialQCDeviceCardProps {
   onCompleteQCWithDevice?: (deviceData: DrPhoneData, deviceIndex: number) => void
   // New prop for when QC is actually completed
   onQCCompleted?: () => void
+  // New prop for when all operations are complete
+  onAllOperationsComplete?: () => void
 }
 
 export function InitialQCDeviceCard({
@@ -77,7 +79,8 @@ export function InitialQCDeviceCard({
   qcApproach = '',
   onQcApproachChange,
   onCompleteQCWithDevice,
-  onQCCompleted
+  onQCCompleted,
+  onAllOperationsComplete
 }: InitialQCDeviceCardProps) {
   
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -87,6 +90,7 @@ export function InitialQCDeviceCard({
 
   // Auto-save QC data when deviceId becomes available (only if we're in QC completion flow)
   const [qcDataReady, setQcDataReady] = useState(false)
+  const [isProcessingComplete, setIsProcessingComplete] = useState(false)
   
   useEffect(() => {
     if (deviceId && qcApproach && qcDataReady && !isSubmitting) {
@@ -99,7 +103,7 @@ export function InitialQCDeviceCard({
   const saveQCData = async (deviceIdToUse: string) => {
     try {
       setIsSubmitting(true)
-      
+      setIsProcessingComplete(false)
 
       // Prepare QC data
       const qcData = {
@@ -113,9 +117,9 @@ export function InitialQCDeviceCard({
       }
 
       // Save to database
-      const result = await createQCCheck.mutateAsync({
+      await createQCCheck.mutateAsync({
         qcData,
-        repairTaskIds: qcApproach === 'repairs' ? selectedRepairs : undefined
+        testResults: undefined // We'll handle test results separately if needed
       })
 
       // Call the callback to update UI
@@ -124,12 +128,22 @@ export function InitialQCDeviceCard({
       // Call the QC completed callback to mark device as completed
       onQCCompleted?.()
       
+      // Call the callback to indicate all operations are complete
+      onAllOperationsComplete?.()
+      
       // Reset the ready state
       setQcDataReady(false)
-    } catch (error) {
+      
+      // Mark processing as complete
+      setIsProcessingComplete(true)
+    } catch {
       toast.error('Failed to save QC data. Please try again.')
+      setIsProcessingComplete(true)
     } finally {
-      setIsSubmitting(false)
+      // Only stop submitting if processing is complete
+      if (isProcessingComplete) {
+        setIsSubmitting(false)
+      }
     }
   }
 
@@ -163,6 +177,7 @@ export function InitialQCDeviceCard({
   const handleConfirmQC = useCallback(async () => {
     setShowConfirmation(false)
     setIsSubmitting(true)
+    setIsProcessingComplete(false)
 
     try {
       // If no device ID is provided, try to create device first
@@ -174,11 +189,12 @@ export function InitialQCDeviceCard({
           onCompleteQCWithDevice(device, deviceIndex)
           // Note: After device creation, the parent component will update the deviceId prop
           // and this component will re-render, allowing the QC check to be saved
-          setIsSubmitting(false)
+          // Don't stop submitting here - wait for all operations to complete
           return
         } else {
           // Fallback to demo mode
           onCompleteQC?.()
+          setIsProcessingComplete(true)
           setIsSubmitting(false)
           return
         }
@@ -196,9 +212,9 @@ export function InitialQCDeviceCard({
       }
 
       // Save to database
-      const result = await createQCCheck.mutateAsync({
+      await createQCCheck.mutateAsync({
         qcData,
-        repairTaskIds: qcApproach === 'repairs' ? selectedRepairs : undefined
+        testResults: undefined // We'll handle test results separately if needed
       })
 
       // Call the callback to update UI
@@ -206,12 +222,22 @@ export function InitialQCDeviceCard({
       
       // Call the QC completed callback to mark device as completed
       onQCCompleted?.()
-    } catch (error) {
+      
+      // Call the callback to indicate all operations are complete
+      onAllOperationsComplete?.()
+      
+      // Mark processing as complete
+      setIsProcessingComplete(true)
+    } catch {
       toast.error('Failed to save QC data. Please try again.')
+      setIsProcessingComplete(true)
     } finally {
-      setIsSubmitting(false)
+      // Only stop submitting if processing is complete
+      if (isProcessingComplete) {
+        setIsSubmitting(false)
+      }
     }
-  }, [deviceId, qcApproach, selectedRepairs, otherDescription, onCompleteQCWithDevice, device, onCompleteQC, createQCCheck, getRepairLabel, onQCCompleted, saveQCData])
+  }, [deviceId, qcApproach, selectedRepairs, otherDescription, onCompleteQCWithDevice, device, onCompleteQC, createQCCheck, getRepairLabel, onQCCompleted, onAllOperationsComplete])
 
   return (
     <Card className="p-4">
@@ -379,7 +405,7 @@ export function InitialQCDeviceCard({
             {isSubmitting || createQCCheck.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
+                {isSubmitting ? 'Processing...' : 'Saving...'}
               </>
             ) : (
               <>
@@ -450,7 +476,7 @@ export function InitialQCDeviceCard({
               {isSubmitting || createQCCheck.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {isSubmitting ? 'Processing...' : 'Saving...'}
                 </>
               ) : (
                 <>

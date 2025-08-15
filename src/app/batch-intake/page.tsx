@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +17,11 @@ export default function BatchIntakePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 300) // 300ms delay
   const { data: batches, isLoading, error, refetch, isFetching } = useBatchesWithDeviceCounts()
+  
+  // Refetch data every time the component mounts (page visit)
+  useEffect(() => {
+    refetch()
+  }, [refetch])
   
   const filteredBatches = useMemo(() => {
     return batches?.filter((batch: Batch & { supplier_name?: string; completed_qc_count?: number }) =>
