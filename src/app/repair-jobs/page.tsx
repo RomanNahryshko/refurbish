@@ -4,26 +4,17 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ConfirmationDialog } from '@/components/common/confirmation-dialog'
-import { RepairJobListTable } from '@/components/repair-jobs/repair-job-list-table'
 import { Badge } from '@/components/ui/badge'
-
-import {
-  Wrench,
-  Search,
-  Plus,
-  Minus,
-  X,
-  Info
-} from 'lucide-react'
-
-import { useRepairJobs, useUpdateRepairJob, useCompleteRepairJob } from '@/lib/hooks/use-repair-jobs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Search, Plus, Minus, X, Wrench } from 'lucide-react'
+import { RepairJobListTable } from '@/components/repair-jobs/repair-job-list-table'
+import { LoadingSpinner } from '@/components/common/loading-spinner'
+import { useRepairJobs } from '@/lib/hooks/use-repair-jobs'
 import { useBatches } from '@/lib/hooks/use-batches'
 import { useSpareParts } from '@/lib/hooks/use-spare-parts'
+import { useStartRepairJob, useCompleteRepairJob, useUpdateRepairJob } from '@/lib/hooks/use-repair-jobs'
+import { RepairJob } from '@/types/mock-types'
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
-import { RepairJob } from '@/lib/types/business-types'
-import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { createClient } from '@/lib/supabase/client'
 
 // Import configs from the table component
@@ -52,7 +43,6 @@ export default function RepairJobsPage() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all') // Default to all jobs
   const [currentPage, setCurrentPage] = useState(1)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   
   // Fetch real data from API
   const { data: repairJobsData, isLoading: repairJobsLoading, error: repairJobsError } = useRepairJobs()
@@ -71,11 +61,39 @@ export default function RepairJobsPage() {
     getCurrentUser()
   }, [])
   
+  // Get current user ID for repair assignments
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  
   // Update repair job mutation
   const updateRepairJob = useUpdateRepairJob()
   
+  // Start repair job mutation (updates device status to in_repair)
+  const startRepairJob = useStartRepairJob()
+  
   // Complete repair job mutation (sends device to QC)
   const completeRepairJob = useCompleteRepairJob()
+  
+  // Handle start repair success/error
+  useEffect(() => {
+    if (startRepairJob.isSuccess) {
+      // The hook will automatically invalidate queries
+    }
+    if (startRepairJob.isError) {
+      console.error('Failed to start repair job:', startRepairJob.error)
+      // You could show a toast notification here
+    }
+  }, [startRepairJob.isSuccess, startRepairJob.isError, startRepairJob.error])
+  
+  // Handle complete repair success/error
+  useEffect(() => {
+    if (completeRepairJob.isSuccess) {
+      // The hook will automatically invalidate queries
+    }
+    if (completeRepairJob.isError) {
+      console.error('Failed to complete repair job:', completeRepairJob.error)
+      // You could show a toast notification here
+    }
+  }, [completeRepairJob.isSuccess, completeRepairJob.isError, completeRepairJob.error])
   
   // Reset page when filters change
   const handleFilterChange = (setter: (value: string) => void) => (value: string) => {
@@ -152,7 +170,7 @@ export default function RepairJobsPage() {
   
   const batches = batchesData || []
   const spareParts = sparePartsData || []
-
+  
   // Apply filters to repair jobs
   const filteredRepairs = transformedRepairJobs.filter(repair => {
     // Search filter - check IMEI and Internal ID
@@ -218,37 +236,36 @@ export default function RepairJobsPage() {
   
   const handleStartRepair = (repair: RepairJob) => {
     if (!currentUserId) {
-      // Handle case when user is not authenticated
+      console.error('No current user ID found')
       return
     }
     
     // Find the transformed repair job data
     const transformedRepair = transformedRepairJobs.find(r => r.id === repair.id)
-    if (!transformedRepair) return
+    if (!transformedRepair) {
+      console.error('❌ Transformed repair not found')
+      return
+    }
     
     setConfirmDialog({
       open: true,
       title: 'Start Repair',
       description: `Are you sure you want to start the ${repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.label} repair for device ${transformedRepair.device_internal_id}?`,
       action: () => {
-        // Update the repair job using the API
-        updateRepairJob.mutate({
-          id: repair.id,
-          data: {
-            status: 'in_progress',
-            assigned_to: currentUserId, // Use current user ID
-            assigned_at: new Date().toISOString()
-          }
+        // Start the repair job using the API (this will update device status to in_repair)
+        startRepairJob.mutate({
+          repairJobId: repair.id,
+          assignedTo: currentUserId
         })
         
-        setConfirmDialog({ ...confirmDialog, open: false })
+        setConfirmDialog({ open: false, title: '', description: '', action: () => {} })
       }
     })
   }
 
-  const handleCompleteRepair = (repairId: string) => {
+  const handleCompleteRepair = (repair: RepairJob) => {
     setPartsRecording({
-      repairId,
+      repairId: repair.id,
       parts: [],
       notes: ''
     })
@@ -426,7 +443,7 @@ export default function RepairJobsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Info className="h-5 w-5 text-blue-600" />
+                {/* <Info className="h-5 w-5 text-blue-600" /> */}
                 <div>
                   <h3 className="font-medium text-blue-900">
                     Currently working on: Device {activeRepair.device_internal_id} - {repairTypeConfig[activeRepair.repair_type as keyof typeof repairTypeConfig]?.label}
@@ -439,10 +456,10 @@ export default function RepairJobsPage() {
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
-                  onClick={() => handleCompleteRepair(activeRepair.id)}
+                  onClick={() => handleCompleteRepair(activeRepair)}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
-                  Complete Job
+                  Complete Repair
                 </Button>
                 <Button
                   variant="ghost"
@@ -484,19 +501,20 @@ export default function RepairJobsPage() {
             onCompleteRepair={handleCompleteRepair}
             onCancelRepair={handleCancelRepair}
             repairCountByDevice={repairCountByDevice}
+            isStartingRepair={startRepairJob.isPending}
           />
         </CardContent>
       </Card>
 
       {/* Confirmation Dialog */}
-      <ConfirmationDialog
+      {/* <ConfirmationDialog
         open={confirmDialog.open}
         onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
         title={confirmDialog.title}
         description={confirmDialog.description}
         confirmText="Start Repair"
         onConfirm={confirmDialog.action}
-      />
+      /> */}
 
       {/* Parts Recording Dialog */}
       {partsRecording.repairId && (
@@ -619,7 +637,12 @@ export default function RepairJobsPage() {
                 >
                   Cancel
                 </Button>
-                <Button onClick={submitCompleteRepair} className="flex-1">
+                <Button 
+                  onClick={() => {
+                    submitCompleteRepair()
+                  }} 
+                  className="flex-1"
+                >
                   Complete Repair {partsRecording.parts.length > 0 && `(${partsRecording.parts.length} parts)`}
                 </Button>
               </div>

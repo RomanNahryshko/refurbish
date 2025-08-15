@@ -33,6 +33,25 @@ export function useDevicesByBatch(batchId: string) {
   })
 }
 
+export function useDevicesForFinalQC() {
+  return useQuery({
+    queryKey: ['devices', 'final-qc'],
+    queryFn: devicesApi.getDevicesForFinalQC,
+  })
+}
+
+export function useQCChecks(deviceIds?: string[], options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true
+  return useQuery({
+    queryKey: ['qc-checks', deviceIds],
+    queryFn: () => {
+      console.log('🔍 useQCChecks queryFn executing...')
+      return devicesApi.getQCChecks(deviceIds)
+    },
+    enabled: enabled
+  })
+}
+
 export function useCreateDevice() {
   const queryClient = useQueryClient()
 

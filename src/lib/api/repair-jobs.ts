@@ -227,6 +227,78 @@ export const repairJobsApi = {
   },
 
   /**
+   * Start a repair job and update device status
+   */
+  async startRepairJob(id: string, assignedTo?: string) {
+    const supabase = createClient()
+    if (!supabase) throw new Error('Supabase client not initialized')
+
+    // Get current user for assigned_by field
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    // First, get the repair job to check device_id
+    const { data: repairJob, error: fetchError } = await supabase
+      .from('repair_jobs')
+      .select('device_id, repair_type')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    // Validate device_id
+    if (!repairJob.device_id) {
+      throw new Error('Repair job has no device_id')
+    }
+
+    // Update repair job status to in_progress
+    const { data, error } = await supabase
+      .from('repair_jobs')
+      .update({
+        status: 'in_progress' as RepairJobStatus,
+        assigned_to: assignedTo || user.id,
+        assigned_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    // Update device status to in_repair
+    const { error: deviceUpdateError } = await supabase
+      .from('devices')
+      .update({ 
+        status: 'in_repair'
+      })
+      .eq('id', repairJob.device_id)
+
+    if (deviceUpdateError) {
+      console.error('Failed to update device status:', deviceUpdateError)
+      // Don't fail the entire request if device update fails
+    }
+
+    // Record device status change in history
+    const { error: historyError } = await supabase
+      .from('device_status_history')
+      .insert({
+        device_id: repairJob.device_id,
+        old_status: 'awaiting_repair',
+        new_status: 'in_repair',
+        changed_by: user.id,
+        notes: `Device repair started - ${repairJob.repair_type}`
+      })
+
+    if (historyError) {
+      console.error('Failed to record device status history:', historyError)
+      // Don't fail the entire request if history recording fails
+    }
+
+    return data as RepairJob
+  },
+
+  /**
    * Complete a repair job and handle device status transition
    */
   async completeRepairJob(id: string, completionData: {
@@ -249,7 +321,7 @@ export const repairJobsApi = {
 
     if (fetchError) throw fetchError
 
-    // Start a transaction
+    // Update repair job status to completed
     const { data, error } = await supabase
       .from('repair_jobs')
       .update({
@@ -292,58 +364,67 @@ export const repairJobsApi = {
     if (pendingError) {
       console.error('Error checking pending repairs:', pendingError)
       // Don't fail the entire request if this check fails
-    } else {
-      // If all repairs are completed, send device to final QC
-      if (!pendingRepairs || pendingRepairs.length === 0) {
-        // Update device status to final_qc
-        const { error: deviceUpdateError } = await supabase
-          .from('devices')
-          .update({ 
-            status: 'final_qc',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', repairJob.device_id)
-
-        if (deviceUpdateError) {
-          console.error('Error updating device status to final_qc:', deviceUpdateError)
-          // Don't fail the entire request if device update fails
-        }
-
-        // Create QC check record for final quality control
-        const { error: qcCheckError } = await supabase
-          .from('qc_checks')
-          .insert({
-            device_id: repairJob.device_id,
-            check_type: 'final',
-            overall_result: 'not_tested',
-            performed_by: user.id,
-            notes: `Device sent to final QC after completing ${repairJob.repair_type} repair`
-          })
-
-        if (qcCheckError) {
-          console.error('Error creating QC check record:', qcCheckError)
-          // Don't fail the entire request if QC check creation fails
-        }
-
-        // Record device status change in history
-        const { error: historyError } = await supabase
-          .from('device_status_history')
-          .insert({
-            device_id: repairJob.device_id,
-            old_status: 'in_repair',
-            new_status: 'final_qc',
-            changed_by: user.id,
-            notes: `Device sent to final QC after completing ${repairJob.repair_type} repair`
-          })
-
-        if (historyError) {
-          console.error('Error recording device status history:', historyError)
-          // Don't fail the entire request if history recording fails
-        }
-      }
+    } else if (!pendingRepairs || pendingRepairs.length === 0) {
+      // All repairs completed, send device to final QC
+      await this.sendDeviceToFinalQC(supabase, repairJob.device_id, user.id, repairJob.repair_type)
     }
 
     return data as RepairJob
+  },
+
+  /**
+   * Send device to final QC after all repairs are completed
+   */
+  async sendDeviceToFinalQC(
+    supabase: any, 
+    deviceId: string, 
+    userId: string, 
+    repairType: string
+  ) {
+    // Update device status to final_qc
+    const { error: deviceUpdateError } = await supabase
+      .from('devices')
+      .update({ 
+        status: 'final_qc'
+      })
+      .eq('id', deviceId)
+
+    if (deviceUpdateError) {
+      console.error('Error updating device status to final_qc:', deviceUpdateError)
+      // Don't fail the entire request if device update fails
+    }
+
+    // Create QC check record for final quality control
+    const { error: qcCheckError } = await supabase
+      .from('qc_checks')
+      .insert({
+        device_id: deviceId,
+        check_type: 'final',
+        overall_result: 'not_tested',
+        performed_by: userId,
+        notes: `Device sent to final QC after completing ${repairType} repair`
+      })
+
+    if (qcCheckError) {
+      console.error('Error creating QC check record:', qcCheckError)
+      // Don't fail the entire request if QC check creation fails
+    }
+
+    // Record device status change in history
+    const { error: historyError } = await supabase
+      .from('device_status_history')
+      .insert({
+        device_id: deviceId,
+        old_status: 'in_repair',
+        new_status: 'final_qc',
+        changed_by: userId,
+        notes: `Device sent to final QC after completing ${repairType} repair`
+      })
+
+    if (historyError) {
+      console.error('Error recording device status history:', historyError)
+      // Don't fail the entire request if history recording fails
+    }
   },
 
   /**

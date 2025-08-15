@@ -118,7 +118,7 @@ export const devicesApi = {
       .from('devices')
       .insert({
         ...deviceData,
-        status: 'received' as DeviceStatus,
+        status: 'awaiting_repair' as DeviceStatus, // Changed from 'received' to 'awaiting_repair'
         grade: 'ungraded' as DeviceGrade,
         created_by: user.id,
         dr_phone_imported_at: deviceData.dr_phone_data ? new Date().toISOString() : undefined
@@ -158,7 +158,7 @@ export const devicesApi = {
       dr_phone_data: device.dr_phone_data,
       grade: device.grade || 'ungraded', // Use provided grade or default to 'ungraded'
       notes: device.notes,
-      status: 'received' as DeviceStatus,
+      status: 'awaiting_repair' as DeviceStatus, // Changed from 'received' to 'awaiting_repair'
       created_by: user.id,
       dr_phone_imported_at: new Date().toISOString()
     }))
@@ -249,6 +249,58 @@ export const devicesApi = {
 
     if (error) throw error
     return true
+  },
+
+  /**
+   * Get devices that need final QC
+   */
+  async getDevicesForFinalQC() {
+    const supabase = createClient()
+    if (!supabase) throw new Error('Supabase client not initialized')
+
+    // Get devices that are in 'final_qc' status
+    const { data, error } = await supabase
+      .from('devices')
+      .select('*')
+      .eq('status', 'final_qc')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as Device[]
+  },
+
+  /**
+   * Get QC checks for devices
+   */
+  async getQCChecks(deviceIds?: string[]) {
+    console.log('🔍 getQCChecks called with deviceIds:', deviceIds)
+    
+    const supabase = createClient()
+    if (!supabase) throw new Error('Supabase client not initialized')
+
+    let query = supabase
+      .from('qc_checks')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (deviceIds && deviceIds.length > 0) {
+      console.log('🔍 Filtering by device IDs:', deviceIds)
+      query = query.in('device_id', deviceIds)
+    } else {
+      console.log('🔍 No device IDs provided, getting all QC checks')
+    }
+
+    console.log('🔍 Executing Supabase query...')
+    const { data, error } = await query
+
+    if (error) {
+      console.error('❌ Supabase query error:', error)
+      throw error
+    }
+    
+    console.log('✅ getQCChecks completed successfully, returning', data?.length || 0, 'QC checks')
+    return data
   }
 }
 

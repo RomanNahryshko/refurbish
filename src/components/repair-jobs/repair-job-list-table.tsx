@@ -4,13 +4,13 @@ import { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Eye,
-  ClipboardCheck,
-  CheckCircle,
-  Clock,
-  Wrench,
-  Package,
-  AlertCircle
+    Eye,
+    ClipboardCheck,
+    CheckCircle,
+    Clock,
+    Wrench,
+    Package,
+    AlertCircle
 } from 'lucide-react'
 import { DeviceListTable, DeviceTableColumn } from '@/components/common/device-list-table'
 import { RepairJob, Batch, Device } from '@/types/mock-types'
@@ -49,9 +49,10 @@ interface RepairJobListTableProps {
     technician_level: string | null
   }
   onStartRepair: (repair: RepairJob) => void
-  onCompleteRepair: (repairId: string) => void
+  onCompleteRepair: (repair: RepairJob) => void
   onCancelRepair: (repairId: string) => void
   repairCountByDevice?: Record<string, number> // Count of repairs per device
+  isStartingRepair?: boolean // Loading state for start repair action
 }
 
 // Convert RepairJob to Device-like structure for table compatibility
@@ -98,7 +99,8 @@ export function RepairJobListTable({
   onStartRepair,
   onCompleteRepair,
   onCancelRepair,
-  repairCountByDevice
+  repairCountByDevice,
+  isStartingRepair
 }: RepairJobListTableProps) {
   
   // Convert repair jobs to device-like format
@@ -143,11 +145,11 @@ export function RepairJobListTable({
           <Button 
             size="sm"
             onClick={() => onStartRepair(repairJob)}
-            disabled={hasActiveRepair}
-            title={hasActiveRepair ? "Complete or cancel current repair first" : "Start this repair"}
+            disabled={hasActiveRepair || isStartingRepair}
+            title={hasActiveRepair || isStartingRepair ? "Complete or cancel current repair first" : "Start this repair"}
           >
             <ClipboardCheck className="h-4 w-4 mr-1" />
-            Start Repair
+            {isStartingRepair ? 'Starting...' : 'Start Repair'}
           </Button>
         )}
         
@@ -155,7 +157,7 @@ export function RepairJobListTable({
           <>
             <Button 
               size="sm"
-              onClick={() => onCompleteRepair(repairJob.id)}
+              onClick={() => onCompleteRepair(repairJob)}
             >
               <CheckCircle className="h-4 w-4 mr-1" />
               Complete

@@ -109,35 +109,35 @@ export function useCompleteRepairJob() {
         notes?: string
       }>
     }) => {
-      const response = await fetch('/api/repair-jobs/complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          repair_job_id: repairJobId,
-          completion_notes: completionNotes,
-          parts_used: partsUsed
-        }),
+      
+      // Transform parts data to include repair_job_id
+      const transformedParts = partsUsed?.map(part => ({
+        ...part,
+        repair_job_id: repairJobId
+      }))
+      
+      const result = await repairJobsApi.completeRepairJob(repairJobId, {
+        completion_notes: completionNotes,
+        parts_used: transformedParts
       })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to complete repair job')
-      }
-
-      return response.json()
+      
+      return result
     },
     onSuccess: (data, { repairJobId }) => {
       // Invalidate repair jobs queries
       queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
       queryClient.invalidateQueries({ queryKey: ['repair-jobs', repairJobId] })
       
-      // If device was sent to QC, also invalidate devices queries
-      if (data.device_sent_to_qc) {
-        queryClient.invalidateQueries({ queryKey: ['devices'] })
-      }
+      // Also invalidate devices queries since device status changes to final_qc
+      queryClient.invalidateQueries({ queryKey: ['devices'] })
+      
+      // Also invalidate QC checks queries since a new QC check is created
+      queryClient.invalidateQueries({ queryKey: ['qc-checks'] })
+      
     },
+    onError: (error, { repairJobId }) => {
+      console.error('Failed to complete repair job:', repairJobId, error)
+    }
   })
 }
 
@@ -145,45 +145,29 @@ export function useStartRepairJob() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ 
+    mutationFn: ({ 
       repairJobId, 
       assignedTo 
     }: { 
       repairJobId: string
       assignedTo?: string
     }) => {
-      const updateData: any = {
-        status: 'pending'
-      }
-      
-      if (assignedTo) {
-        updateData.status = 'in_progress'
-        updateData.assigned_to = assignedTo
-        updateData.assigned_at = new Date().toISOString()
-      } else {
-        updateData.assigned_to = null
-        updateData.assigned_at = null
-      }
-
-      const response = await fetch(`/api/repair-jobs/${repairJobId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to update repair job')
-      }
-
-      return response.json()
+      return repairJobsApi.startRepairJob(repairJobId, assignedTo)
     },
-    onSuccess: (_, { repairJobId }) => {
+    onSuccess: (data, { repairJobId }) => {
       // Invalidate repair jobs queries
       queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
       queryClient.invalidateQueries({ queryKey: ['repair-jobs', repairJobId] })
+      
+      // Also invalidate devices queries since device status changes
+      queryClient.invalidateQueries({ queryKey: ['devices'] })
+      
+      // Force refetch devices to see the status change immediately
+      queryClient.refetchQueries({ queryKey: ['devices'] })
+      queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
     },
+    onError: (error, { repairJobId }) => {
+      console.error('Failed to start repair job:', repairJobId, error)
+    }
   })
 }
