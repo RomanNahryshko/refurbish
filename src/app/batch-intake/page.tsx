@@ -31,7 +31,7 @@ export default function BatchIntakePage() {
     { label: 'Batch Number', key: 'batch_number' },
     { label: 'Supplier', key: 'supplier_name' },
     { label: 'Expected', key: 'device_count' },
-    { label: 'Completed QC', key: 'completed_qc_count' },
+    { label: 'Total Devices', key: 'completed_qc_count' },
     { label: 'Invoice', key: 'invoice_number' },
     { label: 'Date', key: 'received_date' },
     { label: 'Amount', key: 'invoice_amount' },
