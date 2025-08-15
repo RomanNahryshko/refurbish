@@ -4,16 +4,16 @@ import { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    Eye,
-    ClipboardCheck,
-    CheckCircle,
-    Clock,
-    Wrench,
-    Package,
-    AlertCircle
+  Eye,
+  ClipboardCheck,
+  CheckCircle,
+  Clock,
+  Wrench,
+  Package,
+  AlertCircle
 } from 'lucide-react'
 import { DeviceListTable, DeviceTableColumn } from '@/components/common/device-list-table'
-import { RepairJob, Batch, Device } from '@/types/mock-types'
+import { RepairJob, Batch, Device } from '@/lib/types/business-types'
 import Link from 'next/link'
 
 // Repair status configuration for badges
@@ -32,9 +32,16 @@ export const repairTypeConfig = {
   'other': { label: 'Other Repair', level: 'Any', icon: Wrench }
 }
 
+// Extended RepairJob type with joined data from API
+interface RepairJobWithDevice extends RepairJob {
+  device_internal_id?: string
+  device_model?: string
+  assigned_to_name?: string
+}
+
 interface RepairJobListTableProps {
-  repairJobs: RepairJob[]
-  allRepairJobs?: RepairJob[] // Full list for counting repairs per device
+  repairJobs: RepairJobWithDevice[]
+  allRepairJobs?: RepairJobWithDevice[] // Full list for counting repairs per device
   batches: Batch[]
   currentPage: number
   totalPages: number
@@ -48,15 +55,15 @@ interface RepairJobListTableProps {
     role: string
     technician_level: string | null
   }
-  onStartRepair: (repair: RepairJob) => void
-  onCompleteRepair: (repair: RepairJob) => void
+  onStartRepair: (repair: RepairJobWithDevice) => void
+  onCompleteRepair: (repair: RepairJobWithDevice) => void
   onCancelRepair: (repairId: string) => void
   repairCountByDevice?: Record<string, number> // Count of repairs per device
-  isStartingRepair?: boolean // Loading state for start repair action
+  isStartingRepair?: boolean | ((repairId: string) => boolean) // Loading state for start repair action
 }
 
 // Convert RepairJob to Device-like structure for table compatibility
-const convertRepairJobToDevice = (repairJob: RepairJob, allRepairJobs: RepairJob[], repairCountByDevice?: Record<string, number>): Device & { _repairJobData: RepairJob; _repairPosition: number; _totalRepairs: number } => {
+const convertRepairJobToDevice = (repairJob: RepairJobWithDevice, allRepairJobs: RepairJobWithDevice[], repairCountByDevice?: Record<string, number>): Device & { _repairJobData: RepairJobWithDevice; _repairPosition: number; _totalRepairs: number } => {
   const deviceId = repairJob.device_internal_id || 'unknown'
   const totalRepairs = repairCountByDevice?.[deviceId] || 1
   
@@ -118,7 +125,7 @@ export function RepairJobListTable({
   ]
   
   // Create a type for our extended device data
-  type ExtendedDevice = Device & { _repairJobData: RepairJob; _repairPosition: number; _totalRepairs: number }
+  type ExtendedDevice = Device & { _repairJobData: RepairJobWithDevice; _repairPosition: number; _totalRepairs: number }
 
   // Create wrapper functions that cast the device to ExtendedDevice
   const renderActionsWrapper = (device: Device) => renderActions(device as ExtendedDevice)
@@ -145,11 +152,11 @@ export function RepairJobListTable({
           <Button 
             size="sm"
             onClick={() => onStartRepair(repairJob)}
-            disabled={hasActiveRepair || isStartingRepair}
-            title={hasActiveRepair || isStartingRepair ? "Complete or cancel current repair first" : "Start this repair"}
+            disabled={hasActiveRepair || (typeof isStartingRepair === 'function' ? isStartingRepair(repairJob.id) : isStartingRepair)}
+            title={hasActiveRepair || (typeof isStartingRepair === 'function' ? isStartingRepair(repairJob.id) : isStartingRepair) ? "Complete or cancel current repair first" : "Start this repair"}
           >
             <ClipboardCheck className="h-4 w-4 mr-1" />
-            {isStartingRepair ? 'Starting...' : 'Start Repair'}
+            {(typeof isStartingRepair === 'function' ? isStartingRepair(repairJob.id) : isStartingRepair) ? 'Starting...' : 'Start Repair'}
           </Button>
         )}
         

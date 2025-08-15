@@ -230,72 +230,32 @@ export const repairJobsApi = {
    * Start a repair job and update device status
    */
   async startRepairJob(id: string, assignedTo?: string) {
-    const supabase = createClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    console.log('🔧 repairJobsApi.startRepairJob called with:', { id, assignedTo })
+    
+    // Make HTTP request to the API endpoint
+    const response = await fetch(`/api/repair-jobs/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status: 'in_progress',
+        assigned_to: assignedTo,
+        assigned_at: new Date().toISOString()
+      }),
+    })
 
-    // Get current user for assigned_by field
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('User not authenticated')
+    console.log('🔧 API response status:', response.status)
 
-    // First, get the repair job to check device_id
-    const { data: repairJob, error: fetchError } = await supabase
-      .from('repair_jobs')
-      .select('device_id, repair_type')
-      .eq('id', id)
-      .single()
-
-    if (fetchError) throw fetchError
-
-    // Validate device_id
-    if (!repairJob.device_id) {
-      throw new Error('Repair job has no device_id')
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      console.error('🔧 API error:', errorData)
+      throw new Error(errorData.error || `HTTP ${response.status}`)
     }
 
-    // Update repair job status to in_progress
-    const { data, error } = await supabase
-      .from('repair_jobs')
-      .update({
-        status: 'in_progress' as RepairJobStatus,
-        assigned_to: assignedTo || user.id,
-        assigned_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) throw error
-
-    // Update device status to in_repair
-    const { error: deviceUpdateError } = await supabase
-      .from('devices')
-      .update({ 
-        status: 'in_repair'
-      })
-      .eq('id', repairJob.device_id)
-
-    if (deviceUpdateError) {
-      console.error('Failed to update device status:', deviceUpdateError)
-      // Don't fail the entire request if device update fails
-    }
-
-    // Record device status change in history
-    const { error: historyError } = await supabase
-      .from('device_status_history')
-      .insert({
-        device_id: repairJob.device_id,
-        old_status: 'awaiting_repair',
-        new_status: 'in_repair',
-        changed_by: user.id,
-        notes: `Device repair started - ${repairJob.repair_type}`
-      })
-
-    if (historyError) {
-      console.error('Failed to record device status history:', historyError)
-      // Don't fail the entire request if history recording fails
-    }
-
-    return data as RepairJob
+    const result = await response.json()
+    console.log('🔧 API response data:', result)
+    return result.data
   },
 
   /**

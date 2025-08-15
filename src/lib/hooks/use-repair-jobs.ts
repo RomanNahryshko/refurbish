@@ -41,6 +41,9 @@ export function useCreateRepairJob() {
       repairJobsApi.create(data, createdBy),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
+      // Also invalidate devices queries since device status might change
+      queryClient.invalidateQueries({ queryKey: ['devices'] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }
@@ -54,6 +57,9 @@ export function useUpdateRepairJob() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
       queryClient.invalidateQueries({ queryKey: ['repair-jobs', id] })
+      // Also invalidate devices queries since device status might change
+      queryClient.invalidateQueries({ queryKey: ['devices'] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }
@@ -65,6 +71,9 @@ export function useDeleteRepairJob() {
     mutationFn: repairJobsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
+      // Also invalidate devices queries since device status might change
+      queryClient.invalidateQueries({ queryKey: ['devices'] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }
@@ -130,6 +139,7 @@ export function useCompleteRepairJob() {
       
       // Also invalidate devices queries since device status changes to final_qc
       queryClient.invalidateQueries({ queryKey: ['devices'] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
       
       // Also invalidate QC checks queries since a new QC check is created
       queryClient.invalidateQueries({ queryKey: ['qc-checks'] })
@@ -152,9 +162,11 @@ export function useStartRepairJob() {
       repairJobId: string
       assignedTo?: string
     }) => {
+      console.log('🔧 useStartRepairJob mutationFn called with:', { repairJobId, assignedTo })
       return repairJobsApi.startRepairJob(repairJobId, assignedTo)
     },
     onSuccess: (data, { repairJobId }) => {
+      console.log('🔧 useStartRepairJob success:', data)
       // Invalidate repair jobs queries
       queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
       queryClient.invalidateQueries({ queryKey: ['repair-jobs', repairJobId] })
@@ -167,6 +179,7 @@ export function useStartRepairJob() {
       queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
     },
     onError: (error, { repairJobId }) => {
+      console.error('🔧 useStartRepairJob error:', error)
       console.error('Failed to start repair job:', repairJobId, error)
     }
   })

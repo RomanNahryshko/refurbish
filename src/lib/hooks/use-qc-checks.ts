@@ -27,6 +27,7 @@ export function useCreateQCCheck() {
     onSuccess: (_, { qcData }) => {
       queryClient.invalidateQueries({ queryKey: ['qc-checks', 'device', qcData.device_id] })
       queryClient.invalidateQueries({ queryKey: ['devices'] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }

@@ -68,6 +68,7 @@ export function useCreateDevice() {
     mutationFn: devicesApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }
@@ -80,6 +81,7 @@ export function useCreateDevicesFromImport() {
       devicesApi.createFromImport(batchId, devices),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }
@@ -93,6 +95,7 @@ export function useUpdateDevice() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
       queryClient.invalidateQueries({ queryKey: ['devices', id] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }
@@ -106,6 +109,7 @@ export function useUpdateDeviceStatus() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
       queryClient.invalidateQueries({ queryKey: ['devices', id] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }
@@ -119,6 +123,7 @@ export function useUpdateDeviceGrade() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
       queryClient.invalidateQueries({ queryKey: ['devices', id] })
+      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }

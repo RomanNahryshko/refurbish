@@ -6,6 +6,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  console.log('🔧 PATCH /api/repair-jobs/[id] called with params:', params)
+  
   // Check permission
   const permissionCheck = await requirePermission('repair_jobs', 'update')
   if (permissionCheck) return permissionCheck
@@ -20,6 +22,8 @@ export async function PATCH(
 
     const { id } = params
     const updateData = await request.json()
+    
+    console.log('🔧 Update data received:', updateData)
 
     // Validate the repair job exists
     const { data: existingRepairJob, error: fetchError } = await supabase
@@ -51,6 +55,8 @@ export async function PATCH(
         error: `Failed to update repair job: ${updateError.message}` 
       }, { status: 500 })
     }
+    
+    console.log('🔧 Repair job updated successfully:', updatedRepairJob)
 
     // Handle device status changes based on repair job status
     if (updateData.status === 'in_progress') {
@@ -114,6 +120,7 @@ export async function PATCH(
       }
     }
 
+    console.log('🔧 Returning successful response with data:', updatedRepairJob)
     return NextResponse.json({ 
       data: updatedRepairJob,
       message: 'Repair job updated successfully' 

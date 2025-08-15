@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { 
+import {
   ChevronDown,
   ChevronUp,
   Wrench,
@@ -18,6 +18,7 @@ import {
   Calendar
 } from 'lucide-react'
 import { RepairTaskSelector } from '@/components/common/repair-task-selector'
+import { ConfirmationDialog } from '@/components/common/confirmation-dialog'
 
 interface Device {
   id: string
@@ -59,7 +60,8 @@ interface FinalQCDeviceCardProps {
   onRepairToggle: (repairId: string) => void
   onOtherDescriptionChange: (description: string) => void
   onQCNotesChange: (notes: string) => void
-  onCompleteQC: (decision: 'pass' | 'fail', grade?: string) => void
+  onCompleteQC: (decision: 'pass' | 'fail', grade?: string) => Promise<void>
+  isSubmitting?: boolean
 }
 
 export function FinalQCDeviceCard({
@@ -72,35 +74,81 @@ export function FinalQCDeviceCard({
   onRepairToggle,
   onOtherDescriptionChange,
   onQCNotesChange,
-  onCompleteQC
+  onCompleteQC,
+  isSubmitting = false
 }: FinalQCDeviceCardProps) {
   const [showRepairs, setShowRepairs] = useState(false)
   const [selectedGrade, setSelectedGrade] = useState<string>('')
   const [qcDecision, setQcDecision] = useState<'pass' | 'fail' | ''>('')
+  
+  // Modal states
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean
+    title: string
+    description: string
+  }>({
+    open: false,
+    title: '',
+    description: ''
+  })
+  
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean
+    title: string
+    description: string
+    action: () => void
+  }>({
+    open: false,
+    title: '',
+    description: '',
+    action: () => {}
+  })
 
   const handleCompleteQC = () => {
     if (!qcDecision) {
-      alert('Please select Pass or Fail QC')
+      setErrorDialog({
+        open: true,
+        title: 'Missing QC Decision',
+        description: 'Please select Pass or Fail QC before proceeding.'
+      })
       return
     }
 
     if (qcDecision === 'pass' && !selectedGrade) {
-      alert('Please assign a grade for passed device')
+      setErrorDialog({
+        open: true,
+        title: 'Missing Grade Assignment',
+        description: 'Please assign a grade for the passed device.'
+      })
       return
     }
 
     if (qcDecision === 'fail' && selectedRepairs.length === 0) {
-      alert('Please select at least one repair task for failed device')
+      setErrorDialog({
+        open: true,
+        title: 'Missing Repair Tasks',
+        description: 'Please select at least one repair task for the failed device.'
+      })
       return
     }
 
-    const message = qcDecision === 'pass' 
-      ? `Pass Final QC with Grade ${selectedGrade}?\n\nDevice will be marked as ready to ship.`
-      : `Fail Final QC and send back for repairs?\n\nSelected repairs: ${selectedRepairs.join(', ')}`
+    const title = qcDecision === 'pass' 
+      ? 'Confirm Pass Final QC'
+      : 'Confirm Fail Final QC'
+    
+    const description = qcDecision === 'pass' 
+      ? `Are you sure you want to pass Final QC with Grade ${selectedGrade}?\n\nDevice will be marked as ready to ship.`
+      : `Are you sure you want to fail Final QC and send back for repairs?\n\nSelected repairs: ${selectedRepairs.join(', ')}`
 
-    if (confirm(message)) {
-      onCompleteQC(qcDecision, selectedGrade)
-    }
+    setConfirmDialog({
+      open: true,
+      title,
+      description,
+      action: () => {
+        onCompleteQC(qcDecision, selectedGrade)
+        setConfirmDialog({ open: false, title: '', description: '', action: () => {} })
+      }
+    })
   }
 
   return (
@@ -135,11 +183,11 @@ export function FinalQCDeviceCard({
           </div>
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">Storage:</span>
-            <span>{device.storage_capacity}</span>
+            <span>{device.storage_capacity || 'Unknown'}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">Color:</span>
-            <span>{device.color}</span>
+            <span>{device.color || 'Unknown'}</span>
           </div>
         </div>
 
@@ -223,27 +271,39 @@ export function FinalQCDeviceCard({
               <span className="font-medium">Assign Final Grade</span>
             </div>
             <RadioGroup value={selectedGrade} onValueChange={setSelectedGrade} className="grid grid-cols-3 gap-3">
-              <div className="border rounded-lg p-3 cursor-pointer hover:bg-white">
+              <div className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                selectedGrade === 'A' 
+                  ? 'border-green-500 bg-green-100 shadow-md' 
+                  : 'hover:bg-white hover:border-green-300'
+              }`}>
                 <RadioGroupItem value="A" id="final-grade-a" className="sr-only" />
-                <Label htmlFor="final-grade-a" className="cursor-pointer">
+                <Label htmlFor="final-grade-a" className="cursor-pointer w-full">
                   <div className="text-center">
                     <div className="text-xl font-bold text-green-600">A</div>
                     <div className="text-xs">Best Condition</div>
                   </div>
                 </Label>
               </div>
-              <div className="border rounded-lg p-3 cursor-pointer hover:bg-white">
+              <div className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                selectedGrade === 'B' 
+                  ? 'border-blue-500 bg-blue-100 shadow-md' 
+                  : 'hover:bg-white hover:border-blue-300'
+              }`}>
                 <RadioGroupItem value="B" id="final-grade-b" className="sr-only" />
-                <Label htmlFor="final-grade-b" className="cursor-pointer">
+                <Label htmlFor="final-grade-b" className="cursor-pointer w-full">
                   <div className="text-center">
                     <div className="text-xl font-bold text-blue-600">B</div>
                     <div className="text-xs">Good Condition</div>
                   </div>
                 </Label>
               </div>
-              <div className="border rounded-lg p-3 cursor-pointer hover:bg-white">
+              <div className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                selectedGrade === 'C' 
+                  ? 'border-orange-500 bg-orange-100 shadow-md' 
+                  : 'hover:bg-white hover:border-orange-300'
+              }`}>
                 <RadioGroupItem value="C" id="final-grade-c" className="sr-only" />
-                <Label htmlFor="final-grade-c" className="cursor-pointer">
+                <Label htmlFor="final-grade-c" className="cursor-pointer w-full">
                   <div className="text-center">
                     <div className="text-xl font-bold text-orange-600">C</div>
                     <div className="text-xs">Acceptable</div>
@@ -300,10 +360,15 @@ export function FinalQCDeviceCard({
         <div className="flex justify-end pt-3 border-t">
           <Button 
             onClick={handleCompleteQC}
-            disabled={!qcDecision}
+            disabled={!qcDecision || isSubmitting}
             className={qcDecision === 'pass' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
           >
-            {qcDecision === 'pass' ? (
+            {isSubmitting ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Processing...
+              </>
+            ) : qcDecision === 'pass' ? (
               <>
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Complete Final QC - Pass
@@ -322,6 +387,27 @@ export function FinalQCDeviceCard({
           </Button>
         </div>
       </div>
+
+      {/* Error Dialog */}
+      <ConfirmationDialog
+        open={errorDialog.open}
+        onOpenChange={(open: boolean) => setErrorDialog({ ...errorDialog, open })}
+        title={errorDialog.title}
+        description={errorDialog.description}
+        confirmText="OK"
+        onConfirm={() => setErrorDialog({ open: false, title: '', description: '' })}
+        onCancel={() => setErrorDialog({ open: false, title: '', description: '' })}
+      />
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={confirmDialog.open}
+        onOpenChange={(open: boolean) => setConfirmDialog({ ...confirmDialog, open })}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText="Confirm"
+        onConfirm={confirmDialog.action}
+      />
     </Card>
   )
 }

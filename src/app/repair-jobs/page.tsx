@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, Plus, Minus, X, Wrench } from 'lucide-react'
 import { RepairJobListTable } from '@/components/repair-jobs/repair-job-list-table'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
+import { ConfirmationDialog } from '@/components/common/confirmation-dialog'
 import { useRepairJobs } from '@/lib/hooks/use-repair-jobs'
 import { useBatches } from '@/lib/hooks/use-batches'
 import { useSpareParts } from '@/lib/hooks/use-spare-parts'
 import { useStartRepairJob, useCompleteRepairJob, useUpdateRepairJob } from '@/lib/hooks/use-repair-jobs'
-import { RepairJob } from '@/types/mock-types'
+import { RepairJob } from '@/lib/types/business-types'
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/client'
 
@@ -73,16 +74,29 @@ export default function RepairJobsPage() {
   // Complete repair job mutation (sends device to QC)
   const completeRepairJob = useCompleteRepairJob()
   
+  // Track which repair job is currently being started
+  const [startingRepairId, setStartingRepairId] = useState<string | null>(null)
+  
   // Handle start repair success/error
   useEffect(() => {
+    console.log('🔧 startRepairJob state changed:', {
+      isSuccess: startRepairJob.isSuccess,
+      isError: startRepairJob.isError,
+      error: startRepairJob.error,
+      isPending: startRepairJob.isPending
+    })
+    
     if (startRepairJob.isSuccess) {
+      console.log('🔧 startRepairJob SUCCESS!')
+      setStartingRepairId(null) // Clear loading state
       // The hook will automatically invalidate queries
     }
     if (startRepairJob.isError) {
-      console.error('Failed to start repair job:', startRepairJob.error)
+      console.error('🔧 startRepairJob ERROR:', startRepairJob.error)
+      setStartingRepairId(null) // Clear loading state
       // You could show a toast notification here
     }
-  }, [startRepairJob.isSuccess, startRepairJob.isError, startRepairJob.error])
+  }, [startRepairJob.isSuccess, startRepairJob.isError, startRepairJob.error, startRepairJob.isPending])
   
   // Handle complete repair success/error
   useEffect(() => {
@@ -235,6 +249,11 @@ export default function RepairJobsPage() {
   const paginatedRepairs = sortedRepairs.slice(startIndex, endIndex)
   
   const handleStartRepair = (repair: RepairJob) => {
+    console.log('🔧 handleStartRepair called with:', repair)
+    console.log('🔧 currentUserId:', currentUserId)
+    console.log('🔧 repair.repair_type:', repair.repair_type)
+    console.log('🔧 repairTypeConfig keys:', Object.keys(repairTypeConfig))
+    
     if (!currentUserId) {
       console.error('No current user ID found')
       return
@@ -247,20 +266,37 @@ export default function RepairJobsPage() {
       return
     }
     
+    console.log('🔧 Found transformed repair:', transformedRepair)
+    
+    console.log('🔧 Setting confirm dialog...')
     setConfirmDialog({
       open: true,
       title: 'Start Repair',
       description: `Are you sure you want to start the ${repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.label} repair for device ${transformedRepair.device_internal_id}?`,
       action: () => {
-        // Start the repair job using the API (this will update device status to in_repair)
-        startRepairJob.mutate({
-          repairJobId: repair.id,
-          assignedTo: currentUserId
-        })
+        console.log('🔧 🔧 🔧 CONFIRMATION DIALOG ACTION CALLED!')
+        console.log('🔧 Starting repair job with:', { repairJobId: repair.id, assignedTo: currentUserId })
+        
+        try {
+          // Set loading state for this specific repair job
+          setStartingRepairId(repair.id)
+          
+          // Start the repair job using the API (this will update device status to in_repair)
+          startRepairJob.mutate({
+            repairJobId: repair.id,
+            assignedTo: currentUserId
+          })
+          console.log('🔧 startRepairJob.mutate() called successfully')
+        } catch (error) {
+          console.error('🔧 Error calling startRepairJob.mutate():', error)
+          setStartingRepairId(null) // Clear loading state on error
+        }
         
         setConfirmDialog({ open: false, title: '', description: '', action: () => {} })
+        console.log('🔧 Dialog closed')
       }
     })
+    console.log('🔧 Confirm dialog set, should be visible now')
   }
 
   const handleCompleteRepair = (repair: RepairJob) => {
@@ -501,20 +537,20 @@ export default function RepairJobsPage() {
             onCompleteRepair={handleCompleteRepair}
             onCancelRepair={handleCancelRepair}
             repairCountByDevice={repairCountByDevice}
-            isStartingRepair={startRepairJob.isPending}
+            isStartingRepair={(repairId: string) => startingRepairId === repairId}
           />
         </CardContent>
       </Card>
 
       {/* Confirmation Dialog */}
-      {/* <ConfirmationDialog
+      <ConfirmationDialog
         open={confirmDialog.open}
-        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+        onOpenChange={(open: boolean) => setConfirmDialog({ ...confirmDialog, open })}
         title={confirmDialog.title}
         description={confirmDialog.description}
         confirmText="Start Repair"
         onConfirm={confirmDialog.action}
-      /> */}
+      />
 
       {/* Parts Recording Dialog */}
       {partsRecording.repairId && (

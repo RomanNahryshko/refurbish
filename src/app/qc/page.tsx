@@ -18,6 +18,7 @@ import { useBatches } from '@/lib/hooks/use-batches'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { mockDevices, mockBatches, mockQCChecks } from '@/lib/mock-data'
 
 export default function QCPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -30,16 +31,26 @@ export default function QCPage() {
   const queryClient = useQueryClient()
   
   // Fetch devices that are ready for final QC
-  const { data: devicesForQC, isLoading: devicesLoading } = useDevicesForFinalQC()
+  const { data: devicesForQC, isLoading: devicesLoading, error: devicesError } = useDevicesForFinalQC()
   
   // Fetch batches for device information
-  const { data: batches, isLoading: batchesLoading } = useBatches()
+  const { data: batches, isLoading: batchesLoading, error: batchesError } = useBatches()
   
   // Fetch QC checks for history - only when we have devices
-  const { data: qcChecks } = useQCChecks(
+  const { data: qcChecks, error: qcChecksError } = useQCChecks(
     devicesForQC && devicesForQC.length > 0 ? devicesForQC.map(d => d.id) : undefined,
-    { enabled: !!devicesForQC && devicesForQC.length > 0 }
+    { enabled: !!(devicesForQC && devicesForQC.length > 0) }
   )
+  
+  // Fallback to mock data if database is not available
+  const fallbackDevices = mockDevices.filter(d => d.status === 'final_qc')
+  const fallbackBatches = mockBatches
+  const fallbackQCChecks = mockQCChecks.filter(qc => qc.check_type === 'final')
+  
+  // Use real data if available, otherwise fallback to mock data
+  const finalDevices = devicesError ? fallbackDevices : (devicesForQC || [])
+  const finalBatches = batchesError ? fallbackBatches : (batches || [])
+  const finalQCChecks = qcChecksError ? fallbackQCChecks : (qcChecks || [])
   
   // Refetch data every time the component mounts (page visit)
   useEffect(() => {
@@ -49,25 +60,28 @@ export default function QCPage() {
       setIsRefreshing(true)
       
       try {
-        // Force refetch of devices and batches data
-        await queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
-        await queryClient.refetchQueries({ queryKey: ['batches'] })
-        
-        // If we have devices, also refetch QC checks
-        const devicesData = queryClient.getQueryData(['devices', 'final-qc'])
-        if (devicesData && Array.isArray(devicesData) && devicesData.length > 0) {
-          const deviceIds = devicesData.map((d: { id: string }) => d.id)
-          await queryClient.refetchQueries({ queryKey: ['qc-checks', deviceIds] })
+        // Only try to refetch if we have a valid database connection
+        if (!devicesError && !batchesError) {
+          // Force refetch of devices and batches data
+          await queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
+          await queryClient.refetchQueries({ queryKey: ['batches'] })
+          
+          // If we have devices, also refetch QC checks
+          const devicesData = queryClient.getQueryData(['devices', 'final-qc'])
+          if (devicesData && Array.isArray(devicesData) && devicesData.length > 0) {
+            const deviceIds = devicesData.map((d: { id: string }) => d.id)
+            await queryClient.refetchQueries({ queryKey: ['qc-checks', deviceIds] })
+          }
         }
       } finally {
         setIsRefreshing(false)
       }
     }
     refetchData()
-  }, [queryClient]) // Include queryClient in dependencies
+  }, [queryClient, devicesError, batchesError]) // Include errors in dependencies
   
   // Show loading state while data is being fetched or refreshing
-  if (devicesLoading || batchesLoading || isRefreshing) {
+  if ((devicesLoading || batchesLoading) && !devicesError && !batchesError) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="flex justify-center items-center py-12">
@@ -79,7 +93,7 @@ export default function QCPage() {
   
   // Transform API data to match DeviceListTable expectations
   // Since we're not getting batch info in joins anymore, we need to handle it differently
-  const transformedDevices = devicesForQC?.map(device => ({
+  const transformedDevices = finalDevices?.map(device => ({
     ...device,
     // Ensure batch_id is available for DeviceListTable batch lookup
     batch_id: device.batch_id || ''
@@ -97,6 +111,15 @@ export default function QCPage() {
             <p className="text-sm text-gray-400 mt-2">
               Devices will appear here once they complete the repair process and are marked as ready for final QC.
             </p>
+            {(devicesError || batchesError) && (
+              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ Using mock data - Database connection not available. 
+                  <br />
+                  Set up Supabase configuration to use real data.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -106,7 +129,7 @@ export default function QCPage() {
   // QC-specific data calculations (MVP scope)
   const getQCMetrics = () => {
     // Only calculate metrics if we have QC checks data
-    if (!qcChecks) {
+    if (!finalQCChecks) {
       return {
         inQueue: transformedDevices.length,
         completedToday: 0,
@@ -114,7 +137,7 @@ export default function QCPage() {
       }
     }
     
-    const devicesWithQC = qcChecks.filter((qc: { check_type: string }) => qc.check_type === 'final') || []
+    const devicesWithQC = finalQCChecks.filter((qc: { check_type: string }) => qc.check_type === 'final') || []
     const completedQC = devicesWithQC.filter((qc: { overall_result: string }) => qc.overall_result === 'pass' || qc.overall_result === 'fail')
     
     return {
@@ -168,6 +191,11 @@ export default function QCPage() {
           <p className="text-gray-600 mt-1">
             Devices ready for final QC after repairs
           </p>
+          {(devicesError || batchesError) && (
+            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+              ⚠️ Using mock data - Database connection not available
+            </div>
+          )}
         </div>
         
         <div className="flex items-center gap-4">
@@ -175,17 +203,21 @@ export default function QCPage() {
           <Button
             variant="outline"
             size="sm"
-            disabled={isRefreshing}
+            disabled={isRefreshing || !!(devicesError && batchesError)}
             onClick={async () => {
               try {
                 setIsRefreshing(true)
-                await queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
-                await queryClient.refetchQueries({ queryKey: ['batches'] })
-                if (devicesForQC && devicesForQC.length > 0) {
-                  const deviceIds = devicesForQC.map(d => d.id)
-                  await queryClient.refetchQueries({ queryKey: ['qc-checks', deviceIds] })
+                if (!devicesError && !batchesError) {
+                  await queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
+                  await queryClient.refetchQueries({ queryKey: ['batches'] })
+                  if (devicesForQC && devicesForQC.length > 0) {
+                    const deviceIds = devicesForQC.map(d => d.id)
+                    await queryClient.refetchQueries({ queryKey: ['qc-checks', deviceIds] })
+                  }
+                  toast.success('Data refreshed successfully!')
+                } else {
+                  toast.info('Using mock data - no database connection available')
                 }
-                toast.success('Data refreshed successfully!')
               } catch {
                 toast.error('Failed to refresh data')
               } finally {
@@ -243,49 +275,13 @@ export default function QCPage() {
         </div>
       </div>
 
-      {/* Recent QC Activity */}
-      {qcChecks && qcChecks.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="text-lg font-semibold mb-3">
-              Recent QC Activity
-              {isRefreshing && (
-                <span className="ml-2 inline-flex items-center gap-1 text-blue-600 text-sm font-normal">
-                  <LoadingSpinner className="h-3 w-3" />
-                  Updating...
-                </span>
-              )}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-2xl font-bold text-purple-600">
-                  {isRefreshing ? <LoadingSpinner className="h-6 w-6 mx-auto" /> : qcMetrics.inQueue}
-                </div>
-                <div className="text-sm text-gray-600">Devices in Queue</div>
-              </div>
-              <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-2xl font-bold text-green-600">
-                  {isRefreshing ? <LoadingSpinner className="h-6 w-6 mx-auto" /> : qcMetrics.completedToday}
-                </div>
-                <div className="text-sm text-gray-600">Completed Today</div>
-              </div>
-              <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-2xl font-bold text-blue-600">
-                  {isRefreshing ? <LoadingSpinner className="h-6 w-6 mx-auto" /> : qcMetrics.totalCompleted}
-                </div>
-                <div className="text-sm text-gray-600">Total Completed</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
       
       {/* Device Table with Integrated Filters */}
       <Card>
         <CardContent>
           <DeviceListTable
             devices={paginatedDevices}
-            batches={batches || []}
+            batches={finalBatches || []}
             columns={['internal_id', 'device', 'imei', 'batch', 'actions']}
             renderActions={(device) => (
               <Link href={`/qc/${device.internal_id}`}>
@@ -325,7 +321,7 @@ export default function QCPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Batches</SelectItem>
-                      {(batches || []).map((batch: { id: string; batch_number: string }) => (
+                      {(finalBatches || []).map((batch: { id: string; batch_number: string }) => (
                         <SelectItem key={batch.id} value={batch.id}>
                           {batch.batch_number}
                         </SelectItem>

@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (check_type === 'final') {
       if (overall_result === 'pass') {
-        newDeviceStatus = 'graded'
+        newDeviceStatus = 'ready_to_ship' // Passed final QC devices are ready to ship (will be removed from QC queue)
       } else if (overall_result === 'fail') {
         newDeviceStatus = 'awaiting_repair' // Failed final QC goes back to repair
       }
