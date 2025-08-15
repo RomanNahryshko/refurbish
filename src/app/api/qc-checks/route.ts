@@ -91,10 +91,15 @@ export async function POST(request: NextRequest) {
     // Update device status based on QC result
     let newDeviceStatus = 'received'
     if (check_type === 'initial') {
-      if (overall_result === 'pass') {
+      if (overall_result === 'pass' && grade_assigned) {
+        // If initial QC passes with a grade assigned, device is graded
+        newDeviceStatus = 'graded'
+      } else if (overall_result === 'pass') {
+        // If initial QC passes without grade, device awaits repair
         newDeviceStatus = 'awaiting_repair'
       } else if (overall_result === 'fail') {
-        newDeviceStatus = 'awaiting_repair' // Failed devices still go to repair
+        // Failed devices go to repair
+        newDeviceStatus = 'awaiting_repair'
       }
     } else if (check_type === 'final') {
       if (overall_result === 'pass') {

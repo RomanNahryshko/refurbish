@@ -158,7 +158,7 @@ export const devicesApi = {
       dr_phone_data: device.dr_phone_data,
       grade: device.grade || 'ungraded', // Use provided grade or default to 'ungraded'
       notes: device.notes,
-      status: 'awaiting_repair' as DeviceStatus, // Changed from 'received' to 'awaiting_repair'
+      status: device.grade !== 'ungraded' ? 'graded' as DeviceStatus : 'awaiting_repair' as DeviceStatus, // Changed from 'received' to 'awaiting_repair' if picked repairs, else 'graded'
       created_by: user.id,
       dr_phone_imported_at: new Date().toISOString()
     }))
@@ -169,6 +169,20 @@ export const devicesApi = {
       .select()
 
     if (error) throw error
+    if(data[0].status === 'graded') {
+      //add device to final qc_check table
+       const { error: qcCheckError } = await supabase
+      .from('qc_checks')
+      .insert({
+        device_id: data[0].id,
+        check_type: 'final',
+        overall_result: 'not_tested',
+        performed_by: user.id,
+        notes: `Device sent to final QC after completing grading`
+      })
+
+      if (qcCheckError) throw qcCheckError
+    }
     return data as Device[]
   },
 

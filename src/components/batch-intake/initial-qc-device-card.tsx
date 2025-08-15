@@ -109,6 +109,8 @@ export function InitialQCDeviceCard({
       const qcData = {
         device_id: deviceIdToUse,
         check_type: 'initial' as const,
+        // If repairs needed: overall_result = 'fail', device goes to repair
+        // If grade assigned: overall_result = 'pass', device gets 'graded' status
         overall_result: qcApproach === 'repairs' ? 'fail' as const : 'pass' as const,
         grade_assigned: qcApproach === 'grade' ? selectedGrade as 'A' | 'B' | 'C' : undefined,
         notes: qcApproach === 'repairs' 
@@ -204,6 +206,8 @@ export function InitialQCDeviceCard({
       const qcData = {
         device_id: deviceId,
         check_type: 'initial' as const,
+        // If repairs needed: overall_result = 'fail', device goes to repair
+        // If grade assigned: overall_result = 'pass', device gets 'graded' status
         overall_result: qcApproach === 'repairs' ? 'fail' as const : 'pass' as const,
         grade_assigned: qcApproach === 'grade' ? selectedGrade as 'A' | 'B' | 'C' : undefined,
         notes: qcApproach === 'repairs' 
