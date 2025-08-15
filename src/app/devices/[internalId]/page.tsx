@@ -1,37 +1,24 @@
 'use client'
 
-import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 
 import {
-    ArrowLeft,
-    Smartphone,
-    Package,
-    Wrench,
-    CheckCircle,
-    AlertCircle,
-    Hash,
-    Package2
+  ArrowLeft,
+  Smartphone,
+  Wrench,
+  Hash
 } from 'lucide-react';
-import { useDeviceByInternalId } from '@/lib/hooks/use-devices';
+import { useDeviceByInternalId, useDeviceStatusHistory } from '@/lib/hooks/use-devices';
 import { statusConfig } from '@/components/common/device-list-table';
-import { RepairTrackingData } from '@/lib/types/business-types';
+import { DeviceStatusHistoryTable } from '@/components/devices/device-status-history-table';
 
-// Mock current user (for role-based actions)
-const mockCurrentUser = {
-  id: 'user-current',
-  full_name: 'Current User',
-  role: 'technician', // or 'ops_manager'
-  technician_level: 'L2'
-}
+
 
 export default function DeviceJobSheetPage() {
   const params = useParams()
@@ -41,31 +28,17 @@ export default function DeviceJobSheetPage() {
   // Fetch device data by internal ID
   const { data: device, isLoading: deviceLoading, error: deviceError } = useDeviceByInternalId(internalId)
   
-  // State for parts recording
-  const [partsRecording, setPartsRecording] = useState<{
-    repairId: string | null
-    selectedPart: string
-    quantity: number
-    notes: string
-  }>({
-    repairId: null,
-    selectedPart: '',
-    quantity: 1,
-    notes: ''
-  })
+  // Fetch device status history
+  const { data: statusHistory, isLoading: statusHistoryLoading, error: statusHistoryError, refetch: refetchStatusHistory, isFetching: statusHistoryFetching } = useDeviceStatusHistory(device?.id || '')
   
-  // State for confirmation dialogs
-  const [confirmDialog, setConfirmDialog] = useState<{
-    open: boolean
-    title: string
-    description: string
-    action: () => void
-  }>({
-    open: false,
-    title: '',
-    description: '',
-    action: () => {}
-  })
+  // Refetch data every time the component mounts (page visit)
+  useEffect(() => {
+    if (device?.id) {
+      refetchStatusHistory();
+    }
+  }, [device?.id, refetchStatusHistory]);
+  
+
   
   // Validate internal ID format (8 digits)
   if (!/^\d{8}$/.test(internalId)) {
@@ -100,7 +73,9 @@ export default function DeviceJobSheetPage() {
       <div className="p-6 max-w-7xl mx-auto">
         <Card>
           <CardContent className="py-10 text-center">
-            <AlertCircle className="mx-auto h-10 w-10 text-red-600 mb-3" />
+            <div className="mx-auto h-10 w-10 text-red-600 mb-3 flex items-center justify-center">
+              ⚠️
+            </div>
             <h3 className="text-lg font-semibold text-red-600">Error Loading Device</h3>
             <p className="text-gray-600 mb-4">{deviceError.message}</p>
             <Button variant="outline" className="mt-4" onClick={() => router.back()}>
@@ -118,7 +93,9 @@ export default function DeviceJobSheetPage() {
       <div className="p-6 max-w-7xl mx-auto">
         <Card>
           <CardContent className="py-10 text-center">
-            <AlertCircle className="mx-auto h-10 w-10 text-gray-400 mb-3" />
+            <div className="mx-auto h-10 w-10 text-gray-400 mb-3 flex items-center justify-center">
+              ❓
+            </div>
             <p className="text-gray-600">Device not found</p>
             <Button variant="outline" className="mt-4" onClick={() => router.back()}>
               Go Back
@@ -131,77 +108,11 @@ export default function DeviceJobSheetPage() {
   
   // Extract batch data from device response
   const batch = device.batch
-  // For now, we'll use empty arrays for repairs until we implement those APIs
-  const repairs: RepairTrackingData[] = []
-  
-
-
-  if (!device) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <Card>
-          <CardContent className="py-10 text-center">
-            <AlertCircle className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-            <p className="text-gray-600">Device not found</p>
-            <Button variant="outline" className="mt-4" onClick={() => router.back()}>
-              Go Back
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
 
   const status = statusConfig[device.status as keyof typeof statusConfig]
   const StatusIcon = status.icon
 
-  // Handler functions for parts recording and repair actions
-  const handleAddPartsToRepair = (repairId: string) => {
-    setPartsRecording({
-      repairId,
-      selectedPart: '',
-      quantity: 1,
-      notes: ''
-    })
-  }
 
-  const submitPartsRecord = () => {
-    // TODO: Implement parts recording API
-    
-    
-    setPartsRecording({
-      repairId: null,
-      selectedPart: '',
-      quantity: 1,
-      notes: ''
-    })
-  }
-
-  const handleCreateRepair = (repairType: string) => {
-    setConfirmDialog({
-      open: true,
-      title: 'Create Repair Job',
-      description: `Create a new ${repairType.replace('_', ' ')} repair for this device?`,
-      action: () => {
-        const newRepair = {
-          id: `repair-new-${Date.now()}`,
-          device_id: device.id,
-          device_internal_id: device.internal_id,
-          device_model: `${device.brand} ${device.model}`,
-          repair_type: repairType as 'housing_change' | 'glass_change' | 'battery_change' | 'software_update' | 'other',
-          description: undefined,
-          status: 'pending' as const,
-          assigned_to: undefined,
-          assigned_to_name: undefined,
-          created_at: new Date().toISOString()
-        }
-        
-        // TODO: Implement repair creation API
-
-        setConfirmDialog({ ...confirmDialog, open: false })
-      }
-    })
-  }
 
 
 
@@ -354,243 +265,21 @@ export default function DeviceJobSheetPage() {
         </Card>
       </div>
 
-      {/* Repair History */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
-            <Wrench className="h-5 w-5" />
-            Repair History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {repairs.length > 0 ? (
-            <div className="space-y-4">
-              {repairs.map((repair: RepairTrackingData) => {
-                return (
-                  <div key={repair.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h4 className="font-medium">
-                          {repair.repair_type.split('_').map((w: string) => 
-                            w.charAt(0).toUpperCase() + w.slice(1)
-                          ).join(' ')} Repair
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          Assigned to {repair.assigned_to_name || 'Unassigned'}
-                        </p>
-                      </div>
-                      <Badge variant={
-                        repair.status === 'completed' ? 'default' :
-                        repair.status === 'in_progress' ? 'secondary' :
-                        'outline'
-                      }>
-                        {repair.status.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
-                      <div>
-                        <span className="text-gray-600">Created</span>
-                        <p>{new Date(repair.created_at).toLocaleDateString()}</p>
-                      </div>
-                      {repair.assigned_at && (
-                        <div>
-                          <span className="text-gray-600">Assigned</span>
-                          <p>{new Date(repair.assigned_at).toLocaleDateString()}</p>
-                        </div>
-                      )}
-                      {repair.completed_at && (
-                        <div>
-                          <span className="text-gray-600">Completed</span>
-                          <p>{new Date(repair.completed_at).toLocaleDateString()}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {repair.parts_used && repair.parts_used.length > 0 && (
-                      <div className="mt-3 p-3 bg-gray-50 rounded">
-                        <p className="text-sm font-medium mb-1">Parts Used:</p>
-                        <ul className="text-sm text-gray-600">
-                          {repair.parts_used.map((part, idx: number) => (
-                            <li key={idx}>• {part.part_name} (Qty: {part.quantity_used})</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    {repair.completion_notes && (
-                      <div className="mt-3 p-3 bg-gray-50 rounded">
-                        <p className="text-sm">{repair.completion_notes}</p>
-                      </div>
-                    )}
-                    
-                    {/* Action buttons for repairs */}
-                    {(mockCurrentUser.role === 'technician' || mockCurrentUser.role === 'ops_manager') && (
-                      <div className="mt-3 flex gap-2">
-                        {(repair.status === 'completed' || repair.status === 'in_progress') && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAddPartsToRepair(repair.id)}
-                            className="cursor-pointer"
-                          >
-                            <Package className="h-4 w-4 mr-1" />
-                            Add Parts
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="py-8 text-center">
-              <Wrench className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-              <p className="text-gray-600">No repairs scheduled for this device</p>
-            </div>
-          )}
-          
-          {/* Create New Repair - Only for Ops Managers */}
-          {mockCurrentUser.role === 'ops_manager' && (
-            <div className="mt-6 pt-6 border-t">
-              <h4 className="font-medium mb-3">Create New Repair Job</h4>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCreateRepair('housing_change')}
-                  className="cursor-pointer"
-                >
-                  <Package className="h-4 w-4 mr-1" />
-                  Housing Change (L1)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCreateRepair('glass_change')}
-                  className="cursor-pointer"
-                >
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  Glass Change (L2)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCreateRepair('battery_change')}
-                  className="cursor-pointer"
-                >
-                  <Package2 className="h-4 w-4 mr-1" />
-                  Battery Change (L3)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCreateRepair('software_update')}
-                  className="cursor-pointer"
-                >
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  Software Update
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCreateRepair('other')}
-                  className="cursor-pointer"
-                >
-                  <Wrench className="h-4 w-4 mr-1" />
-                  Other Repair
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Confirmation Dialog */}
-      <ConfirmationDialog
-        open={confirmDialog.open}
-        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
-        title={confirmDialog.title}
-        description={confirmDialog.description}
-        confirmText="Create"
-        onConfirm={confirmDialog.action}
-      />
-
-      {/* Parts Recording Dialog */}
-      {partsRecording.repairId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>Add Parts to Repair</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Select Part</label>
-                <Select value={partsRecording.selectedPart} onValueChange={(value) => 
-                  setPartsRecording({ ...partsRecording, selectedPart: value })
-                }>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Choose a part" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="placeholder">No parts available</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium">Quantity</label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={partsRecording.quantity}
-                  onChange={(e) => setPartsRecording({ 
-                    ...partsRecording, 
-                    quantity: parseInt(e.target.value) || 1 
-                  })}
-                  className="mt-1"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium">Notes (Optional)</label>
-                <Input
-                  placeholder="Usage notes..."
-                  value={partsRecording.notes}
-                  onChange={(e) => setPartsRecording({ 
-                    ...partsRecording, 
-                    notes: e.target.value 
-                  })}
-                  className="mt-1"
-                />
-              </div>
-              
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setPartsRecording({ 
-                    repairId: null, 
-                    selectedPart: '', 
-                    quantity: 1, 
-                    notes: '' 
-                  })}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={submitPartsRecord} 
-                  className="flex-1"
-                  disabled={!partsRecording.selectedPart}
-                >
-                  Add Parts
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Device Status History */}
+      {statusHistoryFetching && (
+        <div className="flex items-center justify-center py-2 text-sm text-gray-500">
+          <LoadingSpinner size="sm" />
+          <span className="ml-2">Updating status history...</span>
         </div>
       )}
+      <DeviceStatusHistoryTable
+        deviceId={device.id}
+        statusHistory={statusHistory || []}
+        isLoading={statusHistoryLoading}
+        error={statusHistoryError}
+      />
+
+
     </div>
   );
 }

@@ -308,6 +308,62 @@ export const devicesApi = {
     }
     
     return data
+  },
+
+  /**
+   * Get device status history
+   */
+  async getDeviceStatusHistory(deviceId: string) {
+    const supabase = createClient()
+    if (!supabase) throw new Error('Supabase client not initialized')
+
+    // First get the status history
+    const { data: statusHistory, error: historyError } = await supabase
+      .from('device_status_history')
+      .select('*')
+      .eq('device_id', deviceId)
+      .order('created_at', { ascending: false })
+
+    if (historyError) throw historyError
+
+    // If no history, return empty array
+    if (!statusHistory || statusHistory.length === 0) {
+      return []
+    }
+
+    // Get unique user IDs from the history
+    const userIds = [...new Set(statusHistory
+      .map((history: any) => history.changed_by)
+      .filter(Boolean)
+    )]
+
+    // If no user IDs, return history without user data
+    if (userIds.length === 0) {
+      return statusHistory
+    }
+
+    // Get user profiles for the found user IDs
+    const { data: userProfiles, error: userError } = await supabase
+      .from('user_profiles')
+      .select('id, full_name, role, technician_level')
+      .in('id', userIds)
+
+    if (userError) {
+      console.error('Error fetching user profiles:', userError)
+      // Return history without user data if user fetch fails
+      return statusHistory
+    }
+
+    // Create a map of user ID to user profile
+    const userMap = new Map(userProfiles.map((user: any) => [user.id, user]))
+
+    // Combine history with user data
+    const enrichedHistory = statusHistory.map((history: any) => ({
+      ...history,
+      changed_by_user: history.changed_by ? userMap.get(history.changed_by) : null
+    }))
+
+    return enrichedHistory
   }
 }
 

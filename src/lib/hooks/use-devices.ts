@@ -6,6 +6,10 @@ export function useDevices() {
   return useQuery({
     queryKey: ['devices'],
     queryFn: devicesApi.getAll,
+    staleTime: 0, // Always consider data stale - refetch on every mount
+    gcTime: 5 * 60 * 1000, // 5 minutes in cache
+    refetchOnMount: true, // Always refetch when component mounts
+    retry: 2,
   })
 }
 
@@ -30,6 +34,10 @@ export function useDevicesByBatch(batchId: string) {
     queryKey: ['devices', 'batch', batchId],
     queryFn: () => devicesApi.getByBatchId(batchId),
     enabled: !!batchId,
+    staleTime: 0, // Always consider data stale - refetch on every mount
+    gcTime: 5 * 60 * 1000, // 5 minutes in cache
+    refetchOnMount: true, // Always refetch when component mounts
+    retry: 2,
   })
 }
 
@@ -136,6 +144,18 @@ export function useDeleteDevice() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
     },
+  })
+}
+
+export function useDeviceStatusHistory(deviceId: string) {
+  return useQuery({
+    queryKey: ['device-status-history', deviceId],
+    queryFn: () => devicesApi.getDeviceStatusHistory(deviceId),
+    enabled: !!deviceId,
+    staleTime: 0, // Always consider data stale - refetch on every mount
+    gcTime: 5 * 60 * 1000, // 5 minutes in cache
+    refetchOnMount: true, // Always refetch when component mounts
+    retry: 2,
   })
 }
 

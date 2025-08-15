@@ -67,6 +67,13 @@ export interface DeviceStatusHistory {
   changed_by?: string
   notes?: string
   created_at: string
+  // Enriched data from API (not in database schema)
+  changed_by_user?: {
+    id: string
+    full_name: string
+    role: string
+    technician_level?: string
+  } | null
 }
 
 // Batch types - matches database schema exactly

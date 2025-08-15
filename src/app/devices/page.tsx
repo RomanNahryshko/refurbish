@@ -35,13 +35,13 @@ export default function DevicesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   
   // Fetch batch data if batch parameter is present
-  const { data: batchData, isLoading: batchLoading, error: batchError } = useBatch(batchFromUrl || '');
+  const { data: batchData, isLoading: batchLoading, error: batchError, refetch: refetchBatch, isFetching: batchFetching } = useBatch(batchFromUrl || '');
   
   // Fetch devices from batch if batch parameter is present
-  const { data: batchDevices, isLoading: devicesLoading, error: devicesError } = useDevicesByBatch(batchFromUrl || '');
+  const { data: batchDevices, isLoading: devicesLoading, error: devicesError, refetch: refetchBatchDevices, isFetching: devicesFetching } = useDevicesByBatch(batchFromUrl || '');
   
   // Fetch all devices if no batch parameter is present
-  const { data: allDevicesData, isLoading: allDevicesLoading, error: allDevicesError } = useDevices();
+  const { data: allDevicesData, isLoading: allDevicesLoading, error: allDevicesError, refetch: refetchAllDevices, isFetching: allDevicesFetching } = useDevices();
   
   // Update batch filter when URL changes
   useEffect(() => {
@@ -49,6 +49,16 @@ export default function DevicesPage() {
       setBatchFilter(batchFromUrl);
     }
   }, [batchFromUrl]);
+
+  // Refetch data every time the component mounts (page visit)
+  useEffect(() => {
+    if (batchFromUrl) {
+      refetchBatch();
+      refetchBatchDevices();
+    } else {
+      refetchAllDevices();
+    }
+  }, [batchFromUrl, refetchBatch, refetchBatchDevices, refetchAllDevices]);
   
   const itemsPerPage = DEFAULT_ITEMS_PER_PAGE;
 
@@ -107,11 +117,52 @@ export default function DevicesPage() {
   // Loading state for devices
   const isLoading = batchFromUrl ? (batchLoading || devicesLoading) : allDevicesLoading;
   const hasError = batchFromUrl ? (batchError || devicesError) : allDevicesError;
+  
+  // Check if any data is being refetched (for showing loading state)
+  const isRefetching = batchFromUrl ? (batchFetching || devicesFetching) : allDevicesFetching;
+
+  // Show loading state (like on batch-intake page)
+  if (isLoading || isRefetching) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex justify-between items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Devices</h1>
+            <p className="text-muted-foreground">Loading devices...</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="flex justify-center items-center py-12">
+            <LoadingSpinner />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (hasError) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex justify-between items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Devices</h1>
+            <p className="text-muted-foreground">Error loading devices</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="text-center py-12">
+            <p className="text-red-600">Error loading devices: {String(hasError) || 'Unknown error'}</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">
             Devices
@@ -121,7 +172,7 @@ export default function DevicesPage() {
               </span>
             )}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground">
             {batchFromUrl 
               ? batchData 
                 ? `Showing devices from batch ${batchData.batch_number}`
@@ -132,6 +183,7 @@ export default function DevicesPage() {
             }
           </p>
         </div>
+
         {/* Inline KPIs — Option A: Badge row (visual only) */}
         <div className="w-full md:w-auto mt-4 md:mt-0 md:ml-6 flex flex-wrap items-center gap-2">
           <div className="h-8 rounded-sm border border-gray-300 px-3 flex items-center gap-2 text-gray-800 select-none">
@@ -242,36 +294,32 @@ export default function DevicesPage() {
       {/* Device List with Integrated Filters */}
       <Card>
         <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <LoadingSpinner />
-              <span className="ml-2">Loading devices...</span>
+          {isRefetching && (
+            <div className="flex items-center justify-center py-2 text-sm text-gray-500">
+              <LoadingSpinner size="sm" />
+              <span className="ml-2">Updating devices...</span>
             </div>
-          ) : hasError ? (
-            <div className="text-red-600 py-4">
-              Error loading devices: {hasError.message}
-            </div>
-          ) : (
-                      <DeviceListTable
-            devices={paginatedDevices}
-            batches={mockBatches}
-            columns={['internal_id', 'device', 'imei', 'batch', 'status', 'grade', 'required_repairs', 'actions']}
-            renderActions={(device) => (
-              <Link href={`/devices/${device.internal_id}`}>
-                <Button size="sm" className="cursor-pointer">
-                  <Eye className="h-4 w-4" />
-                  <span className="ml-2">View</span>
-                </Button>
-              </Link>
-            )}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalResults={filteredDevices.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            title="Devices"
-            pageKey="devices"
-              renderFilters={() => (
+          )}
+          <DeviceListTable
+                devices={paginatedDevices}
+                batches={mockBatches}
+                columns={['internal_id', 'device', 'imei', 'batch', 'status', 'grade', 'required_repairs', 'actions']}
+                renderActions={(device) => (
+                  <Link href={`/devices/${device.internal_id}`}>
+                    <Button size="sm" className="cursor-pointer">
+                      <Eye className="h-4 w-4" />
+                      <span className="ml-2">View</span>
+                    </Button>
+                  </Link>
+                )}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalResults={filteredDevices.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                title="Devices"
+                pageKey="devices"
+                renderFilters={() => (
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="relative w-full md:w-64">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -366,9 +414,8 @@ export default function DevicesPage() {
                 </div>
               )}
             />
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
