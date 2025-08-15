@@ -1,46 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { useProfile } from '@/lib/hooks/use-profile'
+import { useUser } from '@/lib/hooks/use-user'
 
 export function Footer() {
-  const [userRole, setUserRole] = useState<string | null>(null)
+  const { data: user } = useUser()
+  const { data: profile } = useProfile(!!user)
 
-  useEffect(() => {
-    const supabase = createClient()
-    if (!supabase) {
-      return
-    }
-
-    const getUserRole = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single()
-          
-          setUserRole(profile?.role || null)
-        }
-      } catch (error) {
-        console.error('Error fetching user role:', error)
-      }
-    }
-
-    getUserRole()
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      getUserRole()
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const isAdmin = userRole === 'ops_manager'
+  const isAdmin = profile?.role === 'ops_manager'
 
   return (
     <footer className="border-t bg-background">

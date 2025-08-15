@@ -1,10 +1,47 @@
 /**
- * Simple Permission Service
- * Checks permissions against the database tables
- * No complex caching - keep it simple for MVP
+ * Permission Service with Basic Caching
+ * Caches user roles to prevent duplicate user_profiles queries
  */
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server';
+
+// Simple in-memory cache for user roles to prevent duplicate queries
+const userRoleCache = new Map<string, { role: string; timestamp: number }>()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+/**
+ * Get cached user role or fetch from database
+ */
+async function getCachedUserRole(userId: string): Promise<string | null> {
+  const now = Date.now()
+  const cached = userRoleCache.get(userId)
+  
+  // Return cached role if still valid
+  if (cached && (now - cached.timestamp) < CACHE_TTL) {
+    return cached.role
+  }
+  
+  // Fetch from database
+  try {
+    const supabase = await createClient()
+    if (!supabase) return null
+    
+    const { data: userProfile, error } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+    
+    if (error || !userProfile) return null
+    
+    // Cache the role
+    userRoleCache.set(userId, { role: userProfile.role, timestamp: now })
+    return userProfile.role
+  } catch (error) {
+    console.error('Error fetching user role:', error)
+    return null
+  }
+}
 
 /**
  * Check if a user has permission to perform an action on a table
@@ -26,17 +63,9 @@ export async function checkPermission(
       return false
     }
     
-    // First, get the user's role
-    const { data: userProfile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('role')
-      .eq('id', userId)
-      .single()
-    
-    if (profileError || !userProfile) {
-      console.error('Error fetching user profile in checkPermission:', profileError)
-      return false
-    }
+    // Get user role from cache or database
+    const userRole = await getCachedUserRole(userId)
+    if (!userRole) return false
     
     // Check if the role has this permission
     const { data: permission } = await supabase
@@ -47,7 +76,7 @@ export async function checkPermission(
       `)
       .eq('table_name', tableName)
       .eq('action', action)
-      .eq('role_permissions.role', userProfile.role)
+      .eq('role_permissions.role', userRole)
       .single()
     
     // If role has permission, return true
@@ -82,14 +111,9 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
   try {
     const supabase = await createClient()
     
-    // Get user's role
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('role')
-      .eq('id', userId)
-      .single()
-    
-    if (!userProfile) return []
+    // Get user's role from cache or database
+    const userRole = await getCachedUserRole(userId)
+    if (!userRole) return []
     
     // Get all permissions for the role
     const { data: rolePermissions } = await supabase
@@ -99,7 +123,7 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
         action,
         role_permissions!inner(role)
       `)
-      .eq('role_permissions.role', userProfile.role)
+      .eq('role_permissions.role', userRole)
     
     // Get user-specific permissions
     const { data: userPermissions } = await supabase
@@ -135,6 +159,13 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
     console.error('Get permissions error:', error)
     return []
   }
+}
+
+/**
+ * Clear user role cache (call this when user role changes)
+ */
+export function clearUserRoleCache(userId: string) {
+  userRoleCache.delete(userId)
 }
 
 /**

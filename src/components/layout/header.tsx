@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useProfile } from '@/lib/hooks/use-profile'
+import { useUser } from '@/lib/hooks/use-user'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -17,8 +18,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import type { User } from '@supabase/supabase-js'
-import type { Session } from '@supabase/supabase-js'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
@@ -32,66 +31,21 @@ const navigation = [
 
 export function Header() {
   const pathname = usePathname()
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<{full_name?: string; role?: string} | null>(null)
+  const { data: user } = useUser()
+  const { data: profile, isLoading: profileLoading } = useProfile(!!user)
 
   const handleLogout = async () => {
     const supabase = createClient()
     if (supabase) {
       await supabase.auth.signOut()
+      // Clear caches when logging out
       window.location.href = '/login'
     }
   }
 
-  useEffect(() => {
-    const supabase = createClient()
-    if (!supabase) {
-      return
-    }
 
-    // Define a function to update user and profile state
-    const updateUserAndProfile = (session: Session | null) => {
-      setUser(session?.user ?? null)
-    }
 
-    // Fetch the initial session
-    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
-      updateUserAndProfile(session)
-    })
 
-    // Subscribe to auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
-      updateUserAndProfile(session)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (user) {
-        try {
-          const response = await fetch('/api/user/profile')
-          if (response.ok) {
-            const data = await response.json()
-            setProfile(data)
-          } else {
-            console.error('Error fetching profile:', response.statusText)
-            setProfile(null)
-          }
-        } catch (e) {
-          console.error('Exception while fetching profile', e)
-          setProfile(null)
-        }
-      } else {
-        setProfile(null)
-      }
-    }
-
-    fetchProfile()
-  }, [user])
 
   const userFullName = profile?.full_name || user?.user_metadata?.full_name || 'Unknown User'
   const userEmail = user?.email || 'No email'
@@ -190,7 +144,7 @@ export function Header() {
                   <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-9 w-9">
                       <AvatarFallback className="bg-primary-100 text-primary-700">
-                        {userInitials}
+                        {profileLoading ? '...' : userInitials}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -198,16 +152,25 @@ export function Header() {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {userFullName}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {userEmail}
-                      </p>
-                      {userRole && (
-                        <p className="text-xs leading-none text-blue-600 font-medium pt-1">
-                          {userRole.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                        </p>
+                      {profileLoading ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-sm text-muted-foreground">Loading profile...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium leading-none">
+                            {userFullName}
+                          </p>
+                          <p className="text-xs leading-none text-muted-foreground">
+                            {userEmail}
+                          </p>
+                          {userRole && (
+                            <p className="text-xs leading-none text-blue-600 font-medium pt-1">
+                              {userRole.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                   </DropdownMenuLabel>

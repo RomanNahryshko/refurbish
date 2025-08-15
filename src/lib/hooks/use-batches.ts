@@ -6,6 +6,9 @@ export function useBatches() {
   return useQuery({
     queryKey: ['batches'],
     queryFn: batchesApi.getAll,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes in cache
+    refetchOnMount: false,
   })
 }
 
@@ -14,6 +17,9 @@ export function useBatch(id: string) {
     queryKey: ['batches', id],
     queryFn: () => batchesApi.getById(id),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes - individual batches change less frequently
+    gcTime: 10 * 60 * 1000, // 10 minutes in cache
+    refetchOnMount: false,
   })
 }
 
@@ -21,6 +27,9 @@ export function useBatchesWithDeviceCounts() {
   return useQuery({
     queryKey: ['batches', 'with-device-counts'],
     queryFn: batchesApi.getAllWithDeviceCounts,
+    staleTime: 2 * 60 * 1000, // 2 minutes - batches don't change frequently
+    gcTime: 5 * 60 * 1000, // 5 minutes in cache
+    refetchOnMount: false, // Don't refetch on mount if data exists
   })
 }
 

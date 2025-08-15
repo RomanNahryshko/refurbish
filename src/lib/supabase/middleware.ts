@@ -1,7 +1,43 @@
-import { createServerClient } from '@supabase/ssr'
-import { type NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr';
+import { type NextRequest, NextResponse } from 'next/server';
 
-import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '../supabase'
+import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '../supabase';
+
+// Simple cache for user profile data to prevent duplicate queries
+const userProfileCache = new Map<string, { must_change_password: boolean; timestamp: number }>()
+const PROFILE_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+/**
+ * Get cached user profile data or fetch from database
+ */
+async function getCachedUserProfile(supabase: any, userId: string): Promise<{ must_change_password: boolean } | null> {
+  const now = Date.now()
+  const cached = userProfileCache.get(userId)
+  
+  // Return cached data if still valid
+  if (cached && (now - cached.timestamp) < PROFILE_CACHE_TTL) {
+    return cached
+  }
+  
+  // Fetch from database
+  try {
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('must_change_password')
+      .eq('id', userId)
+      .single()
+    
+    if (error || !profile) return null
+    
+    // Cache the data
+    const profileData = { must_change_password: profile.must_change_password, timestamp: now }
+    userProfileCache.set(userId, profileData)
+    return profileData
+  } catch (error) {
+    console.error('Error fetching user profile in middleware:', error)
+    return null
+  }
+}
 
 export async function updateSession(request: NextRequest) {
   // Skip authentication if Supabase is not configured
@@ -74,11 +110,7 @@ export async function updateSession(request: NextRequest) {
   // Check if user must change password (for authenticated users only)
   if (user && !isPasswordChangePage && !isAuthPath) {
     try {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('must_change_password')
-        .eq('id', user.id)
-        .single()
+      const profile = await getCachedUserProfile(supabase, user.id)
 
       // Redirect to password change page if flag is set
       if (profile?.must_change_password === true) {
@@ -94,11 +126,7 @@ export async function updateSession(request: NextRequest) {
   if (user && isAuthPath) {
     // First check if they need to change password
     try {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('must_change_password')
-        .eq('id', user.id)
-        .single()
+      const profile = await getCachedUserProfile(supabase, user.id)
 
       if (profile?.must_change_password === true) {
         return NextResponse.redirect(new URL(passwordChangePath, request.url))
@@ -111,4 +139,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   return supabaseResponse
+}
+
+/**
+ * Clear user profile cache (call this when user logs out or changes password)
+ */
+export function clearUserProfileCache(userId: string) {
+  userProfileCache.delete(userId)
 } 

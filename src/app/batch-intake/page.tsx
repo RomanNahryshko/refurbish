@@ -1,31 +1,30 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import Link from 'next/link'
-import { Plus, Search, Download, FileText, Package, Edit } from 'lucide-react'
-import { useBatchesWithDeviceCounts } from '@/lib/hooks/use-batches'
-import { LoadingSpinner } from '@/components/common/loading-spinner'
-import { Batch } from '@/lib/types/business-types'
+import { useState, useMemo } from 'react';
+import { useDebounce } from '@/lib/hooks/use-debounce';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import Link from 'next/link';
+import { Plus, Search, Download, FileText, Package, Edit } from 'lucide-react';
+import { useBatchesWithDeviceCounts } from '@/lib/hooks/use-batches';
+import { LoadingSpinner } from '@/components/common/loading-spinner';
+import { Batch } from '@/lib/types/business-types';
 
 export default function BatchIntakePage() {
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 300) // 300ms delay
   const { data: batches, isLoading, error, refetch, isFetching } = useBatchesWithDeviceCounts()
   
-  // Refetch batches every time the component mounts
-  React.useEffect(() => {
-    refetch()
-  }, [refetch])
-  
-  const filteredBatches = batches?.filter((batch: Batch & { supplier_name?: string; completed_qc_count?: number }) =>
-    batch.batch_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    batch.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    batch.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || []
+  const filteredBatches = useMemo(() => {
+    return batches?.filter((batch: Batch & { supplier_name?: string; completed_qc_count?: number }) =>
+      batch.batch_number.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      batch.invoice_number?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      batch.supplier_name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    ) || []
+  }, [batches, debouncedSearchTerm])
 
   const headerList = [
     { label: 'Batch Number', key: 'batch_number' },
