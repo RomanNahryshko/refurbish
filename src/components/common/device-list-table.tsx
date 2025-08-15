@@ -4,23 +4,29 @@ import { ReactNode, useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Smartphone,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  Filter,
-  Package,
-  ClipboardCheck,
-  Clock,
-  Wrench,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Package2
+    Smartphone,
+    ChevronLeft,
+    ChevronRight,
+    ChevronDown,
+    ChevronUp,
+    Filter,
+    Package,
+    ClipboardCheck,
+    Clock,
+    Wrench,
+    CheckCircle,
+    XCircle,
+    AlertCircle,
+    Package2
 } from 'lucide-react'
 import { Device, Batch } from '@/types/mock-types'
 import { repairTypes } from '@/components/common/repair-task-selector'
+
+// Extended Device interface for repair job display
+interface ExtendedDevice extends Device {
+  _repairPosition?: number
+  _totalRepairs?: number
+}
 
 // Device status to icon/color mapping
 export const statusConfig = {
@@ -48,10 +54,10 @@ export type DeviceTableColumn =
   | 'actions'
 
 interface DeviceListTableProps {
-  devices: Device[]
+  devices: ExtendedDevice[]
   batches: Batch[]
   columns: DeviceTableColumn[]
-  renderActions: (device: Device) => ReactNode
+  renderActions: (device: ExtendedDevice) => ReactNode
   currentPage: number
   totalPages: number
   totalResults: number
@@ -60,7 +66,7 @@ interface DeviceListTableProps {
   title?: string
   renderFilters?: () => ReactNode
   pageKey?: string // For localStorage key (e.g., 'devices', 'qc', 'device-tracking')
-  renderCell?: (device: Device, column: DeviceTableColumn) => ReactNode | null // Custom cell renderer
+  renderCell?: (device: ExtendedDevice, column: DeviceTableColumn) => ReactNode | null // Custom cell renderer
   customHeaders?: Record<DeviceTableColumn, string> // Custom column headers
 }
 
@@ -126,14 +132,14 @@ export function DeviceListTable({
     }
   }
 
-  const renderCell = (device: Device, column: DeviceTableColumn) => {
+  const renderCell = (device: ExtendedDevice, column: DeviceTableColumn) => {
     const batch = batches.find(b => b.id === device.batch_id)
 
     switch (column) {
       case 'internal_id':
         // Check if this is a repair job with position info
-        const repairPosition = (device as any)._repairPosition
-        const totalRepairs = (device as any)._totalRepairs
+        const repairPosition = device._repairPosition
+        const totalRepairs = device._totalRepairs
         
         return (
           <div className="flex items-center">

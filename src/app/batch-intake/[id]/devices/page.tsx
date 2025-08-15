@@ -7,14 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
-  ArrowLeft,
-  Search,
-  Package,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  Wrench,
-  ClipboardCheck
+    ArrowLeft,
+    Search,
+    Package,
+    AlertCircle,
+    CheckCircle,
+    Clock,
+    Wrench,
+    ClipboardCheck
 } from 'lucide-react'
 import Link from 'next/link'
 import { mockBatches, mockDevices, mockRepairJobs, mockQCChecks } from '@/lib/mock-data'
@@ -243,7 +243,7 @@ export default function BatchDevicesPage() {
                       </td>
                       <td className="p-3">
                         <Badge 
-                          variant={getStatusColor(device.status) as any}
+                          variant={getStatusColor(device.status) as "default" | "secondary" | "destructive" | "outline"}
                           className="gap-1 text-xs"
                         >
                           {getStatusIcon(device.status)}

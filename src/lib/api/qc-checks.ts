@@ -61,14 +61,10 @@ export const qcChecksApi = {
    * Create a new QC check
    */
   async create(qcData: CreateQCCheckData, testResults?: CreateQCTestResultData[]) {
-    console.log('Making API call to /api/qc-checks with data:', { qcData, testResults })
-    
     const requestBody = {
       ...qcData,
       test_results: testResults
     }
-    
-    console.log('Request body:', JSON.stringify(requestBody, null, 2))
     
     const response = await fetch('/api/qc-checks', {
       method: 'POST',
@@ -78,9 +74,6 @@ export const qcChecksApi = {
       body: JSON.stringify(requestBody),
     })
 
-    console.log('API response status:', response.status)
-    console.log('API response headers:', response.headers)
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
       console.error('API error:', errorData)
@@ -88,7 +81,6 @@ export const qcChecksApi = {
     }
 
     const result = await response.json()
-    console.log('API success result:', result)
     return result.data
   },
 

@@ -181,7 +181,7 @@ export function UserList({ currentUserId }: UserListProps) {
                             {String(user.full_name || 'No name set')}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {String((user as any)?.auth_user?.email || 'No email')}
+                            {String((user as Record<string, any>)?.auth_user?.email || 'No email')}
                           </div>
                         </div>
                       </td>

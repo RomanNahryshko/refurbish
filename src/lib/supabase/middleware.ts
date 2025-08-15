@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type SupabaseClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '../supabase';
@@ -10,7 +10,7 @@ const PROFILE_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 /**
  * Get cached user profile data or fetch from database
  */
-async function getCachedUserProfile(supabase: any, userId: string): Promise<{ must_change_password: boolean } | null> {
+async function getCachedUserProfile(supabase: SupabaseClient, userId: string): Promise<{ must_change_password: boolean } | null> {
   const now = Date.now()
   const cached = userProfileCache.get(userId)
   

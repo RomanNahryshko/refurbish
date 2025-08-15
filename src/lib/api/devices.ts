@@ -158,7 +158,7 @@ export const devicesApi = {
       dr_phone_data: device.dr_phone_data,
       grade: device.grade || 'ungraded', // Use provided grade or default to 'ungraded'
       notes: device.notes,
-      status: device.grade !== 'ungraded' ? 'graded' as DeviceStatus : 'awaiting_repair' as DeviceStatus, // Changed from 'received' to 'awaiting_repair' if picked repairs, else 'graded'
+      status: device.grade !== 'ungraded' ? 'final_qc' as DeviceStatus : 'awaiting_repair' as DeviceStatus, // Changed from 'received' to 'awaiting_repair' if picked repairs, else 'graded'
       created_by: user.id,
       dr_phone_imported_at: new Date().toISOString()
     }))
@@ -169,7 +169,7 @@ export const devicesApi = {
       .select()
 
     if (error) throw error
-    if(data[0].status === 'graded') {
+    if(data[0].status === 'final_qc') {
       //add device to final qc_check table
        const { error: qcCheckError } = await supabase
       .from('qc_checks')
@@ -288,32 +288,25 @@ export const devicesApi = {
    * Get QC checks for devices
    */
   async getQCChecks(deviceIds?: string[]) {
-    console.log('🔍 getQCChecks called with deviceIds:', deviceIds)
-    
     const supabase = createClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
-    let query = supabase
-      .from('qc_checks')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (deviceIds && deviceIds.length > 0) {
-      console.log('🔍 Filtering by device IDs:', deviceIds)
-      query = query.in('device_id', deviceIds)
-    } else {
-      console.log('🔍 No device IDs provided, getting all QC checks')
+    // If no device IDs provided or empty array, return empty array instead of all QC checks
+    if (!deviceIds || deviceIds.length === 0) {
+      return []
     }
 
-    console.log('🔍 Executing Supabase query...')
-    const { data, error } = await query
+    const { data, error } = await supabase
+      .from('qc_checks')
+      .select('*')
+      .in('device_id', deviceIds)
+      .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('❌ Supabase query error:', error)
+      console.error('Supabase query error:', error)
       throw error
     }
     
-    console.log('✅ getQCChecks completed successfully, returning', data?.length || 0, 'QC checks')
     return data
   }
 }

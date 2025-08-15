@@ -143,7 +143,7 @@ export default function SuppliersPage() {
                     )}
                   </div>
                 </div>
-                <Badge variant={getSupplierTypeColor(supplier.supplier_type) as any} className="gap-1">
+                <Badge variant={getSupplierTypeColor(supplier.supplier_type) as "default" | "secondary" | "destructive" | "outline"} className="gap-1">
                   {getSupplierTypeIcon(supplier.supplier_type)}
                   {supplier.supplier_type === 'both' ? 'Devices & Parts' : 
                    supplier.supplier_type === 'devices' ? 'Devices' : 'Parts'}

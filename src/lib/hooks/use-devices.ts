@@ -37,18 +37,27 @@ export function useDevicesForFinalQC() {
   return useQuery({
     queryKey: ['devices', 'final-qc'],
     queryFn: devicesApi.getDevicesForFinalQC,
+    staleTime: 0, // Always consider data stale - refetch on every mount
+    gcTime: 5 * 60 * 1000, // 5 minutes in cache
+    refetchOnMount: true, // Always refetch when component mounts
+    retry: 2,
   })
 }
 
 export function useQCChecks(deviceIds?: string[], options?: { enabled?: boolean }) {
   const enabled = options?.enabled ?? true
+  
+  // Only enable query if we have device IDs and they're not empty
+  const shouldEnable = enabled && !!deviceIds && deviceIds.length > 0
+  
   return useQuery({
     queryKey: ['qc-checks', deviceIds],
-    queryFn: () => {
-      console.log('🔍 useQCChecks queryFn executing...')
-      return devicesApi.getQCChecks(deviceIds)
-    },
-    enabled: enabled
+    queryFn: () => devicesApi.getQCChecks(deviceIds),
+    enabled: shouldEnable,
+    staleTime: 5 * 60 * 1000, // 5 minutes - QC checks don't change often
+    gcTime: 10 * 60 * 1000, // 10 minutes in cache
+    refetchOnMount: false,
+    retry: 2,
   })
 }
 

@@ -6,9 +6,10 @@ export function useBatches() {
   return useQuery({
     queryKey: ['batches'],
     queryFn: batchesApi.getAll,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 0, // Always consider data stale - refetch on every mount
     gcTime: 5 * 60 * 1000, // 5 minutes in cache
-    refetchOnMount: false,
+    refetchOnMount: true, // Always refetch when component mounts
+    retry: 2,
   })
 }
 

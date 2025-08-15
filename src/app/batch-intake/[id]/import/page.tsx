@@ -141,7 +141,7 @@ export default function ImportDrPhonePage() {
                    repair_type: mappedRepairType,
                    description: mappedRepairType === 'other' ? otherDescription : undefined
                  }
-                 console.log('repairJobData', repairJobData)
+         
                  
                  await createRepairJob.mutateAsync({
                    data: repairJobData,

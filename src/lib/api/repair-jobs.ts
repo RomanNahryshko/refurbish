@@ -376,7 +376,7 @@ export const repairJobsApi = {
    * Send device to final QC after all repairs are completed
    */
   async sendDeviceToFinalQC(
-    supabase: any, 
+    supabase: ReturnType<typeof createClient>, 
     deviceId: string, 
     userId: string, 
     repairType: string

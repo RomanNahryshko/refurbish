@@ -16,14 +16,18 @@ import { useDevicesForFinalQC } from '@/lib/hooks/use-devices'
 import { useQCChecks } from '@/lib/hooks/use-devices'
 import { useBatches } from '@/lib/hooks/use-batches'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 export default function QCPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [batchFilter, setBatchFilter] = useState<string>('all')
   const [brandFilter, setBrandFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   
   const itemsPerPage = DEFAULT_ITEMS_PER_PAGE
+  const queryClient = useQueryClient()
   
   // Fetch devices that are ready for final QC
   const { data: devicesForQC, isLoading: devicesLoading } = useDevicesForFinalQC()
@@ -31,18 +35,39 @@ export default function QCPage() {
   // Fetch batches for device information
   const { data: batches, isLoading: batchesLoading } = useBatches()
   
-  // Fetch QC checks for history
+  // Fetch QC checks for history - only when we have devices
   const { data: qcChecks } = useQCChecks(
-    devicesForQC?.map(d => d.id)
+    devicesForQC && devicesForQC.length > 0 ? devicesForQC.map(d => d.id) : undefined,
+    { enabled: !!devicesForQC && devicesForQC.length > 0 }
   )
   
-  // Debug logging for DeviceListTable rendering
+  // Refetch data every time the component mounts (page visit)
   useEffect(() => {
-    // This effect will run after the component renders and data is available
-  }, [devicesForQC, batches, qcChecks])
+    // Force refetch when component mounts to get fresh data
+    const refetchData = async () => {
+      // This will ensure we get the latest data every time user visits the page
+      setIsRefreshing(true)
+      
+      try {
+        // Force refetch of devices and batches data
+        await queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
+        await queryClient.refetchQueries({ queryKey: ['batches'] })
+        
+        // If we have devices, also refetch QC checks
+        const devicesData = queryClient.getQueryData(['devices', 'final-qc'])
+        if (devicesData && Array.isArray(devicesData) && devicesData.length > 0) {
+          const deviceIds = devicesData.map((d: { id: string }) => d.id)
+          await queryClient.refetchQueries({ queryKey: ['qc-checks', deviceIds] })
+        }
+      } finally {
+        setIsRefreshing(false)
+      }
+    }
+    refetchData()
+  }, [queryClient]) // Include queryClient in dependencies
   
-  // Show loading state while data is being fetched
-  if (devicesLoading || batchesLoading) {
+  // Show loading state while data is being fetched or refreshing
+  if (devicesLoading || batchesLoading || isRefreshing) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="flex justify-center items-center py-12">
@@ -80,7 +105,16 @@ export default function QCPage() {
   
   // QC-specific data calculations (MVP scope)
   const getQCMetrics = () => {
-    const devicesWithQC = qcChecks?.filter((qc: { check_type: string }) => qc.check_type === 'final') || []
+    // Only calculate metrics if we have QC checks data
+    if (!qcChecks) {
+      return {
+        inQueue: transformedDevices.length,
+        completedToday: 0,
+        totalCompleted: 0
+      }
+    }
+    
+    const devicesWithQC = qcChecks.filter((qc: { check_type: string }) => qc.check_type === 'final') || []
     const completedQC = devicesWithQC.filter((qc: { overall_result: string }) => qc.overall_result === 'pass' || qc.overall_result === 'fail')
     
     return {
@@ -120,24 +154,91 @@ export default function QCPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header with KPI badges */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Final Quality Control</h1>
-          <p className="text-gray-600 mt-1">Devices ready for final QC after repairs</p>
+          <h1 className="text-3xl font-bold">
+            Final Quality Control
+            {isRefreshing && (
+              <span className="ml-2 inline-flex items-center gap-1 text-blue-600 text-lg font-normal">
+                <LoadingSpinner className="h-4 w-4" />
+                Updating...
+              </span>
+            )}
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Devices ready for final QC after repairs
+          </p>
         </div>
-        {/* Inline KPI — QC queue count only (MVP scope) */}
-        <div className="w-full md:w-auto mt-4 md:mt-0 md:ml-6 flex flex-wrap items-center gap-2">
-          <div className="h-8 rounded-sm border border-purple-300 px-3 flex items-center gap-2 text-purple-700 select-none">
-            <span className="font-semibold">{qcMetrics.inQueue}</span>
-            <span className="text-sm">In Queue</span>
-          </div>
-          <div className="h-8 rounded-sm border border-green-300 px-3 flex items-center gap-2 text-green-700 select-none">
-            <span className="font-semibold">{qcMetrics.completedToday}</span>
-            <span className="text-sm">Today</span>
-          </div>
-          <div className="h-8 rounded-sm border border-blue-300 px-3 flex items-center gap-2 text-blue-700 select-none">
-            <span className="font-semibold">{qcMetrics.totalCompleted}</span>
-            <span className="text-sm">Total</span>
+        
+        <div className="flex items-center gap-4">
+          {/* Refresh Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isRefreshing}
+            onClick={async () => {
+              try {
+                setIsRefreshing(true)
+                await queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
+                await queryClient.refetchQueries({ queryKey: ['batches'] })
+                if (devicesForQC && devicesForQC.length > 0) {
+                  const deviceIds = devicesForQC.map(d => d.id)
+                  await queryClient.refetchQueries({ queryKey: ['qc-checks', deviceIds] })
+                }
+                toast.success('Data refreshed successfully!')
+              } catch {
+                toast.error('Failed to refresh data')
+              } finally {
+                setIsRefreshing(false)
+              }
+            }}
+            className="flex items-center gap-2"
+          >
+            {isRefreshing ? (
+              <>
+                <LoadingSpinner className="h-4 w-4" />
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <Search className="h-4 w-4" />
+                Refresh
+              </>
+            )}
+          </Button>
+          
+          {/* KPI badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className={`h-8 rounded-sm border px-3 flex items-center gap-2 select-none ${
+              isRefreshing 
+                ? 'border-gray-300 text-gray-500' 
+                : 'border-purple-300 text-purple-700'
+            }`}>
+              <span className="font-semibold">
+                {isRefreshing ? <LoadingSpinner className="h-3 w-3" /> : qcMetrics.inQueue}
+              </span>
+              <span className="text-sm">In Queue</span>
+            </div>
+            <div className={`h-8 rounded-sm border px-3 flex items-center gap-2 select-none ${
+              isRefreshing 
+                ? 'border-gray-300 text-gray-500' 
+                : 'border-green-300 text-green-700'
+            }`}>
+              <span className="font-semibold">
+                {isRefreshing ? <LoadingSpinner className="h-3 w-3" /> : qcMetrics.completedToday}
+              </span>
+              <span className="text-sm">Today</span>
+            </div>
+            <div className={`h-8 rounded-sm border px-3 flex items-center gap-2 select-none ${
+              isRefreshing 
+                ? 'border-gray-300 text-gray-500' 
+                : 'border-blue-300 text-blue-700'
+            }`}>
+              <span className="font-semibold">
+                {isRefreshing ? <LoadingSpinner className="h-3 w-3" /> : qcMetrics.totalCompleted}
+              </span>
+              <span className="text-sm">Total</span>
+            </div>
           </div>
         </div>
       </div>
@@ -146,18 +247,32 @@ export default function QCPage() {
       {qcChecks && qcChecks.length > 0 && (
         <Card>
           <CardContent className="p-4">
-            <h3 className="text-lg font-semibold mb-3">Recent QC Activity</h3>
+            <h3 className="text-lg font-semibold mb-3">
+              Recent QC Activity
+              {isRefreshing && (
+                <span className="ml-2 inline-flex items-center gap-1 text-blue-600 text-sm font-normal">
+                  <LoadingSpinner className="h-3 w-3" />
+                  Updating...
+                </span>
+              )}
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-2xl font-bold text-purple-600">{qcMetrics.inQueue}</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {isRefreshing ? <LoadingSpinner className="h-6 w-6 mx-auto" /> : qcMetrics.inQueue}
+                </div>
                 <div className="text-sm text-gray-600">Devices in Queue</div>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-2xl font-bold text-green-600">{qcMetrics.completedToday}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {isRefreshing ? <LoadingSpinner className="h-6 w-6 mx-auto" /> : qcMetrics.completedToday}
+                </div>
                 <div className="text-sm text-gray-600">Completed Today</div>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-2xl font-bold text-blue-600">{qcMetrics.totalCompleted}</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {isRefreshing ? <LoadingSpinner className="h-6 w-6 mx-auto" /> : qcMetrics.totalCompleted}
+                </div>
                 <div className="text-sm text-gray-600">Total Completed</div>
               </div>
             </div>
@@ -174,9 +289,11 @@ export default function QCPage() {
             columns={['internal_id', 'device', 'imei', 'batch', 'actions']}
             renderActions={(device) => (
               <Link href={`/qc/${device.internal_id}`}>
-                <Button size="sm" className="cursor-pointer">
+                <Button size="sm" className="cursor-pointer" disabled={isRefreshing}>
                   <ClipboardCheck className="h-4 w-4" />
-                  <span className="ml-2">Start QC</span>
+                  <span className="ml-2">
+                    {isRefreshing ? 'Updating...' : 'Start QC'}
+                  </span>
                 </Button>
               </Link>
             )}
@@ -184,8 +301,8 @@ export default function QCPage() {
             totalPages={totalPages}
             totalResults={filteredDevices.length}
             itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            title="Devices Ready for QC"
+            onPageChange={isRefreshing ? () => {} : setCurrentPage}
+            title={`Devices Ready for QC${isRefreshing ? ' (Updating...)' : ''}`}
             pageKey="qc"
             renderFilters={() => (
               <div className="flex flex-wrap items-center gap-3">
@@ -198,10 +315,11 @@ export default function QCPage() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="h-9 pl-8"
+                    disabled={isRefreshing}
                   />
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Select value={batchFilter} onValueChange={setBatchFilter}>
+                  <Select value={batchFilter} onValueChange={setBatchFilter} disabled={isRefreshing}>
                     <SelectTrigger className="h-9 w-[120px]">
                       <SelectValue placeholder="All Batches" />
                     </SelectTrigger>
@@ -215,7 +333,7 @@ export default function QCPage() {
                     </SelectContent>
                   </Select>
 
-                  <Select value={brandFilter} onValueChange={setBrandFilter}>
+                  <Select value={brandFilter} onValueChange={setBrandFilter} disabled={isRefreshing}>
                     <SelectTrigger className="h-9 w-[110px]">
                       <SelectValue placeholder="All Brands" />
                     </SelectTrigger>
@@ -227,21 +345,29 @@ export default function QCPage() {
                     </SelectContent>
                   </Select>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSearchTerm('')
-                      setBatchFilter('all')
-                      setBrandFilter('all')
-                    }}
-                    className="h-9"
-                  >
-                    Clear
-                  </Button>
+                                      <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSearchTerm('')
+                        setBatchFilter('all')
+                        setBrandFilter('all')
+                      }}
+                      className="h-9"
+                      disabled={isRefreshing}
+                    >
+                      Clear
+                    </Button>
+                    
+                    {isRefreshing && (
+                      <div className="flex items-center gap-2 text-blue-600 text-sm">
+                        <LoadingSpinner className="h-3 w-3" />
+                        Updating filters...
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           />
         </CardContent>
       </Card>

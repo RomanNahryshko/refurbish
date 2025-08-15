@@ -12,14 +12,14 @@ import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 
 import {
-  ArrowLeft,
-  Smartphone,
-  Package,
-  Wrench,
-  CheckCircle,
-  AlertCircle,
-  Hash,
-  Package2
+    ArrowLeft,
+    Smartphone,
+    Package,
+    Wrench,
+    CheckCircle,
+    AlertCircle,
+    Hash,
+    Package2
 } from 'lucide-react';
 import { useDeviceByInternalId } from '@/lib/hooks/use-devices';
 import { statusConfig } from '@/components/common/device-list-table';
@@ -167,7 +167,7 @@ export default function DeviceJobSheetPage() {
 
   const submitPartsRecord = () => {
     // TODO: Implement parts recording API
-    console.log('Parts recording:', partsRecording)
+    
     
     setPartsRecording({
       repairId: null,
@@ -197,7 +197,7 @@ export default function DeviceJobSheetPage() {
         }
         
         // TODO: Implement repair creation API
-        console.log('Created new repair:', newRepair)
+
         setConfirmDialog({ ...confirmDialog, open: false })
       }
     })
