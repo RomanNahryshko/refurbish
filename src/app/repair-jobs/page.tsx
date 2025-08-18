@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Plus, Minus, X, Wrench } from 'lucide-react'
+import { Search, Plus, Minus, X, Wrench, AlertTriangle } from 'lucide-react'
 import { RepairJobListTable } from '@/components/repair-jobs/repair-job-list-table'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog'
@@ -14,7 +14,7 @@ import { useRepairJobs } from '@/lib/hooks/use-repair-jobs'
 import { useBatches } from '@/lib/hooks/use-batches'
 import { useSpareParts } from '@/lib/hooks/use-spare-parts'
 import { useStartRepairJob, useCompleteRepairJob, useUpdateRepairJob } from '@/lib/hooks/use-repair-jobs'
-import { RepairJob } from '@/lib/types/business-types'
+import { RepairJob, SparePart } from '@/lib/types/business-types'
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/client'
 
@@ -183,7 +183,7 @@ export default function RepairJobsPage() {
   })) as TransformedRepairJob[]
   
   const batches = batchesData || []
-  const spareParts = sparePartsData || []
+  const spareParts = (sparePartsData || []) as SparePart[]
   
   // Apply filters to repair jobs
   const filteredRepairs = transformedRepairJobs.filter(repair => {
@@ -593,6 +593,8 @@ export default function RepairJobsPage() {
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {partsRecording.parts.map((part, index) => {
                       const sparePart = spareParts.find(p => p.id === part.partId)
+                      const isLowStock = sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock < 10
+                      const willGoNegative = sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock - part.quantity < 0
                       return (
                         <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
                           <div className="flex-1">
@@ -669,14 +671,20 @@ export default function RepairJobsPage() {
               </div>
               
               {/* Warning for insufficient parts */}
-              {hasInsufficientParts && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
-                  <span className="text-sm text-red-700">
-                    Cannot complete repair: insufficient stock for selected parts
-                  </span>
-                </div>
-              )}
+              {(() => {
+                const hasInsufficientParts = partsRecording.parts.some(part => {
+                  const sparePart = spareParts.find(p => p.id === part.partId)
+                  return sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock - part.quantity < 0
+                })
+                return hasInsufficientParts && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                    <span className="text-sm text-red-700">
+                      Cannot complete repair: insufficient stock for selected parts
+                    </span>
+                  </div>
+                )
+              })()}
               
               <div className="flex gap-2 pt-4">
                 <Button 

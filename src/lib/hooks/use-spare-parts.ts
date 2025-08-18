@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { inventoryApi } from '@/lib/api/inventory'
+import { getAllParts } from '@/lib/api/inventory-client'
 
 export function useSpareParts() {
   return useQuery({
     queryKey: ['spare-parts'],
-    queryFn: inventoryApi.getAllParts,
+    queryFn: getAllParts,
   })
 }

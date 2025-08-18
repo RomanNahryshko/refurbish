@@ -43,14 +43,6 @@ export const DEVICE_STATUS_LABELS = {
   'shipped': 'Shipped'
 } as const
 
-// Device grades enum - matches database schema
-export const DEVICE_GRADES = {
-  'ungraded': 'ungraded',
-  'A': 'A',         // Best condition
-  'B': 'B',         // Good condition
-  'C': 'C'          // Acceptable condition
-} as const
-
 // Repair task types enum - matches database schema
 export const REPAIR_TYPES = {
   'housing_change': 'housing_change',   // L1 technician only
@@ -102,7 +94,6 @@ export const PART_CATEGORIES = {
   OTHER: 'other'
 } as const
 
-export type PartCategory = ValueOf<typeof PART_CATEGORIES>
 
 // Part category labels for UI
 export const PART_CATEGORY_LABELS = {
