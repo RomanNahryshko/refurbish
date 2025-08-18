@@ -94,21 +94,7 @@ export const stockAdjustmentsApi = {
     const supabase = await createClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
-    // Get current stock to calculate the correction needed
-    const { data: part, error: fetchError } = await supabase
-      .from('spare_parts')
-      .select('quantity_in_stock')
-      .eq('id', data.spare_part_id)
-      .single()
-
-    if (fetchError) throw fetchError
-
-    // For corrections, prevent negative final stock
-    const finalStock = part.quantity_in_stock + data.quantity
-    if (finalStock < 0) {
-      throw new Error(`Correction would result in negative stock. Current: ${part.quantity_in_stock}, Adjustment: ${data.quantity}`)
-    }
-
+    // Insert the exact quantity the user entered without any modifications
     const { data: result, error } = await supabase
       .from('stock_adjustments')
       .insert(data)

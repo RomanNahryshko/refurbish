@@ -141,7 +141,7 @@ export const inventoryApi = {
   },
 
   /**
-   * Create a new spare part with auto-generated SKU
+   * Create a new spare part
    */
   async createPart(partData: CreateSparePartData) {
     const supabase = await createClient()

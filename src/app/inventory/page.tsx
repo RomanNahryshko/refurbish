@@ -1,20 +1,19 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { PartsList } from '@/modules/inventory/components/parts-list'
-import { PartFormDialog } from '@/modules/inventory/components/part-form-dialog'
-import { StockAdjustmentDialog } from '@/modules/inventory/components/stock-adjustment-dialog'
-import { SparePart } from '@/lib/types/business-types'
-import { useDeletePartMutation } from '@/modules/inventory/hooks/use-inventory'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Info, Shield } from 'lucide-react'
-import { toast } from 'sonner'
+'use client';
+import { useState, useEffect } from 'react';
+import { PartsList } from '@/modules/inventory/components/parts-list';
+import { PartFormDialog } from '@/modules/inventory/components/part-form-dialog';
+import { StockAdjustmentDialog } from '@/modules/inventory/components/stock-adjustment-dialog';
+import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
+import { SparePart } from '@/lib/types/business-types';
+import { useDeletePartMutation } from '@/modules/inventory/hooks/use-inventory';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Shield } from 'lucide-react';
 
 export default function InventoryPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isStockDialogOpen, setIsStockDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedPart, setSelectedPart] = useState<SparePart | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
 
@@ -53,16 +52,21 @@ export default function InventoryPage() {
     setIsEditDialogOpen(true)
   }
 
-  const handleDeletePart = async (partId: string) => {
-    const part = selectedPart // Could also find part by ID if needed
+  const handleDeletePart = (part: SparePart) => {
+    setSelectedPart(part)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDeletePart = async () => {
+    if (!selectedPart) return
     
-    if (confirm(`Are you sure you want to delete this spare part? This action cannot be undone.`)) {
-      try {
-        await deletePartMutation.mutateAsync(partId)
-      } catch (error) {
-        // Error is handled by the mutation hook's toast
-        console.error('Delete error:', error)
-      }
+    try {
+      await deletePartMutation.mutateAsync(selectedPart.id)
+      setIsDeleteDialogOpen(false)
+      setSelectedPart(null)
+    } catch (error) {
+      // Error is handled by the mutation hook's toast
+      console.error('Delete error:', error)
     }
   }
 
@@ -78,6 +82,11 @@ export default function InventoryPage() {
 
   const handleStockDialogClose = () => {
     setIsStockDialogOpen(false)
+    setSelectedPart(null)
+  }
+
+  const handleDeleteDialogClose = () => {
+    setIsDeleteDialogOpen(false)
     setSelectedPart(null)
   }
 
@@ -120,6 +129,21 @@ export default function InventoryPage() {
         open={isStockDialogOpen}
         onOpenChange={handleStockDialogClose}
         part={selectedPart}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={handleDeleteDialogClose}
+        onConfirm={confirmDeletePart}
+        title="Delete Spare Part"
+        description={selectedPart 
+          ? `Are you sure you want to delete "${selectedPart.name}" (${selectedPart.sku})? This action cannot be undone.`
+          : "Are you sure you want to delete this spare part? This action cannot be undone."
+        }
+        confirmText="Delete"
+        variant="destructive"
+        isLoading={deletePartMutation.isPending}
       />
     </div>
   )

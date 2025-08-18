@@ -11,7 +11,7 @@ import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { CompatibleModelsInput } from './compatible-models-input'
 import { useCreatePartMutation, useUpdatePartMutation, useNextSkuQuery } from '@/modules/inventory/hooks/use-inventory'
 import { usePartsSuppliers } from '@/modules/suppliers/hooks/use-suppliers'
-import { PART_CATEGORIES, PART_CATEGORY_LABELS } from '@/lib/constants'
+import { PART_CATEGORY_LABELS } from '@/lib/constants'
 import { SparePart } from '@/lib/types/business-types'
 import { toast } from 'sonner'
 
@@ -47,7 +47,8 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
 
   // Hooks for data fetching and mutations
   const { data: nextSku, isLoading: skuLoading } = useNextSkuQuery()
-  const { data: suppliers, isLoading: suppliersLoading } = usePartsSuppliers()
+  const { data: suppliers, isLoading: suppliersLoading, error: _suppliersError } = usePartsSuppliers()
+  
   const createPartMutation = useCreatePartMutation()
   const updatePartMutation = useUpdatePartMutation()
 
@@ -61,6 +62,7 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
       setFormData(prev => ({
         ...prev,
         sku: nextSku,
+        compatible_models: [], // Ensure this is explicitly set
       }))
     } else if (open && isEditing && editingPart) {
       // Editing existing part - populate form
@@ -109,13 +111,28 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
     setIsSubmitting(true)
 
     try {
+      let parsedUnitCost: number | undefined
+      if (formData.unit_cost && formData.unit_cost.trim() !== '') {
+        // Use Number() instead of parseFloat for better precision handling
+        const numValue = Number(formData.unit_cost)
+        if (!isNaN(numValue) && isFinite(numValue)) {
+          // Round to 2 decimal places to match database DECIMAL(10,2)
+          parsedUnitCost = Math.round(numValue * 100) / 100
+        }
+      }
+      
+      // Filter out empty models from compatible_models
+      const validCompatibleModels = formData.compatible_models 
+        ? formData.compatible_models.filter(model => model && model.trim() !== '')
+        : []
+      
       const partData = {
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
         category: formData.category || undefined,
-        compatible_models: formData.compatible_models.length > 0 ? formData.compatible_models : undefined,
+        compatible_models: validCompatibleModels,
         minimum_stock_level: formData.minimum_stock_level ? parseInt(formData.minimum_stock_level, 10) : undefined,
-        unit_cost: formData.unit_cost ? parseFloat(formData.unit_cost) : undefined,
+        unit_cost: parsedUnitCost,
         primary_supplier_id: formData.primary_supplier_id || undefined,
       }
 
@@ -233,7 +250,9 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
                 <Label>Compatible Models</Label>
                 <CompatibleModelsInput
                   value={formData.compatible_models}
-                  onChange={(models) => setFormData({...formData, compatible_models: models})}
+                  onChange={(models) => {
+                    setFormData({...formData, compatible_models: models})
+                  }}
                   placeholder="e.g., iPhone 12, iPhone 12 Pro"
                 />
               </div>
@@ -258,10 +277,28 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
                     type="number"
                     min="0"
                     step="0.01"
+                    pattern="[0-9]*\.?[0-9]{0,2}"
                     value={formData.unit_cost}
-                    onChange={(e) => setFormData({...formData, unit_cost: e.target.value})}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      // Ensure the value is properly formatted for decimal input
+                      if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
+                        setFormData({...formData, unit_cost: value})
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // Format the value on blur to ensure proper decimal format
+                      const value = e.target.value
+                      if (value && !isNaN(Number(value))) {
+                        const formatted = Number(value).toFixed(2)
+                        setFormData({...formData, unit_cost: formatted})
+                      }
+                    }}
                     placeholder="25.99"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Enter cost with up to 2 decimal places (e.g., 24.95)
+                  </p>
                 </div>
               </div>
               
@@ -276,13 +313,27 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
                     <SelectValue placeholder="Select supplier" />
                   </SelectTrigger>
                   <SelectContent>
-                    {suppliers?.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
+                    {suppliersLoading ? (
+                      <SelectItem value="__loading__" disabled>Loading suppliers...</SelectItem>
+                    ) : _suppliersError ? (
+                      <SelectItem value="__error__" disabled>Error loading suppliers</SelectItem>
+                    ) : suppliers && suppliers.length > 0 ? (
+                      suppliers.map((supplier) => (
+                        <SelectItem key={supplier.id} value={supplier.id}>
+                          {supplier.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="__no_suppliers__" disabled>No suppliers available</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
+                {_suppliersError && (
+                  <p className="text-sm text-red-600">Error: {_suppliersError.message}</p>
+                )}
+                {suppliers && suppliers.length === 0 && !suppliersLoading && (
+                  <p className="text-sm text-gray-600">No suppliers found. Please add suppliers first.</p>
+                )}
               </div>
             </div>
             

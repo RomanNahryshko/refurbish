@@ -38,7 +38,7 @@ export interface UpdateSupplierData {
 }
 
 export interface SuppliersFilters {
-  supplier_type?: 'devices' | 'parts' | 'both'
+  type?: 'devices' | 'parts' | 'both'
   search?: string
 }
 
@@ -48,17 +48,24 @@ export interface SuppliersFilters {
 export async function getAll(filters?: SuppliersFilters): Promise<Supplier[]> {
   const searchParams = new URLSearchParams()
   
-  if (filters?.supplier_type) searchParams.set('supplier_type', filters.supplier_type)
+  if (filters?.type) searchParams.set('type', filters.type)
   if (filters?.search) searchParams.set('search', filters.search)
   
   const url = `/api/suppliers${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
   
+  // Debug logging
+  console.log('getAll suppliers URL:', url, 'filters:', filters)
+  
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Failed to fetch suppliers: ${response.statusText}`)
+    const error = await response.json()
+    throw new Error(error.error || `Failed to fetch suppliers: ${response.statusText}`)
   }
   
-  return response.json()
+  const data = await response.json()
+  console.log('getAll suppliers response:', data)
+  
+  return data
 }
 
 /**
@@ -66,12 +73,12 @@ export async function getAll(filters?: SuppliersFilters): Promise<Supplier[]> {
  */
 export async function getPartsSuppliers(): Promise<Supplier[]> {
   // Fetch suppliers that provide parts or both
-  const [partsSuppliers, bothSuppliers] = await Promise.all([
-    getAll({ supplier_type: 'parts' }),
-    getAll({ supplier_type: 'both' })
-  ])
+  const partsSuppliers = await getAll()
   
-  return [...partsSuppliers, ...bothSuppliers]
+  // Debug logging
+  console.log('getPartsSuppliers result:', { partsSuppliers })
+  
+  return partsSuppliers
 }
 
 /**

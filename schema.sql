@@ -585,9 +585,18 @@ CREATE TRIGGER update_stock_levels AFTER INSERT ON repair_parts_used
 CREATE OR REPLACE FUNCTION apply_stock_adjustment()
 RETURNS TRIGGER AS $$
 BEGIN
-  UPDATE spare_parts
-  SET quantity_in_stock = quantity_in_stock + NEW.quantity
-  WHERE id = NEW.spare_part_id;
+  -- For correction type, replace the stock level with the exact quantity
+  -- For add/remove types, add/subtract the quantity
+  IF NEW.adjustment_type = 'correction' THEN
+    UPDATE spare_parts
+    SET quantity_in_stock = NEW.quantity
+    WHERE id = NEW.spare_part_id;
+  ELSE
+    UPDATE spare_parts
+    SET quantity_in_stock = quantity_in_stock + NEW.quantity
+    WHERE id = NEW.spare_part_id;
+  END IF;
+  
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

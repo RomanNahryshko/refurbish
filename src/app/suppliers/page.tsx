@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { AddSupplierDialog } from '@/modules/suppliers/components/add-supplier-dialog'
+import { LoadingSpinner } from '@/components/common/loading-spinner'
 import {
     Plus,
     Search,
@@ -18,15 +19,17 @@ import {
     Wrench
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { mockSuppliers } from '@/lib/mock-data'
 import { Supplier } from '@/lib/types/business-types'
-
+import { useSuppliersQuery, useDeleteSupplierMutation } from '@/modules/suppliers/hooks/use-suppliers'
 
 export default function SuppliersPage() {
-  const [suppliers, setSuppliers] = useState(mockSuppliers)
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
+  const [editingSupplier, setEditingSupplier] => useState<Supplier | null>(null)
+
+  // Use React Query hooks for data fetching and mutations
+  const { data: suppliers = [], isLoading, error, refetch } = useSuppliersQuery()
+  const deleteSupplierMutation = useDeleteSupplierMutation()
 
   const filteredSuppliers = suppliers.filter(supplier =>
     supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -35,18 +38,9 @@ export default function SuppliersPage() {
   )
 
   const handleSupplierAdded = (supplier: Supplier) => {
-    if (editingSupplier) {
-      // Update existing
-      setSuppliers(suppliers.map(s => 
-        s.id === editingSupplier.id 
-          ? { ...s, ...supplier }
-          : s
-      ))
-    } else {
-      // Add new
-      setSuppliers([...suppliers, supplier])
-    }
+    // The mutation hook will automatically update the cache
     setEditingSupplier(null)
+    setIsAddDialogOpen(false)
   }
 
   const handleEdit = (supplier: Supplier) => {
@@ -54,10 +48,15 @@ export default function SuppliersPage() {
     setIsAddDialogOpen(true)
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this supplier?')) {
-      setSuppliers(suppliers.filter(s => s.id !== id))
-      toast.success('Supplier deleted')
+      try {
+        await deleteSupplierMutation.mutateAsync(id)
+        // The mutation hook will automatically update the cache
+      } catch (error) {
+        // Error is handled by the mutation hook's toast
+        console.error('Delete error:', error)
+      }
     }
   }
 
@@ -90,6 +89,31 @@ export default function SuppliersPage() {
       default:
         return 'outline'
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 max-w-6xl">
+        <div className="flex items-center justify-center p-8">
+          <LoadingSpinner size="md" />
+          <span className="ml-2">Loading suppliers...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6 max-w-6xl">
+        <div className="p-4 text-red-600 bg-red-50 border border-red-200 rounded">
+          <h3 className="font-semibold">Error loading suppliers</h3>
+          <p className="text-sm mt-1">{error.message}</p>
+          <Button onClick={() => refetch()} className="mt-2" size="sm">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -178,8 +202,13 @@ export default function SuppliersPage() {
                   size="sm"
                   onClick={() => handleDelete(supplier.id)}
                   className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  disabled={deleteSupplierMutation.isPending}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  {deleteSupplierMutation.isPending ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
                 </Button>
               </div>
             </CardContent>

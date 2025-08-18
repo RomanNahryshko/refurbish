@@ -1,21 +1,19 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  getAllParts, 
-  getPartById, 
-  getLowStockParts,
-  createPart, 
-  updatePart, 
-  deletePart,
-  createStockAdjustment,
-  recordPartsUsage,
-  isSkuUnique,
-  getNextSku,
-  PartsFilters,
-  CreateSparePartData,
-  UpdateSparePartData,
-  CreateStockAdjustmentData
+import {
+    getAllParts,
+    getPartById,
+    getLowStockParts,
+    createPart,
+    updatePart,
+    deletePart,
+    createStockAdjustment, isSkuUnique,
+    getNextSku,
+    PartsFilters,
+    CreateSparePartData,
+    UpdateSparePartData,
+    CreateStockAdjustmentData
 } from '@/lib/api/inventory-client'
 import { toast } from 'sonner'
 

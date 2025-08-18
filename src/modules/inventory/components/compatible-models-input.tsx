@@ -24,13 +24,15 @@ export function CompatibleModelsInput({
   const addModel = (model: string) => {
     const trimmedModel = model.trim()
     if (trimmedModel && !value.includes(trimmedModel)) {
-      onChange([...value, trimmedModel])
+      const newValue = [...value, trimmedModel]
+      onChange(newValue)
       setInputValue('')
     }
   }
 
   const removeModel = (modelToRemove: string) => {
-    onChange(value.filter(model => model !== modelToRemove))
+    const newValue = value.filter(model => model !== modelToRemove)
+    onChange(newValue)
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {

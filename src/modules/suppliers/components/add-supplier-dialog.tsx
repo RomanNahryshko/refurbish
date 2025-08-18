@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { useCreateSupplier, useUpdateSupplier } from '@/lib/hooks/use-suppliers'
-import type { Supplier } from '@/lib/api/suppliers'
+import type { Supplier } from '@/lib/api/suppliers-client'
 
 type SupplierType = 'devices' | 'parts' | 'both'
 

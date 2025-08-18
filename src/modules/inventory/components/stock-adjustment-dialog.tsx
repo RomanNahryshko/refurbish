@@ -69,7 +69,7 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
       case 'remove':
         return currentStock - adjustment
       case 'correction':
-        // For correction, the quantity represents the final stock level
+        // For correction, show the exact quantity entered (no calculation)
         return adjustment
       default:
         return null
@@ -77,7 +77,8 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
   }
 
   const newStockLevel = calculateNewStock()
-  const wouldBeNegative = newStockLevel !== null && newStockLevel < 0
+  // For correction, we don't check for negative values since it's the exact quantity to send
+  const wouldBeNegative = formData.adjustment_type !== 'correction' && newStockLevel !== null && newStockLevel < 0
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -92,8 +93,20 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
       return
     }
 
-    if (!formData.quantity || parseInt(formData.quantity, 10) <= 0) {
-      toast.error('Please enter a valid quantity')
+    if (!formData.quantity) {
+      toast.error('Please enter a quantity')
+      return
+    }
+
+    const quantityValue = parseInt(formData.quantity, 10)
+    if (isNaN(quantityValue)) {
+      toast.error('Please enter a valid number')
+      return
+    }
+
+    // For add/remove, quantity must be positive
+    if (formData.adjustment_type !== 'correction' && quantityValue <= 0) {
+      toast.error('Quantity must be positive for add/remove operations')
       return
     }
 
@@ -112,15 +125,18 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
     try {
       let adjustmentQuantity = parseInt(formData.quantity, 10)
 
-      // For correction type, calculate the actual adjustment needed
+      // For correction type, send the exact quantity the user entered
       if (formData.adjustment_type === 'correction') {
-        adjustmentQuantity = adjustmentQuantity - part.quantity_in_stock
+        // No calculation needed - send the exact quantity
+      } else {
+        // For add/remove, use absolute value
+        adjustmentQuantity = Math.abs(adjustmentQuantity)
       }
 
       await addStockMutation.mutateAsync({
         spare_part_id: part.id,
         adjustment_type: formData.adjustment_type,
-        quantity: Math.abs(adjustmentQuantity),
+        quantity: adjustmentQuantity,
         reference_number: formData.reference_number.trim() || undefined,
         reason: formData.reason.trim() || undefined,
       })
@@ -247,20 +263,22 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
                 {/* Quantity */}
                 <div className="grid gap-2">
                   <Label htmlFor="quantity">
-                    {formData.adjustment_type === 'correction' ? 'New Stock Level *' : 'Quantity *'}
+                    {formData.adjustment_type === 'correction' ? 'Exact Quantity *' : 'Quantity *'}
                   </Label>
                   <Input
                     id="quantity"
                     type="number"
-                    min="0"
                     value={formData.quantity}
                     onChange={(e) => setFormData({...formData, quantity: e.target.value})}
-                    placeholder={formData.adjustment_type === 'correction' ? 'Final stock amount' : 'Amount to adjust'}
+                    placeholder={formData.adjustment_type === 'correction' ? 'Enter exact quantity' : 'Amount to adjust'}
                     required
                   />
                   {newStockLevel !== null && (
                     <p className={`text-xs ${wouldBeNegative ? 'text-red-600' : 'text-green-600'}`}>
-                      New stock level will be: {newStockLevel}
+                      {formData.adjustment_type === 'correction' 
+                        ? `Quantity to send: ${newStockLevel}`
+                        : `New stock level will be: ${newStockLevel}`
+                      }
                       {wouldBeNegative && ' (Invalid - cannot be negative)'}
                     </p>
                   )}

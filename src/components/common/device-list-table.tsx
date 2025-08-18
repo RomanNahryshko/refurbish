@@ -1,26 +1,26 @@
 'use client'
 
-import { ReactNode, useState, useEffect } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { ReactNode, useState, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
-    Smartphone,
-    ChevronLeft,
-    ChevronRight,
-    ChevronDown,
-    ChevronUp,
-    Filter,
-    Package,
-    ClipboardCheck,
-    Clock,
-    Wrench,
-    CheckCircle,
-    XCircle,
-    AlertCircle,
-    Package2
-} from 'lucide-react'
-import { Device, Batch } from '@/types/mock-types'
-import { repairTypes } from '@/components/common/repair-task-selector'
+  Smartphone,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  Package,
+  ClipboardCheck,
+  Clock,
+  Wrench,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Package2
+} from 'lucide-react';
+import { Device, Batch } from '@/lib/types/business-types';
+import { repairTypes } from '@/components/common/repair-task-selector';
 
 // Extended Device interface for repair job display
 interface ExtendedDevice extends Device {

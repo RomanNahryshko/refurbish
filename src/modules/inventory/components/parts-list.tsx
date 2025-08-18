@@ -10,13 +10,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { usePartsQuery } from '@/modules/inventory/hooks/use-inventory'
 import { StockLevelBadge, getStockStatus } from '@/modules/inventory/components/stock-level-badge'
-import { PART_CATEGORIES, PART_CATEGORY_LABELS } from '@/lib/constants'
-import { 
-  Plus, 
-  Search, 
-  Package, 
-  Edit, 
-  Trash2, 
+import { PART_CATEGORY_LABELS } from '@/lib/constants'
+import {
+  Plus,
+  Search,
+  Package,
+  Edit,
+  Trash2,
   Settings
 } from 'lucide-react'
 import { SparePart } from '@/lib/types/business-types'
@@ -24,7 +24,7 @@ import { SparePart } from '@/lib/types/business-types'
 interface PartsListProps {
   onAddPart?: () => void
   onEditPart?: (part: SparePart) => void
-  onDeletePart?: (partId: string) => void
+  onDeletePart?: (part: SparePart) => void
   onAdjustStock?: (part: SparePart) => void
   canModify?: boolean
 }
@@ -274,7 +274,7 @@ export function PartsList({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => onDeletePart(part.id)}
+                                onClick={() => onDeletePart(part)}
                                 className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                                 title="Delete Part"
                               >
