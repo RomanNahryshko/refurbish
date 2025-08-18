@@ -1,23 +1,22 @@
-'use client'
-
-import { useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+'use client';
+import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
   ClipboardCheck
-} from 'lucide-react'
-import { useDeviceByInternalId } from '@/lib/hooks/use-devices'
-import { useBatches } from '@/lib/hooks/use-batches'
-import { useRepairJobs } from '@/lib/hooks/use-repair-jobs'
-import { useCreateQCCheck } from '@/lib/hooks/use-qc-checks'
-import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs'
-import { toast } from 'sonner'
-import { FinalQCDeviceCard } from '@/components/quality-control/final-qc-device-card'
-import { LoadingSpinner } from '@/components/common/loading-spinner'
-import { mockBatches, mockRepairJobs, getDeviceByInternalId } from '@/lib/mock-data'
-import { createClient } from '@/lib/supabase/client'
+} from 'lucide-react';
+import { useDeviceByInternalId } from '@/lib/hooks/use-devices';
+import { useBatches } from '@/lib/hooks/use-batches';
+import { useRepairJobs } from '@/lib/hooks/use-repair-jobs';
+import { useCreateQCCheck } from '@/lib/hooks/use-qc-checks';
+import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
+import { toast } from 'sonner';
+import { FinalQCDeviceCard } from '@/components/quality-control/final-qc-device-card';
+import { LoadingSpinner } from '@/components/common/loading-spinner';
+import { createClient } from '@/lib/supabase/client';
+import { RepairType } from '@/lib/types/business-types';
 
 export default function FinalQCPage() {
   const params = useParams()
@@ -44,16 +43,6 @@ export default function FinalQCPage() {
   // Repair job creation hook
   const createRepairJob = useCreateRepairJob()
   
-  // Fallback to mock data if database is not available
-  const fallbackDevice = getDeviceByInternalId(internalId)
-  const fallbackBatches = mockBatches
-  const fallbackRepairJobs = mockRepairJobs
-  
-  // Use real data if available, otherwise fallback to mock data
-  const finalDevice = deviceError ? fallbackDevice : device
-  const finalBatches = batchesError ? fallbackBatches : (batches || [])
-  const finalRepairJobs = repairJobsError ? fallbackRepairJobs : (repairJobs || [])
-  
   // Validate internal ID format (8 digits)
   if (!/^\d{8}$/.test(internalId)) {
     return (
@@ -69,8 +58,8 @@ export default function FinalQCPage() {
     )
   }
   
-  // Show loading state while device is being fetched (only if we have a valid database connection)
-  if (deviceLoading && !deviceError) {
+  // Show loading state while device is being fetched
+  if (deviceLoading) {
     return (
       <div className="p-6 max-w-5xl mx-auto">
         <div className="flex justify-center items-center py-12">
@@ -80,18 +69,13 @@ export default function FinalQCPage() {
     )
   }
   
-  // Show error if device fetch failed and no fallback available
-  if (deviceError && !fallbackDevice) {
+  // Show error if device fetch failed
+  if (deviceError) {
     return (
       <div className="p-6 max-w-5xl mx-auto">
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-gray-900">Error Loading Device</h1>
           <p className="text-gray-600 mt-2">Failed to load device data: {deviceError.message}</p>
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="text-sm text-yellow-800">
-              ⚠️ Database connection not available. Set up Supabase configuration to use real data.
-            </p>
-          </div>
           <Link href="/qc" className="mt-4 inline-block">
             <Button>Back to QC Queue</Button>
           </Link>
@@ -101,19 +85,12 @@ export default function FinalQCPage() {
   }
   
   // Check if device was found
-  if (!finalDevice) {
+  if (!device) {
     return (
       <div className="p-6 max-w-5xl mx-auto">
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-gray-900">Device Not Found</h1>
           <p className="text-gray-600 mt-2">No device found with internal ID: {internalId}</p>
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="text-sm text-yellow-800">
-              ⚠️ This device ID doesn&apos;t exist in the mock data. 
-              <br />
-              Available mock devices: 00000001 to 00000060
-            </p>
-          </div>
           <Link href="/qc" className="mt-4 inline-block">
             <Button>Back to QC Queue</Button>
           </Link>
@@ -122,9 +99,9 @@ export default function FinalQCPage() {
     )
   }
   
-  const batch = finalBatches?.find(b => b.id === finalDevice.batch_id)
-  const completedRepairs = finalRepairJobs?.filter(r => 
-    r.device_id === finalDevice.id && r.status === 'completed'
+  const batch = batches?.find(b => b.id === device.batch_id)
+  const completedRepairs = repairJobs?.filter(r => 
+    r.device_id === device.id && r.status === 'completed'
   ) || []
   
   // Handle repair selection
@@ -145,97 +122,80 @@ export default function FinalQCPage() {
     
     try {
       // Create QC check record in database
-      if (finalDevice && !deviceError) {
-        const supabase = createClient()
-        if (supabase) {
-          // Get current user
-          const { data: { user } } = await supabase.auth.getUser()
-          if (!user) {
-            toast.error('User not authenticated')
-            return
-          }
-          
-          // Prepare QC check data
-          const qcData = {
-            device_id: finalDevice.id,
-            check_type: 'final' as const,
-            overall_result: decision as 'pass' | 'fail',
-            grade_assigned: decision === 'pass' ? grade as 'A' | 'B' | 'C' : undefined,
-            notes: qcNotes || `Final QC: ${decision === 'pass' ? `Passed with Grade ${grade}` : 'Failed - requires additional repairs'}`
-          }
-          
-          // Create test results for final QC (without qc_check_id as it will be added by the API)
-          const testResults = [
-            {
-              test_name: 'overall_condition',
-              test_result: decision as 'pass' | 'fail',
-              notes: decision === 'pass' ? `Final grade assigned: ${grade}` : 'Device failed final QC'
-            },
-            {
-              test_name: 'repair_quality',
-              test_result: decision === 'pass' ? 'pass' : 'fail',
-              notes: decision === 'pass' ? 'All repairs completed successfully' : 'Additional repairs required'
-            }
-          ] as any[] // Type assertion to bypass the interface mismatch
-          
-          // Create QC check with test results
-          await createQCCheck.mutateAsync({
-            qcData,
-            testResults
-          })
-          
-          // If QC failed, create repair jobs for selected repairs
-          if (decision === 'fail' && selectedRepairs.length > 0) {
-            try {
-              for (const repairType of selectedRepairs) {
-                // Map repair type to the correct format
-                const repairTypeMap: Record<string, string> = {
-                  'housing_replace': 'housing_change',
-                  'glass_replace': 'glass_change',
-                  'battery_replace': 'battery_change',
-                  'housing_change': 'housing_change',
-                  'glass_change': 'glass_change',
-                  'battery_change': 'battery_change',
-                  'software_update': 'software_update',
-                  'other': 'other'
-                }
-                
-                const mappedRepairType = repairTypeMap[repairType]
-                
-                if (!mappedRepairType) {
-                  console.error(`Invalid repair type: ${repairType}`)
-                  continue
-                }
-                
-                const repairJobData = {
-                  device_id: finalDevice.id,
-                  repair_type: mappedRepairType as any, // Type assertion for compatibility
-                  description: mappedRepairType === 'other' ? otherRepairDescription : undefined
-                }
-                
-                await createRepairJob.mutateAsync({
-                  data: repairJobData,
-                  createdBy: user.id
-                })
+      const supabase = createClient()
+      if (supabase) {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          toast.error('User not authenticated')
+          return
+        }
+        
+        // Prepare QC check data
+        const qcData = {
+          device_id: device.id,
+          check_type: 'final' as const,
+          overall_result: decision as 'pass' | 'fail',
+          grade_assigned: decision === 'pass' ? grade as 'A' | 'B' | 'C' : undefined,
+          notes: qcNotes || `Final QC: ${decision === 'pass' ? `Passed with Grade ${grade}` : 'Failed - requires additional repairs'}`
+        }
+        
+        // Create QC check (no need for artificial test results)
+        await createQCCheck.mutateAsync({
+          qcData
+        })
+        
+        // If QC failed, create repair jobs for selected repairs
+        if (decision === 'fail' && selectedRepairs.length > 0) {
+          try {
+            for (const repairType of selectedRepairs) {
+              // Map repair type to the correct format
+              const repairTypeMap: Record<string, string> = {
+                'housing_replace': 'housing_change',
+                'glass_replace': 'glass_change',
+                'battery_replace': 'battery_change',
+                'housing_change': 'housing_change',
+                'glass_change': 'glass_change',
+                'battery_change': 'battery_change',
+                'software_update': 'software_update',
+                'other': 'other'
               }
               
-              toast.success(`Created ${selectedRepairs.length} repair job(s) for device ${finalDevice.internal_id}`)
-            } catch (error) {
-              console.error('Failed to create repair jobs:', error)
-              toast.error('QC completed but failed to create repair jobs. Please check repair queue.')
+              const mappedRepairType = repairTypeMap[repairType]
+              
+              if (!mappedRepairType) {
+                console.error(`Invalid repair type: ${repairType}`)
+                continue
+              }
+              
+              const repairJobData = {
+                device_id: device.id,
+                repair_type: mappedRepairType as RepairType,
+                description: mappedRepairType === 'other' ? otherRepairDescription : undefined
+              }
+              
+              await createRepairJob.mutateAsync({
+                data: repairJobData,
+                createdBy: user.id
+              })
             }
+            
+            toast.success(`Created ${selectedRepairs.length} repair job(s) for device ${device.internal_id}`)
+          } catch (error) {
+            console.error('Failed to create repair jobs:', error)
+            toast.error('QC completed but failed to create repair jobs. Please check repair queue.')
           }
-          
-          toast.success(`Final QC completed successfully for device ${finalDevice.internal_id}`)
         }
+        
+        toast.success(`Final QC completed successfully for device ${device.internal_id}`)
       }
       
       // Show success message
       if (decision === 'pass') {
-        toast.success(`Device ${finalDevice.internal_id} passed Final QC with Grade ${grade}. Ready to ship!`)
+        toast.success(`Device ${device.internal_id} passed Final QC with Grade ${grade}. Ready to ship!`)
       } else {
         const repairCount = selectedRepairs.length
-        toast.warning(`Device ${finalDevice.internal_id} failed Final QC. ${repairCount} additional repair task(s) created`)
+        toast.warning(`Device ${device.internal_id} failed Final QC. ${repairCount} additional repair task(s) created`)
       }
       
       router.push('/qc')
@@ -260,10 +220,10 @@ export default function FinalQCPage() {
             <ClipboardCheck className="h-6 w-6" />
             Final Quality Control
           </h1>
-          <p className="text-gray-600">Device {finalDevice.internal_id}</p>
-          {(deviceError || batchesError || repairJobsError) && (
+          <p className="text-gray-600">Device {device.internal_id}</p>
+          {(batchesError || repairJobsError) && (
             <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
-              ⚠️ Using mock data - Database connection not available
+              ⚠️ Some data may not be fully loaded due to connection issues
             </div>
           )}
         </div>
@@ -271,7 +231,7 @@ export default function FinalQCPage() {
 
       {/* Final QC Device Card */}
       <FinalQCDeviceCard
-        device={finalDevice}
+        device={device}
         batch={batch}
         completedRepairs={completedRepairs}
         selectedRepairs={selectedRepairs}

@@ -17,17 +17,55 @@ import {
     ClipboardCheck
 } from 'lucide-react'
 import Link from 'next/link'
-import { mockBatches, mockDevices, mockRepairJobs, mockQCChecks } from '@/lib/mock-data'
+import { useBatch } from '@/lib/hooks/use-batches'
+import { useDevicesByBatch } from '@/lib/hooks/use-devices'
+import { useRepairJobs } from '@/lib/hooks/use-repair-jobs'
+import { useQCChecks } from '@/lib/hooks/use-devices'
+import { LoadingSpinner } from '@/components/common/loading-spinner'
+import { QCCheck } from '@/lib/types/business-types'
 
 export default function BatchDevicesPage() {
   const params = useParams()
   const batchId = params.id as string
-  const batch = mockBatches.find(b => b.id === batchId)
-  const batchDevices = mockDevices.filter(d => d.batch_id === batchId)
+  
+  // Fetch real data from database
+  const { data: batch, isLoading: batchLoading } = useBatch(batchId)
+  const { data: batchDevices, isLoading: devicesLoading } = useDevicesByBatch(batchId)
+  const { data: repairJobs } = useRepairJobs()
+  const { data: qcChecks } = useQCChecks(
+    batchDevices ? batchDevices.map(d => d.id) : undefined,
+    { enabled: !!batchDevices }
+  )
   
   const [searchTerm, setSearchTerm] = useState('')
   
-  const filteredDevices = batchDevices.filter(device =>
+  // Show loading state while data is being fetched
+  if (batchLoading || devicesLoading) {
+    return (
+      <div className="container mx-auto p-6 max-w-7xl">
+        <div className="flex justify-center items-center py-12">
+          <LoadingSpinner />
+        </div>
+      </div>
+    )
+  }
+  
+  // Check if batch was found
+  if (!batch) {
+    return (
+      <div className="container mx-auto p-6 max-w-7xl">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-gray-900">Batch Not Found</h1>
+          <p className="text-gray-600 mt-2">No batch found with ID: {batchId}</p>
+          <Link href="/batch-intake" className="mt-4 inline-block">
+            <Button>Back to Batch Intake</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+  
+  const filteredDevices = (batchDevices || []).filter(device =>
     device.imei.includes(searchTerm) ||
     device.internal_id.includes(searchTerm) ||
     device.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -74,13 +112,13 @@ export default function BatchDevicesPage() {
   const getDeviceStats = () => {
     const stats = {
       expected: batch?.device_count || 0, // Expected count from batch creation
-      received: batchDevices.length, // Actual devices imported/in DB
+      received: (batchDevices || []).length, // Actual devices imported/in DB
       inQC: 0,
       inRepair: 0,
       readyToShip: 0
     }
     
-    batchDevices.forEach(device => {
+    ;(batchDevices || []).forEach(device => {
       if (device.status.includes('qc')) stats.inQC++
       else if (device.status.includes('repair')) stats.inRepair++
       else if (['graded', 'ready_to_ship', 'shipped'].includes(device.status)) stats.readyToShip++
@@ -126,10 +164,6 @@ export default function BatchDevicesPage() {
     { label: 'Repairs', key: 'repairs' },
     { label: 'Actions', key: 'actions' }
   ]
-
-  if (!batch) {
-    return <div>Batch not found</div>
-  }
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -208,10 +242,10 @@ export default function BatchDevicesPage() {
               </thead>
               <tbody>
                 {filteredDevices.map((device, index) => {
-                  const repairs = mockRepairJobs.filter(r => r.device_id === device.id)
-                  const qcChecks = mockQCChecks.filter(q => q.device_id === device.id)
-                  const hasInitialQC = qcChecks.some(q => q.check_type === 'initial')
-                  const hasFinalQC = qcChecks.some(q => q.check_type === 'final')
+                  const repairs = (repairJobs || []).filter(r => r.device_id === device.id)
+                  const deviceQCChecks = (qcChecks || []).filter((q: QCCheck) => q.device_id === device.id)
+                  const hasInitialQC = deviceQCChecks.some((q: QCCheck) => q.check_type === 'initial')
+                  const hasFinalQC = deviceQCChecks.some((q: QCCheck) => q.check_type === 'final')
                   const pendingRepairs = repairs.filter(r => r.status === 'pending').length
                   const completedRepairs = repairs.filter(r => r.status === 'completed').length
                   

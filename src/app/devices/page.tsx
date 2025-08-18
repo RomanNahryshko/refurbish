@@ -7,14 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Search,
-  Eye,
-  Calendar,
-  FileText,
-  DollarSign,
-  Package
+    Search,
+    Eye,
+    Calendar,
+    FileText,
+    DollarSign,
+    Package
 } from 'lucide-react';
-import { mockBatches } from '@/lib/mock-data';
+import { useBatches } from '@/lib/hooks/use-batches';
 import { DeviceListTable } from '@/components/common/device-list-table';
 import { DEVICE_STATUS_LABELS, DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants';
 import { useBatch } from '@/lib/hooks/use-batches';
@@ -42,6 +42,9 @@ export default function DevicesPage() {
   
   // Fetch all devices if no batch parameter is present
   const { data: allDevicesData, isLoading: allDevicesLoading, error: allDevicesError, refetch: refetchAllDevices, isFetching: allDevicesFetching } = useDevices();
+  
+  // Fetch all batches for filter options
+  const { data: batches } = useBatches();
   
   // Update batch filter when URL changes
   useEffect(() => {
@@ -302,7 +305,7 @@ export default function DevicesPage() {
           )}
           <DeviceListTable
                 devices={paginatedDevices}
-                batches={mockBatches}
+                batches={batches || []}
                 columns={['internal_id', 'device', 'imei', 'batch', 'status', 'grade', 'required_repairs', 'actions']}
                 renderActions={(device) => (
                   <Link href={`/devices/${device.internal_id}`}>
@@ -351,7 +354,7 @@ export default function DevicesPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Batches</SelectItem>
-                        {mockBatches.map(batch => (
+                        {(batches || []).map((batch: { id: string; batch_number: string }) => (
                           <SelectItem key={batch.id} value={batch.id}>
                             {batch.batch_number}
                           </SelectItem>

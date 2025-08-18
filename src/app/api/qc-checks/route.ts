@@ -124,6 +124,29 @@ export async function POST(request: NextRequest) {
       // Note: We don't fail the entire request if device update fails
     }
 
+    // Record device status history with QC notes for all status changes
+    const historyNotes = notes || (check_type === 'final' 
+      ? overall_result === 'pass' 
+        ? `Final QC passed with grade ${grade_assigned}`
+        : `Final QC failed - requires additional repairs`
+      : `Initial QC: ${overall_result === 'pass' ? 'Passed' : 'Failed'}`
+    )
+
+    const { error: historyError } = await supabase
+      .from('device_status_history')
+      .insert({
+        device_id: device_id,
+        new_status: newDeviceStatus,
+        notes: historyNotes,
+        changed_by: user.id,
+        created_at: new Date().toISOString()
+      })
+
+    if (historyError) {
+      console.error('Error recording device status history:', historyError)
+      // Note: We don't fail the entire request if history recording fails
+    }
+
     return NextResponse.json({ 
       data: qcCheck,
       message: 'QC check created successfully' 
