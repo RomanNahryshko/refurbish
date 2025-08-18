@@ -170,6 +170,15 @@ export interface SparePart {
   quantity_in_stock: number
   minimum_stock_level: number
   unit_cost?: number
+  primary_supplier_id?: string
+  created_at: string
+  updated_at?: string
+  deleted_at?: string | null
+  // Joined data
+  suppliers?: {
+    id: string
+    name: string
+  }
   supplier_name?: string // Joined from supplier
   low_stock?: boolean // Computed field
 }

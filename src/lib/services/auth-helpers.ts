@@ -22,6 +22,16 @@ export async function requirePermission(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   
+  // Check if user is Supabase superadmin (service_role)
+  // Supabase dashboard users often have role metadata
+  const isSuperAdmin = user.app_metadata?.role === 'service_role' || 
+                       user.user_metadata?.role === 'superadmin' ||
+                       user.email?.endsWith('@supabase.io')
+  
+  if (isSuperAdmin) {
+    return null // Superadmin has all permissions
+  }
+  
   if (!await checkPermission(user.id, tableName, action)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }

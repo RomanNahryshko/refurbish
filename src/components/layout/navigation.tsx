@@ -57,12 +57,6 @@ const navigationItems: NavigationItem[] = [
     allowedRoles: ['technician', 'ops_manager'],
   },
   {
-    title: 'Shipping',
-    href: '/shipping',
-    description: 'Prepare shipping manifests',
-          allowedRoles: ['ops_manager', 'general_manager'],
-  },
-  {
     title: 'Admin',
     href: '/admin',
     description: 'System administration',

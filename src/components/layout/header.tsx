@@ -26,7 +26,6 @@ const navigation = [
   { name: 'Repair Jobs', href: '/repair-jobs' },
   { name: 'Quality Control', href: '/qc' },
   { name: 'Inventory', href: '/inventory' },
-  { name: 'Shipping', href: '/shipping' },
 ]
 
 export function Header() {

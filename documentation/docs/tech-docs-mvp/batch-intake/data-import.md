@@ -13,4 +13,4 @@ This document describes the process for importing data from Dr. Phone.
 5.  **Error Handling**: Basic validation and error reporting.
 6.  **Fault Modification**: After import, faults can be manually added, modified, or supplemented with visual inspection findings.
 
-For more details on the initial quality control checks, see the [Quality Control Process](../device-tracking/quality-control.md#initial-qc). 
+For more details on the initial quality control checks, see the Quality Control process. 

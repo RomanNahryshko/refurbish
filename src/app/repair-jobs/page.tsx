@@ -595,7 +595,14 @@ export default function RepairJobsPage() {
                       const sparePart = spareParts.find(p => p.id === part.partId)
                       return (
                         <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                          <span className="flex-1 text-sm">{sparePart?.name}</span>
+                          <div className="flex-1">
+                            <span className="text-sm">{sparePart?.name}</span>
+                            <div className="text-xs text-gray-500">
+                              Available: {sparePart?.quantity_in_stock || 0}
+                              {isLowStock && <span className="text-red-500 ml-1">⚠️ Low Stock</span>}
+                              {willGoNegative && <span className="text-red-600 ml-1">❌ Insufficient Stock</span>}
+                            </div>
+                          </div>
                           <div className="flex items-center gap-1">
                             <Button
                               size="sm"
@@ -617,13 +624,13 @@ export default function RepairJobsPage() {
                               variant="ghost"
                               onClick={() => {
                                 const newParts = [...partsRecording.parts]
-                                const maxStock = sparePart?.quantity_in_stock || 999
+                                const maxStock = sparePart?.quantity_in_stock || 0
                                 if (newParts[index].quantity < maxStock) {
                                   newParts[index].quantity++
                                   setPartsRecording({ ...partsRecording, parts: newParts })
                                 }
                               }}
-                              disabled={part.quantity >= (sparePart?.quantity_in_stock || 999)}
+                              disabled={part.quantity >= (sparePart?.quantity_in_stock || 0)}
                             >
                               <Plus className="h-3 w-3" />
                             </Button>
@@ -660,6 +667,16 @@ export default function RepairJobsPage() {
                   className="mt-1"
                 />
               </div>
+              
+              {/* Warning for insufficient parts */}
+              {hasInsufficientParts && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <span className="text-sm text-red-700">
+                    Cannot complete repair: insufficient stock for selected parts
+                  </span>
+                </div>
+              )}
               
               <div className="flex gap-2 pt-4">
                 <Button 
