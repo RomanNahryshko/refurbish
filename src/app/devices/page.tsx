@@ -7,12 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-    Search,
-    Eye,
-    Calendar,
-    FileText,
-    DollarSign,
-    Package
+  Search,
+  Eye,
+  Calendar,
+  FileText,
+  DollarSign,
+  Package
 } from 'lucide-react';
 import { useBatches } from '@/lib/hooks/use-batches';
 import { DeviceListTable } from '@/components/common/device-list-table';
@@ -114,8 +114,8 @@ export default function DevicesPage() {
   const readyCount = allDevices.filter(d => d.status === 'ready_to_ship').length;
   
   // Additional KPI counts for QC data
-  const repairsRequiredCount = allDevices.filter(d => d.dr_phone_data?.required_repairs && d.dr_phone_data.required_repairs.length > 0).length;
-  const gradeAssignedCount = allDevices.filter(d => d.dr_phone_data?.grade && d.dr_phone_data.grade !== 'ungraded').length;
+  const repairsRequiredCount = allDevices.filter(d => d.dr_phone_data?.required_repairs && d.dr_phone_data.required_repairs.length > 0 && d.status !== 'ready_to_ship').length;
+  const gradeAssignedCount = allDevices.filter(d => d?.grade && d.grade !== 'ungraded').length;
 
   // Loading state for devices
   const isLoading = batchFromUrl ? (batchLoading || devicesLoading) : allDevicesLoading;

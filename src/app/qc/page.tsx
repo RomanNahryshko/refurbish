@@ -1,23 +1,20 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+'use client';;
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-    ClipboardCheck,
-    Search
-} from 'lucide-react'
-import { DeviceListTable } from '@/components/common/device-list-table'
-import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
-import { useDevicesForFinalQC } from '@/lib/hooks/use-devices'
-import { useQCChecks } from '@/lib/hooks/use-devices'
-import { useBatches } from '@/lib/hooks/use-batches'
-import { LoadingSpinner } from '@/components/common/loading-spinner'
-import { useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+  ClipboardCheck,
+  Search
+} from 'lucide-react';
+import { DeviceListTable } from '@/components/common/device-list-table';
+import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants';
+import { useDevicesForFinalQC, useDevices } from '@/lib/hooks/use-devices';
+import { useBatches } from '@/lib/hooks/use-batches';
+import { LoadingSpinner } from '@/components/common/loading-spinner';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function QCPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -35,11 +32,12 @@ export default function QCPage() {
   // Fetch batches for device information
   const { data: batches, isLoading: batchesLoading, error: batchesError } = useBatches()
   
-  // Fetch QC checks for history - only when we have devices
-  const { data: qcChecks } = useQCChecks(
-    devicesForQC && devicesForQC.length > 0 ? devicesForQC.map(d => d.id) : undefined,
-    { enabled: !!(devicesForQC && devicesForQC.length > 0) }
-  )
+  // Fetch all devices for metrics calculation
+  const { data: allDevices } = useDevices()
+  
+
+  
+
   
   // Refetch data every time the component mounts (page visit)
   useEffect(() => {
@@ -52,12 +50,8 @@ export default function QCPage() {
         await queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
         await queryClient.refetchQueries({ queryKey: ['batches'] })
         
-        // If we have devices, also refetch QC checks
-        const devicesData = queryClient.getQueryData(['devices', 'final-qc'])
-        if (devicesData && Array.isArray(devicesData) && devicesData.length > 0) {
-          const deviceIds = devicesData.map((d: { id: string }) => d.id)
-          await queryClient.refetchQueries({ queryKey: ['qc-checks', deviceIds] })
-        }
+        // Refetch all devices for metrics calculation
+        await queryClient.refetchQueries({ queryKey: ['devices'] })
       } finally {
         setIsRefreshing(false)
       }
@@ -111,25 +105,41 @@ export default function QCPage() {
   
   // QC-specific data calculations (MVP scope)
   const getQCMetrics = () => {
-    // Only calculate metrics if we have QC checks data
-    if (!qcChecks) {
-      return {
-        inQueue: transformedDevices.length,
-        completedToday: 0,
-        totalCompleted: 0
-      }
+    // Calculate inQueue from current devices
+    const inQueue = transformedDevices.length
+    
+    // Calculate completedToday from devices that moved to ready_to_ship today
+    let completedToday = 0
+    let totalCompleted = 0
+    
+    if (allDevices && Array.isArray(allDevices)) {
+      const today = new Date().toDateString()
+      
+      // Count devices that moved to ready_to_ship today
+      completedToday = allDevices.filter((device: any) => {
+        if (device.status === 'ready_to_ship' && device.updated_at) {
+          const updatedDate = new Date(device.updated_at).toDateString()
+          const isToday = updatedDate === today
+          
+          
+          
+          return isToday
+        }
+        return false
+      }).length
+      
+      // Count total devices with ready_to_ship status
+      totalCompleted = allDevices.filter((device: any) => device.status === 'ready_to_ship').length
     }
     
-    const devicesWithQC = qcChecks.filter((qc: { check_type: string }) => qc.check_type === 'final') || []
-    const completedQC = devicesWithQC.filter((qc: { overall_result: string }) => qc.overall_result === 'pass' || qc.overall_result === 'fail')
+
+    
+
     
     return {
-      inQueue: transformedDevices.length,
-      completedToday: completedQC.filter((qc: { performed_at?: string; created_at: string }) => {
-        const today = new Date().toDateString()
-        return new Date(qc.performed_at || qc.created_at).toDateString() === today
-      }).length,
-      totalCompleted: completedQC.length
+      inQueue,
+      completedToday,
+      totalCompleted
     }
   }
   
@@ -164,54 +174,14 @@ export default function QCPage() {
         <div>
           <h1 className="text-3xl font-bold">
             Final Quality Control
-            {isRefreshing && (
-              <span className="ml-2 inline-flex items-center gap-1 text-blue-600 text-lg font-normal">
-                <LoadingSpinner className="h-4 w-4" />
-                Updating...
-              </span>
-            )}
           </h1>
           <p className="text-gray-600 mt-1">
             Devices ready for final QC after repairs
           </p>
+
         </div>
         
         <div className="flex items-center gap-4">
-          {/* Refresh Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isRefreshing}
-            onClick={async () => {
-              try {
-                setIsRefreshing(true)
-                await queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
-                await queryClient.refetchQueries({ queryKey: ['batches'] })
-                if (devicesForQC && devicesForQC.length > 0) {
-                  const deviceIds = devicesForQC.map(d => d.id)
-                  await queryClient.refetchQueries({ queryKey: ['qc-checks', deviceIds] })
-                }
-                toast.success('Data refreshed successfully!')
-              } catch {
-                toast.error('Failed to refresh data')
-              } finally {
-                setIsRefreshing(false)
-              }
-            }}
-            className="flex items-center gap-2"
-          >
-            {isRefreshing ? (
-              <>
-                <LoadingSpinner className="h-4 w-4" />
-                Refreshing...
-              </>
-            ) : (
-              <>
-                <Search className="h-4 w-4" />
-                Refresh
-              </>
-            )}
-          </Button>
           
           {/* KPI badges */}
           <div className="flex flex-wrap items-center gap-2">
@@ -221,7 +191,7 @@ export default function QCPage() {
                 : 'border-purple-300 text-purple-700'
             }`}>
               <span className="font-semibold">
-                {isRefreshing ? <LoadingSpinner className="h-3 w-3" /> : qcMetrics.inQueue}
+                {qcMetrics.inQueue}
               </span>
               <span className="text-sm">In Queue</span>
             </div>
@@ -231,7 +201,7 @@ export default function QCPage() {
                 : 'border-green-300 text-green-700'
             }`}>
               <span className="font-semibold">
-                {isRefreshing ? <LoadingSpinner className="h-3 w-3" /> : qcMetrics.completedToday}
+                {qcMetrics.completedToday}
               </span>
               <span className="text-sm">Today</span>
             </div>
@@ -241,7 +211,7 @@ export default function QCPage() {
                 : 'border-blue-300 text-blue-700'
             }`}>
               <span className="font-semibold">
-                {isRefreshing ? <LoadingSpinner className="h-3 w-3" /> : qcMetrics.totalCompleted}
+                {qcMetrics.totalCompleted}
               </span>
               <span className="text-sm">Total</span>
             </div>
