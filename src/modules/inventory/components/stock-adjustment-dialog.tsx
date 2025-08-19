@@ -69,7 +69,7 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
       case 'remove':
         return currentStock - adjustment
       case 'correction':
-        // For correction, show the exact quantity entered (no calculation)
+        // For correction, show the exact quantity that will be sent
         return adjustment
       default:
         return null
@@ -77,8 +77,6 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
   }
 
   const newStockLevel = calculateNewStock()
-  // For correction, we don't check for negative values since it's the exact quantity to send
-  const wouldBeNegative = formData.adjustment_type !== 'correction' && newStockLevel !== null && newStockLevel < 0
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -115,23 +113,12 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
       return
     }
 
-    if (wouldBeNegative) {
-      toast.error('Stock adjustment would result in negative stock level')
-      return
-    }
+    // Note: API handles all validation including negative stock prevention
 
     setIsSubmitting(true)
 
     try {
-      let adjustmentQuantity = parseInt(formData.quantity, 10)
-
-      // For correction type, send the exact quantity the user entered
-      if (formData.adjustment_type === 'correction') {
-        // No calculation needed - send the exact quantity
-      } else {
-        // For add/remove, use absolute value
-        adjustmentQuantity = Math.abs(adjustmentQuantity)
-      }
+      const adjustmentQuantity = parseInt(formData.quantity, 10)
 
       await addStockMutation.mutateAsync({
         spare_part_id: part.id,
@@ -274,12 +261,11 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
                     required
                   />
                   {newStockLevel !== null && (
-                    <p className={`text-xs ${wouldBeNegative ? 'text-red-600' : 'text-green-600'}`}>
+                    <p className="text-xs text-green-600">
                       {formData.adjustment_type === 'correction' 
                         ? `Quantity to send: ${newStockLevel}`
                         : `New stock level will be: ${newStockLevel}`
                       }
-                      {wouldBeNegative && ' (Invalid - cannot be negative)'}
                     </p>
                   )}
                 </div>
@@ -322,7 +308,7 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={isSubmitting || !formData.adjustment_type || !formData.quantity || wouldBeNegative}
+                  disabled={isSubmitting || !formData.adjustment_type || !formData.quantity}
                 >
                   {isSubmitting && <LoadingSpinner size="sm" className="mr-2" />}
                   Apply Adjustment

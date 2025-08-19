@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import { Device, DeviceStatus, DeviceGrade, DrPhoneData } from '@/lib/types/business-types'
+import { DEVICE_STATUS } from '@/lib/constants'
 
 export interface CreateDeviceData {
   batch_id: string
@@ -118,7 +119,7 @@ export const devicesApi = {
       .from('devices')
       .insert({
         ...deviceData,
-        status: 'awaiting_repair' as DeviceStatus, // Changed from 'received' to 'awaiting_repair'
+        status: DEVICE_STATUS.awaiting_repair as DeviceStatus, // Changed from 'received' to 'awaiting_repair'
         grade: 'ungraded' as DeviceGrade,
         created_by: user.id,
         dr_phone_imported_at: deviceData.dr_phone_data ? new Date().toISOString() : undefined
@@ -169,7 +170,7 @@ export const devicesApi = {
       .select()
 
     if (error) throw error
-    if(data[0].status === 'final_qc') {
+    if(data[0].status === DEVICE_STATUS.final_qc) {
       //add device to final qc_check table
        const { error: qcCheckError } = await supabase
       .from('qc_checks')
@@ -333,7 +334,7 @@ export const devicesApi = {
 
     // Get unique user IDs from the history
     const userIds = [...new Set(statusHistory
-      .map((history: any) => history.changed_by)
+      .map((history: { changed_by: string }) => history.changed_by)
       .filter(Boolean)
     )]
 
@@ -355,10 +356,10 @@ export const devicesApi = {
     }
 
     // Create a map of user ID to user profile
-    const userMap = new Map(userProfiles.map((user: any) => [user.id, user]))
+    const userMap = new Map(userProfiles.map((user: { id: string }) => [user.id, user]))
 
     // Combine history with user data
-    const enrichedHistory = statusHistory.map((history: any) => ({
+    const enrichedHistory = statusHistory.map((history: { changed_by: string }) => ({
       ...history,
       changed_by_user: history.changed_by ? userMap.get(history.changed_by) : null
     }))

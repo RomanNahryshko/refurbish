@@ -24,11 +24,11 @@ import {
 interface ExcelDataTableProps {
   data: {
     headers: string[]
-    rows: Record<string, any>[]
+    rows: Record<string, unknown>[]
     totalRows: number
     sheetName: string
   }
-  onRowSelect?: (selectedRows: Record<string, any>[]) => void
+  onRowSelect?: (selectedRows: Record<string, unknown>[]) => void
   selectable?: boolean
 }
 
@@ -196,8 +196,8 @@ export function ExcelDataTable({ data, onRowSelect, selectable = false }: ExcelD
                   )}
                   {data.headers.map((header, colIndex) => (
                     <TableCell key={colIndex} className="max-w-[200px]">
-                      <div className="truncate" title={row[header] || ''}>
-                        {row[header] || ''}
+                      <div className="truncate" title={String(row[header])}>
+                        {String(row[header])}
                       </div>
                     </TableCell>
                   ))}

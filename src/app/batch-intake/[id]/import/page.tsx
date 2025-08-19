@@ -12,9 +12,15 @@ import { useExcelParser } from '@/lib/hooks/use-excel-parser';
 import { useBatch } from '@/lib/hooks/use-batches';
 import { useCreateDevicesFromImport } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
-import { createClient } from '@/lib/supabase/client';
+// Removed: Direct Supabase import - using hooks instead
 import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
 import { REPAIR_TYPES } from '@/lib/constants';
+import {
+  useFilterDevicesByExisting,
+  useCompletedQCByDevices,
+  useFindExistingDevice
+} from '@/lib/hooks/use-device-import';
+import { useDeviceImportState } from '@/lib/hooks/use-device-import-state';
 
 // Mock Dr. Phone data format
 interface DrPhoneData {
@@ -27,7 +33,7 @@ interface DrPhoneData {
 
 export default function ImportDrPhonePage() {
   const params = useParams()
-  const router = useRouter()
+  const _router = useRouter() // Currently unused but may be needed for navigation
   const batchId = params.id as string
   
   // Get batch data with devices from API
@@ -41,19 +47,23 @@ export default function ImportDrPhonePage() {
   // Store filtered devices (duplicates removed)
   const [filteredDevices, setFilteredDevices] = useState<DrPhoneData[]>([])
   
-  // Per-device repair task selection state
-  const [deviceRepairs, setDeviceRepairs] = useState<Record<number, string[]>>({})
-  const [deviceOtherDescriptions, setDeviceOtherDescriptions] = useState<Record<number, string>>({})
-  
-  // Per-device grade selection state
-  const [deviceGrades, setDeviceGrades] = useState<Record<number, string>>({})
-  
-  // Per-device repair section expansion state
-  const [expandedRepairSections, setExpandedRepairSections] = useState<Record<number, boolean>>({})
-  
-  // Per-device QC approach state (repairs vs grade)
-  const [deviceQcApproaches, setDeviceQcApproaches] = useState<Record<number, 'repairs' | 'grade' | ''>>({})
-  const [completedDevices, setCompletedDevices] = useState<Set<number>>(new Set())
+  // Use custom hook for device import state management
+  const {
+    deviceRepairs,
+    deviceOtherDescriptions,
+    deviceGrades,
+    expandedRepairSections,
+    deviceQcApproaches,
+    completedDevices: _completedDevices, // Not used in template but needed for hook logic
+    handleDeviceRepairToggle,
+    handleDeviceOtherDescription,
+    handleRepairSectionToggle,
+    handleQcApproachChange,
+    handleDeviceGradeChange,
+    markDeviceCompleted,
+    resetAllStates,
+    updateCompletedDevices,
+  } = useDeviceImportState()
   const [isDragOver, setIsDragOver] = useState(false)
   const [fileInputKey, setFileInputKey] = useState(0)
 
@@ -65,9 +75,11 @@ export default function ImportDrPhonePage() {
   
   const createDevicesFromImport = useCreateDevicesFromImport()
   const createRepairJob = useCreateRepairJob()
+  const findExistingDevice = useFindExistingDevice()
 
-  // Helper function to get current user ID
+  // Helper function to get current user ID - should be moved to a hook
   const getCurrentUserId = async (): Promise<string> => {
+    const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
     if (supabase) {
       const { data: { user } } = await supabase.auth.getUser()
@@ -76,17 +88,30 @@ export default function ImportDrPhonePage() {
     return 'unknown'
   }
 
+  // Convert parsed data to DrPhoneData format
+  const convertedData = React.useMemo(() => {
+    if (!parsedData?.rows) return []
+    
+    return parsedData.rows.map((row) => ({
+      imei: row['Imei'] || '',
+      brand: row['Brand'] || row['brand'] || row[1] || '',
+      model: row['Model Name'] || '',
+      serialNumber: row['Serial'] || '',
+      faults: row['Fail'] || 'No faults detected'
+    }))
+  }, [parsedData])
+
+  // Use hooks to filter and check devices
+  const { filteredDevices: hookFilteredDevices, existingCount } = useFilterDevicesByExisting(convertedData as DrPhoneData[])
+  const { completedIMEIs } = useCompletedQCByDevices(hookFilteredDevices, createdDevices)
+
   
   // Function to create a single device when QC is completed
   const createSingleDevice = async (deviceData: DrPhoneData, deviceIndex: number, selectedRepairs: string[], otherDescription: string, selectedGrade: string) => {
     try {
       setIsCreatingDevice(true)
       
-      const supabase = createClient()
-      if (!supabase) {
-        toast.error('Database connection failed')
-        return null
-      }
+      // Remove direct supabase usage - using hooks instead
 
       // Create device with status 'received' (according to schema)
       const deviceToCreate = {
@@ -171,35 +196,28 @@ export default function ImportDrPhonePage() {
       if ((error as Error)?.message?.includes('duplicate key') || (error as Error)?.message?.includes('already exists')) {
         
         try {
-          // Device already exists, fetch its ID
-          const supabase = createClient()
-          if (supabase) {
-            const { data: existingDevice, error: fetchError } = await supabase
-              .from('devices')
-              .select('id')
-              .eq('imei', deviceData.imei)
-              .eq('batch_id', batchId)
-              .is('deleted_at', null)
-              .single()
+          // Device already exists, try to find it using the hook
+          const existingDevice = await findExistingDevice.mutateAsync({
+            imei: deviceData.imei,
+            batchId: batchId
+          })
 
-            if (fetchError) {
-              toast.error('Failed to create or find device. Please try again.')
-              return null
-            }
-
-            if (existingDevice) {
-              // Add to createdDevices if not already there
-              setCreatedDevices(prev => {
-                if (!prev.find(d => d.id === existingDevice.id)) {
-                  return [...prev, { id: existingDevice.id, imei: deviceData.imei }]
-                }
-                return prev
-              })
-              return existingDevice.id
-            }
+          if (existingDevice) {
+            // Add to createdDevices if not already there
+            setCreatedDevices(prev => {
+              if (!prev.find(d => d.id === existingDevice.id)) {
+                return [...prev, { id: existingDevice.id, imei: deviceData.imei }]
+              }
+              return prev
+            })
+            return existingDevice.id
           }
+          
+          toast.error('Failed to create or find device. Please try again.')
+          return null
         } catch {
-          // Handle fetch error silently
+          toast.error('Failed to create or find device. Please try again.')
+          return null
         }
       }
       
@@ -210,84 +228,7 @@ export default function ImportDrPhonePage() {
     }
   }
 
-  // Function to check if devices already have completed QC
-  const checkAlreadyCompletedDevices = async (devices: DrPhoneData[]) => {
-    try {
-      const completedIMEIs = new Set<string>()
-      
-      // Check each device against the database
-      for (const device of devices) {
-        // Check if device exists and has completed QC
-        const existingDevice = createdDevices.find(d => d.imei === device.imei)
-        if (existingDevice?.id) {
-          // Device exists, check if it has completed QC
-          const supabase = createClient()
-          if (supabase) {
-            const { data: qcChecks } = await supabase
-              .from('qc_checks')
-              .select('id, overall_result')
-              .eq('device_id', existingDevice.id)
-              .eq('check_type', 'initial')
-              .in('overall_result', ['pass', 'fail'])
-              .limit(1)
-            
-            if (qcChecks && qcChecks.length > 0) {
-              completedIMEIs.add(device.imei)
-            }
-          }
-        }
-      }
-      
-      return completedIMEIs
-            } catch {
-          return new Set<string>()
-        }
-  }
-
-  // Function to fetch existing devices and filter out duplicates
-  const fetchExistingDevicesAndFilter = async (parsedDevices: DrPhoneData[]) => {
-    try {
-      
-      const supabase = createClient()
-      if (!supabase) {
-        return parsedDevices
-      }
-
-      
-      const { data: existingDevices, error } = await supabase
-        .from('devices')
-        .select('id, imei, brand, model, serial_number')
-        .is('deleted_at', null)
-      
-      
-
-
-      if (error) {
-        toast.error('Failed to check for existing devices. Please try again.')
-        return parsedDevices
-      }
-
-      // Filter out devices that already exist (by IMEI)
-      const existingIMEIs = new Set(existingDevices?.map((d: { imei: string }) => d.imei?.toString()?.trim()) || [])
-      
-      // Clean and validate parsed IMEIs
-      const cleanedParsedDevices = parsedDevices.map(device => ({
-        ...device,
-        imei: device.imei?.toString()?.trim() || ''
-      }))
-      
-      // Filter out duplicates
-      const filteredDevices = cleanedParsedDevices.filter(device => {
-        const isDuplicate = existingIMEIs.has(device.imei)
-        return !isDuplicate
-      })
-
-      return filteredDevices
-    } catch {
-      toast.error('Error checking for existing devices. Please try again.')
-      return parsedDevices
-    }
-  }
+  // Removed: Functions replaced by hooks
 
       const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -365,106 +306,46 @@ export default function ImportDrPhonePage() {
     }
   }
 
-  // Handle per-device repair task selection
-  const handleDeviceRepairToggle = (deviceIndex: number, repairId: string) => {
-    setDeviceRepairs(prev => {
-      const currentRepairs = prev[deviceIndex] || []
-      
-      const updatedRepairs = currentRepairs.includes(repairId)
-        ? currentRepairs.filter(id => id !== repairId)
-        : [...currentRepairs, repairId]
-      
-      const newState = { ...prev, [deviceIndex]: updatedRepairs }
-      
-      return newState
-    })
-  }
-
-  const handleDeviceOtherDescription = (deviceIndex: number, description: string) => {
-    setDeviceOtherDescriptions(prev => ({ ...prev, [deviceIndex]: description }))
-  }
-
-  // Handle expanding/collapsing repair sections
-  const handleRepairSectionToggle = (deviceIndex: number) => {
-    setExpandedRepairSections(prev => {
-      const newState = {
-        ...prev,
-        [deviceIndex]: !prev[deviceIndex]
-      }
-      return newState
-    })
-  }
-
-  // Handle QC approach changes for each device
-  const handleQcApproachChange = (deviceIndex: number, approach: 'repairs' | 'grade') => {
-    setDeviceQcApproaches(prev => ({
-      ...prev,
-      [deviceIndex]: approach
-    }))
-  }
-
-  // Handle grade selection changes for each device
-  const handleDeviceGradeChange = (deviceIndex: number, grade: string) => {
-    setDeviceGrades(prev => {
-      const newState = { ...prev, [deviceIndex]: grade }
-      return newState
-    })
-  }
+  // Removed: Handler functions now provided by useDeviceImportState hook
 
   // Handle Excel parsing success
   React.useEffect(() => {
     if (parsedData) {
       toast.success(`Successfully parsed ${parsedData.totalRows} rows from Excel file`)
       
-      // Check for already completed devices when Excel is parsed
-      if (parsedData.rows && parsedData.rows.length > 0) {
-        const convertedData = parsedData.rows.map((row) => ({
-          imei: row['Imei'] || '',
-          brand: row['Brand'] || row['brand'] || row[1] || '',
-          model: row['Model Name'] || '',
-          serialNumber: row['Serial'] || '',
-          faults: row['Fail'] || 'No faults detected'
-        }))
-        
-        // First, filter out devices that already exist in the database
-        fetchExistingDevicesAndFilter(convertedData)
-          .then(filteredDevices => {
-            // Calculate how many devices already exist in the system
-            const existingCount = convertedData.length - filteredDevices.length
-            setExistingDevicesCount(existingCount)
-            
-            // Store both the original and filtered data
-            setImportedData(convertedData)
-            setFilteredDevices(filteredDevices)
-            
-            // Force a re-render by updating a timestamp
-            setFileInputKey(prev => prev + 1)
-            
-            // Then check which of the remaining devices already have completed QC
-            return { filteredDevices, completedIMEIs: checkAlreadyCompletedDevices(filteredDevices) }
-          })
-          .then(async ({ filteredDevices, completedIMEIs }) => {
-            const completedIMEIsSet = await completedIMEIs
-            
-            if (completedIMEIsSet.size > 0) {
-              // Mark already completed devices
-              const completedIndices = new Set<number>()
-              filteredDevices.forEach((device, index) => {
-                if (completedIMEIsSet.has(device.imei)) {
-                  completedIndices.add(index)
-                }
-              })
-              
-              setCompletedDevices(completedIndices)
-              toast.info(`${completedIndices.size} devices already have completed QC and will be hidden`)
-            }
-          })
-          .catch(() => {
-            toast.error('Error processing Excel data. Please try again.')
-          })
+      // Store the imported data for processing
+      setImportedData(convertedData as DrPhoneData[])
+      
+      // Force a re-render by updating a timestamp
+      setFileInputKey(prev => prev + 1)
+    }
+  }, [parsedData, convertedData])
+
+  // Update filtered devices when hook data changes
+  React.useEffect(() => {
+    if (hookFilteredDevices.length > 0) {
+      setFilteredDevices(hookFilteredDevices)
+      setExistingDevicesCount(existingCount)
+    }
+  }, [hookFilteredDevices, existingCount])
+
+  // Update completed devices when QC check data changes
+  React.useEffect(() => {
+    if (completedIMEIs.size > 0 && hookFilteredDevices.length > 0) {
+      const completedIndices = new Set<number>()
+      hookFilteredDevices.forEach((device, index) => {
+        if (completedIMEIs.has(device.imei)) {
+          completedIndices.add(index)
+        }
+      })
+      
+      updateCompletedDevices(completedIndices)
+      
+      if (completedIndices.size > 0) {
+        toast.info(`${completedIndices.size} devices already have completed QC and will be hidden`)
       }
     }
-  }, [parsedData])
+  }, [completedIMEIs, hookFilteredDevices, updateCompletedDevices])
 
   // Handle Excel parsing error
   React.useEffect(() => {
@@ -497,33 +378,21 @@ export default function ImportDrPhonePage() {
         
         if (deviceId) {
           // Now mark as completed
-          setCompletedDevices(prev => {
-            const newSet = new Set([...prev, deviceIndex])
-            return newSet
-          })
+          markDeviceCompleted(deviceIndex)
           toast.success(`Device ${deviceData.imei} created and ready for Initial QC`)
           
           // Note: The QC check will be saved by the InitialQCDeviceCard component
           // after the device is created and it has a valid deviceId
         }
         
-        // Re-filter the devices list to exclude newly created devices
-        const updatedFilteredDevices = await fetchExistingDevicesAndFilter(importedData)
-        setFilteredDevices(updatedFilteredDevices)
+        // The filtered devices will be updated automatically by the hook
         
         // Reset all radio button states after filtering
-        setDeviceQcApproaches({})
-        setDeviceRepairs({})
-        setDeviceGrades({})
-        setDeviceOtherDescriptions({})
-        setExpandedRepairSections({})
+        resetAllStates()
         
       } else {
         // Device already exists, just mark as completed
-        setCompletedDevices(prev => {
-          const newSet = new Set([...prev, deviceIndex])
-          return newSet
-        })
+        markDeviceCompleted(deviceIndex)
         toast.success(`Initial QC completed for device ${filteredDevices[deviceIndex].imei}`)
       }
     } catch {
@@ -531,45 +400,11 @@ export default function ImportDrPhonePage() {
     }
   }
 
-  const _proceedToBatchDevices = () => {
-    if (completedDevices.size === 0) {
-      alert('Please complete Initial QC for at least one device before proceeding.')
-      return
-    }
-    
-    const completedCount = completedDevices.size
-    const totalCount = importedData.length
-    
-    if (completedCount < totalCount) {
-      const confirmMessage = `You have completed ${completedCount} of ${totalCount} devices. Do you want to proceed anyway?`
-      if (!confirm(confirmMessage)) {
-        return
-      }
-    }
-    
-    toast.success(`Initial QC completed for ${completedCount} devices. Proceeding to batch management.`)
-    router.push(`/devices?batch=${batchId}`)
-  }
-
-  // Handle saving current state and quitting
-  const _handleSaveAndQuit = () => {
-    const completedCount = completedDevices.size
-    
-    if (completedCount === 0) {
-      toast.error('No devices have completed Initial QC yet. Please complete at least one device before saving.')
-      return
-    }
-    
-    toast.success(`Saved ${completedCount} completed devices. Returning to batch list.`)
-    router.push('/batch-intake')
-  }
+  // Removed: Unused navigation functions
 
   // Callback when QC is actually completed (called from InitialQCDeviceCard)
   const handleQCCompleted = (deviceIndex: number) => {
-    setCompletedDevices(prev => {
-      const newSet = new Set([...prev, deviceIndex])
-      return newSet
-    })
+    markDeviceCompleted(deviceIndex)
     
     // Force a re-render to ensure the UI updates
     setTimeout(() => {

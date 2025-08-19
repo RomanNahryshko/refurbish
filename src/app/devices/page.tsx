@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,13 +16,13 @@ import {
 } from 'lucide-react';
 import { useBatches } from '@/lib/hooks/use-batches';
 import { DeviceListTable } from '@/components/common/device-list-table';
-import { DEVICE_STATUS_LABELS, DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants';
+import { DEVICE_STATUS_LABELS, DEFAULT_ITEMS_PER_PAGE, DEVICE_STATUS, DEVICE_GRADES } from '@/lib/constants';
 import { useBatch } from '@/lib/hooks/use-batches';
 import { useDevices, useDevicesByBatch } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { Device } from '@/lib/types/business-types';
 
-export default function DevicesPage() {
+function DevicesPageContent() {
   const searchParams = useSearchParams();
   const batchFromUrl = searchParams.get('batch');
   
@@ -111,11 +111,11 @@ export default function DevicesPage() {
 
   // KPI counts - use real data when available
   const totalCount = allDevices.length;
-  const readyCount = allDevices.filter(d => d.status === 'ready_to_ship').length;
+  const readyCount = allDevices.filter(d => d.status === DEVICE_STATUS.ready_to_ship).length;
   
   // Additional KPI counts for QC data
-  const repairsRequiredCount = allDevices.filter(d => d.dr_phone_data?.required_repairs && d.dr_phone_data.required_repairs.length > 0 && d.status !== 'ready_to_ship').length;
-  const gradeAssignedCount = allDevices.filter(d => d?.grade && d.grade !== 'ungraded').length;
+  const repairsRequiredCount = allDevices.filter(d => d.dr_phone_data?.required_repairs && d.dr_phone_data.required_repairs.length > 0 && d.status !== DEVICE_STATUS.ready_to_ship).length;
+  const gradeAssignedCount = allDevices.filter(d => d?.grade && d.grade !== DEVICE_GRADES.ungraded).length;
 
   // Loading state for devices
   const isLoading = batchFromUrl ? (batchLoading || devicesLoading) : allDevicesLoading;
@@ -420,5 +420,13 @@ export default function DevicesPage() {
           </CardContent>
         </Card>
       </div>
-    );
-  }
+  );
+}
+
+export default function DevicesPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner size="md" />}>
+      <DevicesPageContent />
+    </Suspense>
+  );
+}

@@ -5,26 +5,27 @@ import Link from 'next/link'
 import { useUpdateUserStatus, useResetUserPassword } from '@/lib/hooks/use-users'
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { MoreHorizontal, Edit, Shield, ShieldOff, Key, Eye } from 'lucide-react'
+import { UserProfile } from '@/lib/types/business-types'
 
 interface UserActionsProps {
-  user: Record<string, unknown> // User type from API
+  user: UserProfile & { auth_user?: { email?: string }; email?: string }
   currentUserId?: string
   onUpdate: () => void
 }
@@ -60,7 +61,7 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
     try {
       await resetPasswordMutation.mutateAsync({
         userId: String(user.id),
-        email: String((user as Record<string, any>).auth_user?.email || (user as Record<string, any>).email),
+        email: String(user.auth_user?.email || user.email || ''),
         performedBy: currentUserId || 'unknown-admin'
       })
       onUpdate()
@@ -152,7 +153,7 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
             </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to {actionType === 'enable' ? 'enable' : 'disable'} {' '}
-              <strong>{String(user.full_name || (user as Record<string, any>).auth_user?.email)}</strong>?
+              <strong>{user.full_name || user.auth_user?.email || 'Unknown User'}</strong>?
               {actionType === 'disable' && (
                 <span className="block mt-2 text-red-600">
                   This user will no longer be able to access the system.
@@ -182,7 +183,7 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
             <AlertDialogTitle>Reset Password</AlertDialogTitle>
             <AlertDialogDescription>
               This will generate a new temporary password for{' '}
-              <strong>{String(user.full_name || (user as Record<string, any>).auth_user?.email)}</strong>.
+              <strong>{user.full_name || user.auth_user?.email || 'Unknown User'}</strong>.
               <span className="block mt-2 text-amber-600">
                 The user will be required to change their password on next login.
               </span>

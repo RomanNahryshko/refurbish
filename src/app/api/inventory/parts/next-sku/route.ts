@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { inventoryApi } from '@/lib/api/inventory'
 import { requirePermission } from '@/lib/services/auth-helpers'
 
 // GET /api/inventory/parts/next-sku - Get next available SKU
-export async function GET(request: NextRequest) {
+export async function GET() {
   // Only require authentication for viewing
   const authError = await requirePermission('spare_parts', 'read')
   if (authError) return authError

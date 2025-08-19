@@ -5,7 +5,7 @@ import { checkPermission } from '@/lib/services/permissions'
 // GET /api/batches/[id] - Get a single batch by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -34,7 +34,7 @@ export async function GET(
       )
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Get URL parameters for additional data
     const { searchParams } = new URL(request.url)
@@ -73,8 +73,8 @@ export async function GET(
 
     // Transform data to include supplier_name
     const batch = {
-      ...data,
-      supplier_name: data.supplier?.name
+      ...(data as object),
+      supplier_name: (data as { supplier?: { name?: string } })?.supplier?.name || null
     }
 
     return NextResponse.json({ data: batch })
@@ -90,7 +90,7 @@ export async function GET(
 // PUT /api/batches/[id] - Update a batch
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -119,7 +119,7 @@ export async function PUT(
       )
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Parse request body
     const body = await request.json()
@@ -177,8 +177,8 @@ export async function PUT(
 
     // Transform data to include supplier_name
     const batch = {
-      ...data,
-      supplier_name: data.supplier?.name
+      ...(data as object),
+      supplier_name: (data as { supplier?: { name?: string } })?.supplier?.name || null
     }
 
     return NextResponse.json({ data: batch })
@@ -194,7 +194,7 @@ export async function PUT(
 // DELETE /api/batches/[id] - Delete a batch (soft delete)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -223,7 +223,7 @@ export async function DELETE(
       )
     }
 
-    const { id } = params
+    const { id } = await params
 
     // Check if batch has devices
     const { data: devices, error: devicesError } = await supabase

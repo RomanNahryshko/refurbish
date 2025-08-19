@@ -1,6 +1,5 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -33,17 +32,6 @@ const getRoleIcon = (role: string) => {
       return Settings
     default:
       return User
-  }
-}
-
-const getRoleDisplay = (role: string) => {
-  switch (role) {
-    case 'technician':
-      return 'Technician'
-    case 'ops_manager':
-      return 'Ops Manager'
-    default:
-      return role
   }
 }
 

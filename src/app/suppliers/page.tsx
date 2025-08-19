@@ -18,14 +18,13 @@ import {
     Package,
     Wrench
 } from 'lucide-react'
-import { toast } from 'sonner'
-import { Supplier } from '@/lib/types/business-types'
+import { Supplier } from '@/lib/api/suppliers-client'
 import { useSuppliersQuery, useDeleteSupplierMutation } from '@/modules/suppliers/hooks/use-suppliers'
 
 export default function SuppliersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingSupplier, setEditingSupplier] => useState<Supplier | null>(null)
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
 
   // Use React Query hooks for data fetching and mutations
   const { data: suppliers = [], isLoading, error, refetch } = useSuppliersQuery()
@@ -37,7 +36,7 @@ export default function SuppliersPage() {
     supplier.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleSupplierAdded = (supplier: Supplier) => {
+  const handleSupplierAdded = () => {
     // The mutation hook will automatically update the cache
     setEditingSupplier(null)
     setIsAddDialogOpen(false)
@@ -230,7 +229,7 @@ export default function SuppliersPage() {
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         onSupplierAdded={handleSupplierAdded}
-        editingSupplier={editingSupplier}
+        editingSupplier={editingSupplier || undefined}
       />
     </div>
   )

@@ -27,8 +27,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
+// Simple repair label function since we removed the complex import
+const getRepairLabel = (repairId: string): string => {
+  // Basic mapping for common repair types
+  const repairLabels: Record<string, string> = {
+    'screen': 'Screen Replacement',
+    'battery': 'Battery Replacement', 
+    'camera': 'Camera Repair',
+    'speaker': 'Speaker Repair',
+    'charging_port': 'Charging Port Repair',
+    'water_damage': 'Water Damage Repair',
+    'software': 'Software Issues'
+  }
+  return repairLabels[repairId] || repairId
+}
+
 // Import repair types to get human-readable labels
-import { repairTypes } from '@/components/common/repair-task-selector'
 
 interface DrPhoneData {
   imei: string
@@ -92,15 +106,8 @@ export function InitialQCDeviceCard({
   const [qcDataReady, setQcDataReady] = useState(false)
   const [isProcessingComplete, setIsProcessingComplete] = useState(false)
   
-  useEffect(() => {
-    if (deviceId && qcApproach && qcDataReady && !isSubmitting) {
-      // Save QC data immediately without going through confirmation dialog
-      saveQCData(deviceId)
-    }
-  }, [deviceId, qcApproach, qcDataReady, isSubmitting])
-
   // Function to save QC data directly (without confirmation dialog)
-  const saveQCData = async (deviceIdToUse: string) => {
+  const saveQCData = useCallback(async (deviceIdToUse: string) => {
     try {
       setIsSubmitting(true)
       setIsProcessingComplete(false)
@@ -147,13 +154,15 @@ export function InitialQCDeviceCard({
         setIsSubmitting(false)
       }
     }
-  }
+  }, [createQCCheck, qcApproach, selectedGrade, selectedRepairs, otherDescription, onCompleteQC, onQCCompleted, onAllOperationsComplete, isProcessingComplete])
 
-  // Helper function to convert repair IDs to human-readable labels
-  const getRepairLabel = (repairId: string): string => {
-    const repairType = repairTypes.find(repair => repair.id === repairId)
-    return repairType ? repairType.label : repairId
-  }
+  // Auto-save QC data when device ID becomes available
+  useEffect(() => {
+    if (deviceId && qcApproach && qcDataReady && !isSubmitting) {
+      // Save QC data immediately without going through confirmation dialog
+      saveQCData(deviceId)
+    }
+  }, [deviceId, qcApproach, qcDataReady, isSubmitting, saveQCData])
 
 
   const handleCompleteQC = () => {
@@ -241,7 +250,7 @@ export function InitialQCDeviceCard({
         setIsSubmitting(false)
       }
     }
-  }, [deviceId, qcApproach, selectedRepairs, otherDescription, onCompleteQCWithDevice, device, onCompleteQC, createQCCheck, getRepairLabel, onQCCompleted, onAllOperationsComplete])
+  }, [deviceId, qcApproach, selectedRepairs, otherDescription, onCompleteQCWithDevice, device, deviceIndex, onCompleteQC, createQCCheck, onQCCompleted, onAllOperationsComplete, isProcessingComplete, selectedGrade])
 
   return (
     <Card className="p-4">

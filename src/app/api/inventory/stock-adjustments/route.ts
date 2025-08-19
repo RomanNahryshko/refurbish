@@ -83,8 +83,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-      console.log('adjustment_type', adjustment_type)
-
     // Call appropriate method based on adjustment type
     let result
     switch (adjustment_type) {
@@ -115,38 +113,9 @@ export async function POST(request: NextRequest) {
         break
     }
 
-          // Update the spare part stock level
-    let newStockLevel: number = 0
-    let shouldUpdateStock = true
-    
-    switch (adjustment_type) {
-      case 'add':
-        newStockLevel = sparePart.quantity_in_stock + quantity
-        break
-      case 'remove':
-        newStockLevel = sparePart.quantity_in_stock - quantity
-        break
-      case 'correction':
-        // For correction, the database trigger automatically updates the stock
-        // So we don't need to manually update it here
-        shouldUpdateStock = false
-        break
-      default:
-        newStockLevel = sparePart.quantity_in_stock
-    }
-
-    // Update the spare part only if not handled by database trigger
-    if (shouldUpdateStock) {
-      const { error: updateError } = await supabase
-        .from('spare_parts')
-        .update({ quantity_in_stock: newStockLevel })
-        .eq('id', spare_part_id)
-
-      if (updateError) {
-        // Don't fail the request, just log the error
-        console.error('Failed to update spare part stock:', updateError)
-      }
-    }
+    // Note: Stock levels are automatically updated by database triggers
+    // - 'add' and 'remove' triggers update spare_parts.quantity_in_stock
+    // - 'correction' trigger replaces spare_parts.quantity_in_stock with exact value
     
     return NextResponse.json(result)
   } catch (error) {

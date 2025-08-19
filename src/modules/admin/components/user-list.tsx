@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { UserActions } from './user-actions'
+import { UserFilters } from '@/lib/api/users'
+import { UserProfile } from '@/lib/types/business-types'
 
 interface UserListProps {
   currentUserId?: string
@@ -27,7 +29,7 @@ export function UserList({ currentUserId }: UserListProps) {
   }
 
   const { data: users, isLoading, error, refetch } = useUsers(
-    Object.keys(filters).length > 0 ? filters : undefined
+    Object.keys(filters).length > 0 ? filters as UserFilters : undefined
   )
 
   const handleRefresh = () => {
@@ -181,7 +183,7 @@ export function UserList({ currentUserId }: UserListProps) {
                             {String(user.full_name || 'No name set')}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {String((user as Record<string, any>)?.auth_user?.email || 'No email')}
+                            {String((user as { auth_user?: { email?: string } })?.auth_user?.email || 'No email')}
                           </div>
                         </div>
                       </td>
@@ -213,7 +215,7 @@ export function UserList({ currentUserId }: UserListProps) {
                       </td>
                       <td className="p-3">
                         <UserActions 
-                          user={user}
+                          user={user as unknown as UserProfile}
                           currentUserId={currentUserId}
                           onUpdate={handleRefresh}
                         />

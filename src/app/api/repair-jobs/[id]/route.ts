@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { DEVICE_STATUS } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/server'
 import { requirePermission } from '@/lib/services/auth-helpers'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log('🔧 PATCH /api/repair-jobs/[id] called with params:', params)
+  const resolvedParams = await params
+  console.log('🔧 PATCH /api/repair-jobs/[id] called with params:', resolvedParams)
   
   // Check permission
   const permissionCheck = await requirePermission('repair_jobs', 'update')
@@ -20,7 +22,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { id } = params
+    const { id } = resolvedParams
     const updateData = await request.json()
     
     console.log('🔧 Update data received:', updateData)
@@ -63,7 +65,7 @@ export async function PATCH(
       const { error: deviceUpdateError } = await supabase
         .from('devices')
         .update({ 
-          status: 'in_repair',
+          status: DEVICE_STATUS.in_repair,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingRepairJob.device_id)
@@ -78,8 +80,8 @@ export async function PATCH(
         .from('device_status_history')
         .insert({
           device_id: existingRepairJob.device_id,
-          old_status: 'awaiting_repair',
-          new_status: 'in_repair',
+          old_status: DEVICE_STATUS.awaiting_repair,
+          new_status: DEVICE_STATUS.in_repair,
           changed_by: user.id,
           notes: `Device status changed to in_repair when starting repair job`
         })
@@ -93,7 +95,7 @@ export async function PATCH(
       const { error: deviceUpdateError } = await supabase
         .from('devices')
         .update({ 
-          status: 'awaiting_repair',
+          status: DEVICE_STATUS.awaiting_repair,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingRepairJob.device_id)
@@ -108,8 +110,8 @@ export async function PATCH(
         .from('device_status_history')
         .insert({
           device_id: existingRepairJob.device_id,
-          old_status: 'in_repair',
-          new_status: 'awaiting_repair',
+          old_status: DEVICE_STATUS.in_repair,
+          new_status: DEVICE_STATUS.awaiting_repair,
           changed_by: user.id,
           notes: `Device status changed to awaiting_repair when canceling repair job`
         })

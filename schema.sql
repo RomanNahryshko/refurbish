@@ -41,13 +41,13 @@ CREATE TYPE technician_level AS ENUM (
 -- Device status workflow
 CREATE TYPE device_status AS ENUM (
   'received',        -- Just received in batch
-  'initial_qc',      -- In initial quality control
+  'initial_qc',      -- In initial quality control | remove
   'awaiting_repair', -- QC complete, waiting for repair
   'in_repair',       -- Currently being repaired
   'final_qc',        -- In final quality control
-  'graded',          -- QC complete and graded
-  'ready_to_ship',   -- Ready for shipping
-  'shipped'          -- Shipped out
+  'graded',          -- QC complete and graded | use instead of ready_to_ship
+  'ready_to_ship',   -- Ready for shipping | remove
+  'shipped'          -- Shipped out | remove
 );
 
 -- Device grades

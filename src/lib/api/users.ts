@@ -252,7 +252,7 @@ export const usersApi = {
    * Update user profile information
    * Requires ops_manager role
    */
-  async update(userId: string, userData: UpdateUserData, performedBy: string) {
+  async update(userId: string, userData: UpdateUserData, _performedBy: string) {
     const supabase = await createClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
@@ -292,7 +292,7 @@ export const usersApi = {
    * Disable/Enable user account
    * Requires ops_manager role
    */
-  async updateStatus(userId: string, status: UserAccountStatus, performedBy: string) {
+  async updateStatus(userId: string, status: UserAccountStatus, _performedBy: string) {
     const supabase = await createClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
@@ -317,7 +317,7 @@ export const usersApi = {
    * Reset user password (will trigger password reset email)
    * Requires service role key
    */
-  async resetPassword(userId: string, email: string, performedBy: string) {
+  async resetPassword(userId: string, _email: string, _performedBy: string) {
     const adminClient = createAdminClient()
     if (!adminClient) {
       throw new Error('Admin client not configured. Set SUPABASE_SERVICE_ROLE_KEY environment variable.')

@@ -296,9 +296,6 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
                     }}
                     placeholder="25.99"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Enter cost with up to 2 decimal places (e.g., 24.95)
-                  </p>
                 </div>
               </div>
               
@@ -358,5 +355,5 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -27,7 +27,7 @@ export function BatchList() {
             <CardHeader>
               <CardTitle>Batch #{batch.id.slice(0, 8)}</CardTitle>
               <CardDescription>
-                {batch.supplier || 'Unknown Supplier'}
+                {batch.supplier_name || 'Unknown Supplier'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -35,7 +35,7 @@ export function BatchList() {
                 Created: {new Date(batch.created_at).toLocaleDateString()}
               </p>
               <p className="text-sm">
-                Phones: {batch.phone_count || 0}
+                Devices: {batch.device_count || 0}
               </p>
               <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
                 <LoadingSpinner size="sm" />
@@ -74,7 +74,7 @@ export function BatchList() {
           <CardHeader>
             <CardTitle>Batch #{batch.id.slice(0, 8)}</CardTitle>
             <CardDescription>
-              {batch.supplier || 'Unknown Supplier'}
+              {batch.supplier_name || 'Unknown Supplier'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -82,7 +82,7 @@ export function BatchList() {
               Created: {new Date(batch.created_at).toLocaleDateString()}
             </p>
             <p className="text-sm">
-              Phones: {batch.phone_count || 0}
+              Devices: {batch.device_count || 0}
             </p>
           </CardContent>
         </Card>

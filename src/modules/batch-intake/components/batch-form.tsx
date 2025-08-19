@@ -11,7 +11,7 @@ import { Plus } from 'lucide-react'
 import { AddSupplierDialog } from '@/modules/suppliers/components/add-supplier-dialog'
 import { toast } from 'sonner'
 import { useDeviceSuppliers } from '@/lib/hooks/use-suppliers'
-import type { Supplier } from '@/lib/api/suppliers'
+import { Supplier } from '@/lib/api/suppliers-client'
 
 interface BatchFormData {
   supplier_id: string

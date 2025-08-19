@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { DEVICE_STATUS } from '@/lib/constants'
 import { RepairJob, RepairType, RepairJobStatus, RepairPartsUsed } from '@/lib/types/business-types'
 
 export interface CreateRepairJobData {
@@ -345,7 +346,7 @@ export const repairJobsApi = {
     const { error: deviceUpdateError } = await supabase
       .from('devices')
       .update({ 
-        status: 'final_qc'
+        status: DEVICE_STATUS.final_qc
       })
       .eq('id', deviceId)
 
@@ -375,8 +376,8 @@ export const repairJobsApi = {
       .from('device_status_history')
       .insert({
         device_id: deviceId,
-        old_status: 'in_repair',
-        new_status: 'final_qc',
+        old_status: DEVICE_STATUS.in_repair,
+        new_status: DEVICE_STATUS.final_qc,
         changed_by: userId,
         notes: `Device sent to final QC after completing ${repairType} repair`
       })

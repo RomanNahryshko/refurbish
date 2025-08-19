@@ -109,7 +109,7 @@ export async function checkPermission(
       `)
       .eq('table_name', tableName)
       .eq('action', action)
-      .eq('role_permissions.role', userRole)
+      .eq('role_permissions.role', userProfile.role)
       .single()
     
     // If role has permission, return true
@@ -179,7 +179,6 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
     // Add/remove user-specific permissions
     userPermissions?.forEach(p => {
       const permString = `${p.table_name}:${p.action}`
-      // @ts-ignore - we know user_permissions exists from the query
       if (p.user_permissions[0].granted) {
         permissions.add(permString)
       } else {

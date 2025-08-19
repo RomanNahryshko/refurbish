@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { DEVICE_STATUS } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/server'
 import { requirePermission } from '@/lib/services/auth-helpers'
 
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
         const { error: deviceUpdateError } = await supabase
           .from('devices')
           .update({ 
-            status: 'final_qc',
+            status: DEVICE_STATUS.final_qc,
             updated_at: new Date().toISOString()
           })
           .eq('id', repairJob.device_id)
@@ -139,8 +140,8 @@ export async function POST(request: NextRequest) {
           .from('device_status_history')
           .insert({
             device_id: repairJob.device_id,
-            old_status: 'in_repair',
-            new_status: 'final_qc',
+            old_status: DEVICE_STATUS.in_repair,
+            new_status: DEVICE_STATUS.final_qc,
             changed_by: user.id,
             notes: `Device sent to final QC after completing ${repairJob.repair_type} repair`
           })

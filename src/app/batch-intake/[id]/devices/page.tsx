@@ -7,14 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
-    ArrowLeft,
-    Search,
-    Package,
-    AlertCircle,
-    CheckCircle,
-    Clock,
-    Wrench,
-    ClipboardCheck
+  ArrowLeft,
+  Search,
+  Package,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Wrench,
+  ClipboardCheck
 } from 'lucide-react'
 import Link from 'next/link'
 import { useBatch } from '@/lib/hooks/use-batches'
@@ -23,6 +23,7 @@ import { useRepairJobs } from '@/lib/hooks/use-repair-jobs'
 import { useQCChecks } from '@/lib/hooks/use-devices'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { QCCheck } from '@/lib/types/business-types'
+import { DEVICE_STATUS, REPAIR_STATUS, DEVICE_GRADES } from '@/lib/constants'
 
 export default function BatchDevicesPage() {
   const params = useParams()
@@ -74,16 +75,16 @@ export default function BatchDevicesPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'received':
+      case DEVICE_STATUS.received:
         return <Package className="h-4 w-4" />
-      case 'initial_qc':
-      case 'final_qc':
+      case DEVICE_STATUS.initial_qc:
+      case DEVICE_STATUS.final_qc:
         return <ClipboardCheck className="h-4 w-4" />
-      case 'awaiting_repair':
-      case 'in_repair':
+      case DEVICE_STATUS.awaiting_repair:
+      case DEVICE_STATUS.in_repair:
         return <Wrench className="h-4 w-4" />
-      case 'graded':
-      case 'ready_to_ship':
+      case DEVICE_STATUS.graded:
+      case DEVICE_STATUS.ready_to_ship:
         return <CheckCircle className="h-4 w-4" />
       default:
         return <Clock className="h-4 w-4" />
@@ -92,17 +93,17 @@ export default function BatchDevicesPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'received':
+      case DEVICE_STATUS.received:
         return 'secondary'
-      case 'initial_qc':
-      case 'final_qc':
+      case DEVICE_STATUS.initial_qc:
+      case DEVICE_STATUS.final_qc:
         return 'default'
-      case 'awaiting_repair':
+      case DEVICE_STATUS.awaiting_repair:
         return 'destructive'
-      case 'in_repair':
+      case DEVICE_STATUS.in_repair:
         return 'warning'
-      case 'graded':
-      case 'ready_to_ship':
+      case DEVICE_STATUS.graded:
+      case DEVICE_STATUS.ready_to_ship:
         return 'success'
       default:
         return 'outline'
@@ -121,7 +122,7 @@ export default function BatchDevicesPage() {
     ;(batchDevices || []).forEach(device => {
       if (device.status.includes('qc')) stats.inQC++
       else if (device.status.includes('repair')) stats.inRepair++
-      else if (['graded', 'ready_to_ship', 'shipped'].includes(device.status)) stats.readyToShip++
+      else if (device.status === DEVICE_STATUS.graded || device.status === DEVICE_STATUS.ready_to_ship || device.status === DEVICE_STATUS.shipped) stats.readyToShip++
     })
     
     return [
@@ -246,8 +247,8 @@ export default function BatchDevicesPage() {
                   const deviceQCChecks = (qcChecks || []).filter((q: QCCheck) => q.device_id === device.id)
                   const hasInitialQC = deviceQCChecks.some((q: QCCheck) => q.check_type === 'initial')
                   const hasFinalQC = deviceQCChecks.some((q: QCCheck) => q.check_type === 'final')
-                  const pendingRepairs = repairs.filter(r => r.status === 'pending').length
-                  const completedRepairs = repairs.filter(r => r.status === 'completed').length
+                  const pendingRepairs = repairs.filter(r => r.status === REPAIR_STATUS.pending).length
+                  const completedRepairs = repairs.filter(r => r.status === REPAIR_STATUS.completed).length
                   
                   return (
                     <tr 
@@ -285,7 +286,7 @@ export default function BatchDevicesPage() {
                         </Badge>
                       </td>
                       <td className="p-3">
-                        {device.grade !== 'ungraded' ? (
+                        {device.grade !== DEVICE_GRADES.ungraded ? (
                           <Badge variant="outline" className="font-bold">
                             {device.grade}
                           </Badge>

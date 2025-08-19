@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { DEVICE_STATUS } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/server'
 import { requirePermission } from '@/lib/services/auth-helpers'
-import { TestResultData } from '@/lib/types/business-types'
+import { TestResultData, DeviceStatus } from '@/lib/types/business-types'
 
 export async function POST(request: NextRequest) {
   // Check permission
@@ -89,23 +90,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Update device status based on QC result
-    let newDeviceStatus = 'received'
+    let newDeviceStatus: DeviceStatus = DEVICE_STATUS.received
     if (check_type === 'initial') {
       if (overall_result === 'pass' && grade_assigned) {
         // If initial QC passes with a grade assigned, device is graded
-        newDeviceStatus = 'graded'
+        newDeviceStatus = DEVICE_STATUS.graded
       } else if (overall_result === 'pass') {
         // If initial QC passes without grade, device awaits repair
-        newDeviceStatus = 'awaiting_repair'
+        newDeviceStatus = DEVICE_STATUS.awaiting_repair
       } else if (overall_result === 'fail') {
         // Failed devices go to repair
-        newDeviceStatus = 'awaiting_repair'
+        newDeviceStatus = DEVICE_STATUS.awaiting_repair
       }
     } else if (check_type === 'final') {
       if (overall_result === 'pass') {
-        newDeviceStatus = 'ready_to_ship' // Passed final QC devices are ready to ship (will be removed from QC queue)
+        newDeviceStatus = DEVICE_STATUS.ready_to_ship // Passed final QC devices are ready to ship (will be removed from QC queue)
       } else if (overall_result === 'fail') {
-        newDeviceStatus = 'awaiting_repair' // Failed final QC goes back to repair
+        newDeviceStatus = DEVICE_STATUS.awaiting_repair // Failed final QC goes back to repair
       }
     }
 

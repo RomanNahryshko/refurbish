@@ -92,7 +92,7 @@ export const qcChecksApi = {
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // Update QC check
-    const { data: qcCheck, error: qcError } = await supabase
+    const { error: qcError } = await supabase
       .from('qc_checks')
       .update({
         ...qcData,

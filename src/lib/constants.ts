@@ -79,7 +79,12 @@ export const USER_STATUS = {
 export const DEFAULT_ITEMS_PER_PAGE = 20
 
 // Device grades
-export const DEVICE_GRADES = ['A', 'B', 'C', 'ungraded'] as const
+export const DEVICE_GRADES = {
+  A: 'A',
+  B: 'B', 
+  C: 'C',
+  ungraded: 'ungraded'
+} as const
 
 // Spare parts categories
 export const PART_CATEGORIES = {

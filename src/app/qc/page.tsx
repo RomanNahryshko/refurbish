@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  ClipboardCheck,
-  Search
+    ClipboardCheck,
+    Search
 } from 'lucide-react';
 import { DeviceListTable } from '@/components/common/device-list-table';
-import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants';
+import { DEFAULT_ITEMS_PER_PAGE, DEVICE_STATUS } from '@/lib/constants';
+import { Device } from '@/lib/types/business-types';
 import { useDevicesForFinalQC, useDevices } from '@/lib/hooks/use-devices';
 import { useBatches } from '@/lib/hooks/use-batches';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
@@ -116,8 +117,8 @@ export default function QCPage() {
       const today = new Date().toDateString()
       
       // Count devices that moved to ready_to_ship today
-      completedToday = allDevices.filter((device: any) => {
-        if (device.status === 'ready_to_ship' && device.updated_at) {
+      completedToday = allDevices.filter((device: Device) => {
+        if (device.status === DEVICE_STATUS.ready_to_ship && device.updated_at) {
           const updatedDate = new Date(device.updated_at).toDateString()
           const isToday = updatedDate === today
           
@@ -129,7 +130,7 @@ export default function QCPage() {
       }).length
       
       // Count total devices with ready_to_ship status
-      totalCompleted = allDevices.filter((device: any) => device.status === 'ready_to_ship').length
+      totalCompleted = allDevices.filter((device: Device) => device.status === DEVICE_STATUS.ready_to_ship).length
     }
     
 

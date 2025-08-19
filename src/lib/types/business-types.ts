@@ -165,6 +165,7 @@ export interface SparePart {
   minimum_stock_level?: number
   unit_cost?: number
   primary_supplier_id?: string
+  suppliers?: Supplier
   created_by?: string
   created_at: string
   updated_at?: string

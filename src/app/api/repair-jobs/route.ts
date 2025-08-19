@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { DEVICE_STATUS } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/server'
 import { requirePermission } from '@/lib/services/auth-helpers'
 
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { device_id, repair_type, description, assigned_to, notes } = await request.json()
+    const { device_id, repair_type, description, assigned_to } = await request.json()
 
     // Validate required fields
     if (!device_id || !repair_type) {
@@ -74,11 +75,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Update device status to 'in_repair' if not already
-    if (device.status !== 'in_repair') {
+    if (device.status !== DEVICE_STATUS.in_repair) {
       const { error: deviceUpdateError } = await supabase
         .from('devices')
         .update({ 
-          status: 'in_repair',
+          status: DEVICE_STATUS.in_repair,
           updated_at: new Date().toISOString()
         })
         .eq('id', device_id)

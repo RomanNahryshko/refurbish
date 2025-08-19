@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef } from 'react'
 
 interface ExcelData {
   headers: string[]
-  rows: Record<string, any>[]
+  rows: Record<string, unknown>[]
   totalRows: number
   sheetName: string
 }
@@ -45,7 +45,7 @@ export function useExcelParser(): UseExcelParserReturn {
         console.error('Worker message error:', error)
       })
       
-    } catch (error) {
+    } catch {
       setError('Failed to create web worker')
       setIsParsing(false)
       return
@@ -86,7 +86,7 @@ export function useExcelParser(): UseExcelParserReturn {
         }
       }, 30000) // 30 second timeout
       
-    } catch (error) {
+    } catch {
       setError('Failed to send file to worker')
       setIsParsing(false)
     }
@@ -95,7 +95,7 @@ export function useExcelParser(): UseExcelParserReturn {
     return () => {
       worker.removeEventListener('message', handleMessage)
     }
-  }, [])
+  }, [isParsing])
 
   // Cleanup worker on unmount
   React.useEffect(() => {

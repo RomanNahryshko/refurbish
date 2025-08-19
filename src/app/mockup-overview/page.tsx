@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { Package, Smartphone, Wrench, ClipboardCheck, PackageSearch, BarChart3 } from 'lucide-react';
+import { Package, Smartphone, Wrench, ClipboardCheck, PackageSearch, BarChart3, Users } from 'lucide-react'
+import { DEVICE_STATUS } from '@/lib/constants'
 
 export default function MockupOverviewPage() {
   // Using batch-1 as demo batch for testing dynamic pages
@@ -88,12 +89,12 @@ export default function MockupOverviewPage() {
   ]
 
   const deviceStatuses = [
-    { status: 'received', description: 'Device received in batch' },
-    { status: 'initial_qc', description: 'Undergoing initial quality control' },
-    { status: 'awaiting_repair', description: 'Waiting for repair assignment' },
-    { status: 'in_repair', description: 'Active repair in progress' },
-    { status: 'final_qc', description: 'Undergoing final quality control' },
-    { status: 'graded', description: 'QC passed, grade assigned' },
+    { status: DEVICE_STATUS.received, description: 'Device received in batch' },
+    { status: DEVICE_STATUS.initial_qc, description: 'Undergoing initial quality control' },
+    { status: DEVICE_STATUS.awaiting_repair, description: 'Waiting for repair assignment' },
+    { status: DEVICE_STATUS.in_repair, description: 'Active repair in progress' },
+    { status: DEVICE_STATUS.final_qc, description: 'Undergoing final quality control' },
+    { status: DEVICE_STATUS.graded, description: 'QC passed, grade assigned' },
   ]
 
   const repairTaskStatuses = [

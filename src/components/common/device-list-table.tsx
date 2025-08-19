@@ -1,23 +1,24 @@
 'use client'
 
 import { ReactNode, useState, useEffect } from 'react';
+import { DEVICE_STATUS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Smartphone,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  Filter,
-  Package,
-  ClipboardCheck,
-  Clock,
-  Wrench,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Package2
+    Smartphone,
+    ChevronLeft,
+    ChevronRight,
+    ChevronDown,
+    ChevronUp,
+    Filter,
+    Package,
+    ClipboardCheck,
+    Clock,
+    Wrench,
+    CheckCircle,
+    XCircle,
+    AlertCircle,
+    Package2
 } from 'lucide-react';
 import { Device, Batch } from '@/lib/types/business-types';
 import { repairTypes } from '@/components/common/repair-task-selector';
@@ -30,14 +31,14 @@ interface ExtendedDevice extends Device {
 
 // Device status to icon/color mapping
 export const statusConfig = {
-  'received': { icon: Package, color: 'bg-gray-500', label: 'Received' },
-  'initial_qc': { icon: ClipboardCheck, color: 'bg-blue-500', label: 'Initial QC' },
-  'awaiting_repair': { icon: Clock, color: 'bg-yellow-500', label: 'Awaiting Repair' },
-  'in_repair': { icon: Wrench, color: 'bg-orange-500', label: 'In Repair' },
-  'final_qc': { icon: CheckCircle, color: 'bg-purple-500', label: 'Final QC' },
-  'graded': { icon: CheckCircle, color: 'bg-green-500', label: 'Graded' },
-  'ready_to_ship': { icon: Package2, color: 'bg-indigo-500', label: 'Ready to Ship' },
-  'shipped': { icon: CheckCircle, color: 'bg-green-600', label: 'Shipped' },
+  [DEVICE_STATUS.received]: { icon: Package, color: 'bg-gray-500', label: 'Received' },
+  [DEVICE_STATUS.initial_qc]: { icon: ClipboardCheck, color: 'bg-blue-500', label: 'Initial QC' },
+  [DEVICE_STATUS.awaiting_repair]: { icon: Clock, color: 'bg-yellow-500', label: 'Awaiting Repair' },
+  [DEVICE_STATUS.in_repair]: { icon: Wrench, color: 'bg-orange-500', label: 'In Repair' },
+  [DEVICE_STATUS.final_qc]: { icon: CheckCircle, color: 'bg-purple-500', label: 'Final QC' },
+  [DEVICE_STATUS.graded]: { icon: CheckCircle, color: 'bg-green-500', label: 'Graded' },
+  [DEVICE_STATUS.ready_to_ship]: { icon: Package2, color: 'bg-indigo-500', label: 'Ready to Ship' },
+  [DEVICE_STATUS.shipped]: { icon: CheckCircle, color: 'bg-green-600', label: 'Shipped' },
   'failed': { icon: XCircle, color: 'bg-red-500', label: 'Failed' },
   'returned': { icon: AlertCircle, color: 'bg-red-600', label: 'Returned' }
 }
@@ -212,7 +213,7 @@ export function DeviceListTable({
             })}
             {device.dr_phone_data?.other_repair_description && (
               <div className="text-xs text-gray-600 mt-1 italic">
-                "{device.dr_phone_data.other_repair_description}"
+                &quot;{device.dr_phone_data.other_repair_description}&quot;
               </div>
             )}
           </div>

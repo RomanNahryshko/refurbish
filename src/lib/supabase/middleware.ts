@@ -1,7 +1,8 @@
-import { createServerClient, type SupabaseClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '../supabase';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 // Simple cache for user profile data to prevent duplicate queries
 const userProfileCache = new Map<string, { must_change_password: boolean; timestamp: number }>()
