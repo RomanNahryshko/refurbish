@@ -594,7 +594,7 @@ export default function RepairJobsPage() {
                     {partsRecording.parts.map((part, index) => {
                       const sparePart = spareParts.find(p => p.id === part.partId)
                       const isLowStock = sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock < 10
-                      const willGoNegative = sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock - part.quantity < 0
+                      const willGoNegative = sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock < part.quantity
                       return (
                         <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
                           <div className="flex-1">
@@ -674,7 +674,7 @@ export default function RepairJobsPage() {
               {(() => {
                 const hasInsufficientParts = partsRecording.parts.some(part => {
                   const sparePart = spareParts.find(p => p.id === part.partId)
-                  return sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock - part.quantity < 0
+                  return sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock < part.quantity
                 })
                 return hasInsufficientParts && (
                   <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -703,8 +703,15 @@ export default function RepairJobsPage() {
                     submitCompleteRepair()
                   }} 
                   className="flex-1"
+                  disabled={(() => {
+                    const hasInsufficientParts = partsRecording.parts.some(part => {
+                      const sparePart = spareParts.find(p => p.id === part.partId)
+                      return sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock < part.quantity
+                    })
+                    return hasInsufficientParts || completeRepairJob.isPending
+                  })()}
                 >
-                  Complete Repair {partsRecording.parts.length > 0 && `(${partsRecording.parts.length} parts)`}
+                  {completeRepairJob.isPending ? 'Completing...' : `Complete Repair${partsRecording.parts.length > 0 ? ` (${partsRecording.parts.length} part${partsRecording.parts.length > 1 ? 's' : ''})` : ''}`}
                 </Button>
               </div>
             </CardContent>

@@ -71,8 +71,30 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    // Record parts usage if provided
+    // Record parts usage if provided - validates stock levels before recording
     if (parts_used && Array.isArray(parts_used) && parts_used.length > 0) {
+      // Validate stock levels before recording usage
+      for (const part of parts_used) {
+        const { data: sparePart, error: sparePartError } = await supabase
+          .from('spare_parts')
+          .select('id, name, quantity_in_stock')
+          .eq('id', part.spare_part_id)
+          .is('deleted_at', null)
+          .single()
+
+        if (sparePartError || !sparePart) {
+          return NextResponse.json({ 
+            error: `Spare part not found: ${part.spare_part_id}` 
+          }, { status: 404 })
+        }
+
+        if (sparePart.quantity_in_stock < part.quantity_used) {
+          return NextResponse.json({ 
+            error: `Insufficient stock for part "${sparePart.name}". Available: ${sparePart.quantity_in_stock}, Required: ${part.quantity_used}` 
+          }, { status: 400 })
+        }
+      }
+
       const partsToRecord = parts_used.map(part => ({
         repair_job_id,
         spare_part_id: part.spare_part_id,
@@ -88,7 +110,9 @@ export async function POST(request: NextRequest) {
 
       if (partsError) {
         console.error('Error recording parts usage:', partsError)
-        // Don't fail the entire request if parts recording fails
+        return NextResponse.json({ 
+          error: `Failed to record parts usage: ${partsError.message}` 
+        }, { status: 500 })
       }
     }
 

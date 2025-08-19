@@ -97,6 +97,21 @@ export function useRecordPartsUsage() {
       partsData.forEach(part => {
         queryClient.invalidateQueries({ queryKey: ['repair-jobs', part.repair_job_id, 'parts'] })
       })
+      
+      // Invalidate inventory queries since stock levels changed by parts usage
+      if (partsData && partsData.length > 0) {
+        // Invalidate all spare parts queries (used by repair jobs page)
+        queryClient.invalidateQueries({ queryKey: ['spare-parts'] })
+        
+        // Invalidate inventory module queries (used by inventory page)
+        queryClient.invalidateQueries({ queryKey: ['parts'] })
+        queryClient.invalidateQueries({ queryKey: ['parts', 'low-stock'] })
+        
+        // Invalidate specific parts that were used
+        partsData.forEach(part => {
+          queryClient.invalidateQueries({ queryKey: ['parts', part.spare_part_id] })
+        })
+      }
     },
   })
 }
@@ -132,7 +147,7 @@ export function useCompleteRepairJob() {
       
       return result
     },
-    onSuccess: (data, { repairJobId }) => {
+    onSuccess: (data, { repairJobId, partsUsed }) => {
       // Invalidate repair jobs queries
       queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
       queryClient.invalidateQueries({ queryKey: ['repair-jobs', repairJobId] })
@@ -143,6 +158,24 @@ export function useCompleteRepairJob() {
       
       // Also invalidate QC checks queries since a new QC check is created
       queryClient.invalidateQueries({ queryKey: ['qc-checks'] })
+      
+      // Invalidate inventory queries if parts were used (stock levels changed)
+      if (partsUsed && partsUsed.length > 0) {
+        // Invalidate all spare parts queries (used by repair jobs page)
+        queryClient.invalidateQueries({ queryKey: ['spare-parts'] })
+        
+        // Invalidate inventory module queries (used by inventory page)
+        queryClient.invalidateQueries({ queryKey: ['parts'] })
+        queryClient.invalidateQueries({ queryKey: ['parts', 'low-stock'] })
+        
+        // Invalidate general inventory queries if they exist
+        queryClient.invalidateQueries({ queryKey: ['inventory'] })
+        
+        // Invalidate specific parts that were used
+        partsUsed.forEach(part => {
+          queryClient.invalidateQueries({ queryKey: ['parts', part.spare_part_id] })
+        })
+      }
       
     },
     onError: (error, { repairJobId }) => {
