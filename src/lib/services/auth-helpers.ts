@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { checkPermission } from './permissions'
 
 /**
@@ -15,7 +15,7 @@ export async function requirePermission(
   tableName: string,
   action: 'create' | 'read' | 'update' | 'delete'
 ): Promise<NextResponse | null> {
-  const supabase = await createClient()
+  const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
@@ -43,7 +43,7 @@ export async function requirePermission(
  * Get authenticated user or return error response
  */
 export async function getAuthenticatedUser() {
-  const supabase = await createClient()
+  const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {

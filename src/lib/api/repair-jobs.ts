@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { createSupabaseClient } from '@/lib/supabase/client'
 import { DEVICE_STATUS } from '@/lib/constants'
 import { RepairJob, RepairType, RepairJobStatus, RepairPartsUsed } from '@/lib/types/business-types'
 
@@ -32,7 +32,7 @@ export const repairJobsApi = {
    * Get all repair jobs
    */
   async getAll() {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -54,7 +54,7 @@ export const repairJobsApi = {
    * Get repair jobs by device ID
    */
   async getByDeviceId(deviceId: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -72,7 +72,7 @@ export const repairJobsApi = {
    * Get repair jobs by technician
    */
   async getByTechnician(technicianId: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -95,7 +95,7 @@ export const repairJobsApi = {
    * Get a single repair job by ID
    */
   async getById(id: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -118,7 +118,7 @@ export const repairJobsApi = {
    * Create a new repair job
    */
   async create(repairJobData: CreateRepairJobData, createdBy: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // Validate description for 'other' repair type
@@ -145,7 +145,7 @@ export const repairJobsApi = {
    * Update an existing repair job
    */
   async update(id: string, repairJobData: UpdateRepairJobData) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // Validate description for 'other' repair type
@@ -171,7 +171,7 @@ export const repairJobsApi = {
    * Delete a repair job (soft delete)
    */
   async delete(id: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { error } = await supabase
@@ -187,7 +187,7 @@ export const repairJobsApi = {
    * Get parts used in a repair job
    */
   async getPartsUsed(repairJobId: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -209,7 +209,7 @@ export const repairJobsApi = {
    * Record parts usage in a repair job
    */
   async recordPartsUsage(partsData: CreateRepairPartsUsedData[], recordedBy: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const partsToRecord = partsData.map(part => ({
@@ -266,7 +266,7 @@ export const repairJobsApi = {
     completion_notes?: string
     parts_used?: CreateRepairPartsUsedData[]
   }) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // Get current user for recorded_by field
@@ -337,7 +337,7 @@ export const repairJobsApi = {
    * Send device to final QC after all repairs are completed
    */
   async sendDeviceToFinalQC(
-    supabase: ReturnType<typeof createClient>, 
+    supabase: ReturnType<typeof createSupabaseClient>, 
     deviceId: string, 
     userId: string, 
     repairType: string
@@ -392,7 +392,7 @@ export const repairJobsApi = {
    * Check if all repairs for a device are completed
    */
   async areAllRepairsCompleted(deviceId: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase

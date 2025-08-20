@@ -16,7 +16,7 @@ import { useSpareParts } from '@/lib/hooks/use-spare-parts'
 import { useStartRepairJob, useCompleteRepairJob, useUpdateRepairJob } from '@/lib/hooks/use-repair-jobs'
 import { RepairJob, SparePart } from '@/lib/types/business-types'
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
-import { createClient } from '@/lib/supabase/client'
+import { createSupabaseClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/use-user'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { canTechnicianPerformRepair, getTechnicianRepairTypes } from '@/lib/config/permissions'
@@ -60,7 +60,7 @@ export default function RepairJobsPage() {
   // Get current user ID from Supabase
   useEffect(() => {
     const getCurrentUser = async () => {
-      const supabase = createClient()
+      const supabase = createSupabaseClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setCurrentUserId(user.id)

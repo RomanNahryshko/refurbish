@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { createSupabaseClient } from '@/lib/supabase/client'
 
 interface DrPhoneData {
   imei: string
@@ -29,7 +29,7 @@ export function useExistingDevices() {
   return useQuery<ExistingDevice[]>({
     queryKey: ['devices', 'existing'],
     queryFn: async () => {
-      const supabase = createClient()
+      const supabase = createSupabaseClient()
       if (!supabase) throw new Error('Supabase client not initialized')
 
       const { data, error } = await supabase
@@ -51,7 +51,7 @@ export function useCompletedQCChecks(deviceIds: string[]) {
     queryFn: async () => {
       if (deviceIds.length === 0) return {}
 
-      const supabase = createClient()
+      const supabase = createSupabaseClient()
       if (!supabase) throw new Error('Supabase client not initialized')
 
       const { data, error } = await supabase
@@ -86,7 +86,7 @@ export function useDeviceByImeiAndBatch(imei: string, batchId: string) {
     queryFn: async () => {
       if (!imei || !batchId) return null
 
-      const supabase = createClient()
+      const supabase = createSupabaseClient()
       if (!supabase) throw new Error('Supabase client not initialized')
 
       const { data, error } = await supabase
@@ -182,7 +182,7 @@ import React from 'react'
 export function useFindExistingDevice() {
   return useMutation<ExistingDevice | null, Error, { imei: string; batchId: string }>({
     mutationFn: async ({ imei, batchId }) => {
-      const supabase = createClient()
+      const supabase = createSupabaseClient()
       if (!supabase) throw new Error('Supabase client not initialized')
 
       const { data, error } = await supabase

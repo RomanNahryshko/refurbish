@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { usersApi } from '@/lib/api/users'
 import { checkPermission } from '@/lib/services/permissions'
-import { createClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 // GET /api/admin/users - List users
 export async function GET(request: NextRequest) {
   // Check authentication
-  const supabase = await createClient()
+  const supabase = await createSupabaseServerClient()
   
   if (!supabase) {
     return NextResponse.json({ error: 'Supabase client not configured' }, { status: 500 })
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/users - Create user
 export async function POST(request: NextRequest) {
   // Check authentication
-  const supabase = await createClient()
+  const supabase = await createSupabaseServerClient()
   
   if (!supabase) {
     return NextResponse.json({ error: 'Supabase client not configured' }, { status: 500 })

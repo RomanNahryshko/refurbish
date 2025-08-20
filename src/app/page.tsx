@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createSupabaseClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -15,7 +15,7 @@ export default function Home() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const supabase = createClient()
+        const supabase = createSupabaseClient()
         const { data: { user } } = await supabase.auth.getUser()
         
         if (!user) {

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 export interface StockAdjustment {
   id: string
@@ -24,7 +24,7 @@ export const stockAdjustmentsApi = {
    * Add stock to a spare part
    */
   async addStock(data: CreateStockAdjustmentData & { adjustment_type: 'add' }) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // For adding stock, quantity should be positive and reference_number is required
@@ -53,7 +53,7 @@ export const stockAdjustmentsApi = {
    * Remove stock from a spare part
    */
   async removeStock(data: CreateStockAdjustmentData & { adjustment_type: 'remove' }) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // For removing stock, quantity should be negative
@@ -91,7 +91,7 @@ export const stockAdjustmentsApi = {
    * Make stock correction (can be positive or negative)
    */
   async correctStock(data: CreateStockAdjustmentData & { adjustment_type: 'correction' }) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // Insert the exact quantity the user entered without any modifications
@@ -125,7 +125,7 @@ export const stockAdjustmentsApi = {
    * Get stock adjustments for a specific part
    */
   async getAdjustmentsForPart(partId: string) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -146,7 +146,7 @@ export const stockAdjustmentsApi = {
    * Get all recent stock adjustments
    */
   async getRecentAdjustments(limit: number = 50) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase

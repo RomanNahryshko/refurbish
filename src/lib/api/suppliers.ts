@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { createSupabaseClient } from '@/lib/supabase/client'
 import { Supplier } from '@/lib/types/business-types'
 
 export interface CreateSupplierData {
@@ -16,7 +16,7 @@ export const suppliersApi = {
    * Get all suppliers
    */
   async getAll() {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -33,7 +33,7 @@ export const suppliersApi = {
    * Get suppliers by type
    */
   async getByType(type: 'devices' | 'parts' | 'both') {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -51,7 +51,7 @@ export const suppliersApi = {
    * Get a single supplier by ID
    */
   async getById(id: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -69,7 +69,7 @@ export const suppliersApi = {
    * Create a new supplier
    */
   async create(supplierData: CreateSupplierData) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -86,7 +86,7 @@ export const suppliersApi = {
    * Update an existing supplier
    */
   async update(id: string, supplierData: Partial<CreateSupplierData>) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -107,7 +107,7 @@ export const suppliersApi = {
    * Delete a supplier (soft delete)
    */
   async delete(id: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { error } = await supabase

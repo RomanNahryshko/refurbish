@@ -3,11 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-import { createClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { LoginFormData } from '@/lib/types/business-types'
 
 export async function login(formData: LoginFormData) {
-  const supabase = await createClient()
+  const supabase = await createSupabaseServerClient()
   
   if (!supabase) {
     return { error: 'Supabase is not configured. Please set up your environment variables.' }
@@ -30,7 +30,7 @@ export async function login(formData: LoginFormData) {
 }
 
 export async function logout() {
-  const supabase = await createClient()
+  const supabase = await createSupabaseServerClient()
   
   if (!supabase) {
     redirect('/login')
@@ -48,7 +48,7 @@ export async function logout() {
 }
 
 export async function getCurrentUser() {
-  const supabase = await createClient()
+  const supabase = await createSupabaseServerClient()
   
   if (!supabase) {
     return null

@@ -3,12 +3,12 @@
  * Run this to check if service role can access user_profiles table
  */
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 export async function testAdminPermissions() {
   console.log('🔍 Testing admin client permissions...')
   
-  const adminClient = createAdminClient()
+  const adminClient = createSupabaseAdminClient()
   
   if (!adminClient) {
     console.error('❌ Admin client not configured')

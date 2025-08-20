@@ -3,7 +3,7 @@
  * Uses browser Supabase client instead of server client
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { createSupabaseClient } from '@/lib/supabase/client';
 import { getRolePermissions } from '@/lib/config/permissions';
 import { type PermissionString, type UserRole } from '@/lib/types/business-types';
 
@@ -25,7 +25,7 @@ async function getCachedUserRole(userId: string): Promise<string | null> {
   
   // Fetch from database using client
   try {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) return null
     
     const { data: userProfile, error } = await supabase
@@ -54,7 +54,7 @@ export async function checkPermissionClient(
   action: 'create' | 'read' | 'update' | 'delete'
 ): Promise<boolean> {
   try {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     
     if (!supabase) {
       console.error('Supabase client not available in checkPermissionClient')
@@ -145,7 +145,7 @@ export async function checkPermissionClient(
  */
 export async function getUserPermissionsClient(userId: string): Promise<PermissionString[]> {
   try {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     
     // Get user's role from cache or database
     const userRole = await getCachedUserRole(userId)
