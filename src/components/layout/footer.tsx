@@ -8,7 +8,7 @@ export function Footer() {
   const { data: user } = useUser()
   const { data: profile } = useProfile(!!user)
 
-  const isAdmin = profile?.role === 'ops_manager'
+  const isAdmin = profile?.role === 'admin'
 
   return (
     <footer className="border-t bg-background">

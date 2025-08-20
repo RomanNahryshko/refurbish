@@ -1,19 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useToast } from '@/lib/hooks/use-toast'
-import type { User } from '@supabase/supabase-js'
+import { usePasswordStatus, useChangePassword } from '@/lib/hooks/use-change-password'
+import { getRedirectPath } from '@/lib/config/route-permissions'
+import { UserRole } from '@/lib/types/business-types'
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
@@ -31,10 +31,19 @@ type ChangePasswordFormData = z.infer<typeof changePasswordSchema>
 
 export default function ChangePasswordPage() {
   const router = useRouter()
-  const toast = useToast()
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<User | null>(null)
-  const [isForced, setIsForced] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
+  const [userInfo, setUserInfo] = useState<{
+    user: {
+      id: string
+      email: string | null
+    }
+    mustChangePassword: boolean
+    role: string
+  } | null>(null)
+  const initialized = useRef(false)
+
+  const { checkPasswordStatus, loading: statusLoading } = usePasswordStatus()
+  const { changePassword, loading: changeLoading } = useChangePassword()
 
   const form = useForm<ChangePasswordFormData>({
     resolver: zodResolver(changePasswordSchema),
@@ -46,119 +55,74 @@ export default function ChangePasswordPage() {
   })
 
   useEffect(() => {
+    // Prevent multiple initializations
+    if (initialized.current) return
+    initialized.current = true
+
     const checkUser = async () => {
-      const supabase = createClient()
-      
       try {
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        const status = await checkPasswordStatus()
         
-        if (userError || !user) {
-          router.push('/login')
+        if (!status) {
+          // User not authenticated, redirect to login
+          router.replace('/login')
           return
         }
 
-        setUser(user)
+        setUserInfo(status)
 
-        // Get user profile to check must_change_password flag
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-
-        if (profileError) {
-          console.error('Error fetching user profile:', profileError)
-          toast.error({
-            title: 'Error',
-            description: 'Failed to load user profile'
-          })
+        // If user doesn't need to change password, redirect based on role
+        if (!status.mustChangePassword) {
+          const redirectPath = getRedirectPath(status.role as UserRole, '/change-password')
+          router.replace(redirectPath)
           return
         }
-        setIsForced(profile?.must_change_password === true)
-        setLoading(false)
 
-        // If user doesn't need to change password, redirect to dashboard
-        if (!profile?.must_change_password) {
-          router.push('/dashboard')
-        }
-
+        setPageLoading(false)
       } catch (error) {
-        console.error('Error checking user:', error)
-        router.push('/login')
+        console.error('Error checking user status:', error)
+        router.replace('/login')
       }
     }
 
     checkUser()
-  }, [router, toast])
+  }, [router, checkPasswordStatus])
 
   const onSubmit = async (data: ChangePasswordFormData) => {
-    if (!user) return
+    const success = await changePassword({
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword
+    })
 
-    const supabase = createClient()
-
-    try {
-      // First verify current password by trying to sign in
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: user.email || '',
-        password: data.currentPassword
-      })
-
-      if (verifyError) {
-        toast.error({
-          title: 'Current Password Incorrect',
-          description: 'Please check your current password and try again'
-        })
-        return
-      }
-
-      // Update password
-      const { error: passwordError } = await supabase.auth.updateUser({
-        password: data.newPassword
-      })
-
-      if (passwordError) {
-        toast.error({
-          title: 'Password Update Failed',
-          description: passwordError.message
-        })
-        return
-      }
-
-      // Update user profile to remove must_change_password flag
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({ 
-          must_change_password: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-
-      if (profileError) {
-        console.error('Error updating profile:', profileError)
-        // Don't show error to user since password was changed successfully
-      }
-
-      toast.success({
-        title: 'Password Changed',
-        description: 'Your password has been updated successfully. Redirecting...'
-      })
-
-      // Redirect after a short delay to let user see the success message
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 1500)
-
-    } catch (error) {
-      console.error('Error changing password:', error)
-      toast.error({
-        title: 'Error',
-        description: 'An unexpected error occurred'
-      })
+    if (success) {
+      // Reset form on success
+      form.reset()
     }
   }
 
-  if (loading) {
+  const handleCancel = () => {
+    if (userInfo?.role) {
+      const redirectPath = getRedirectPath(userInfo.role as UserRole, '/change-password')
+      router.push(redirectPath)
+    } else {
+      router.push('/dashboard')
+    }
+  }
+
+  const getCancelButtonText = () => {
+    if (!userInfo?.role) return 'Cancel and return'
+    
+    switch (userInfo.role) {
+      case 'technician':
+        return 'Cancel and return to home'
+      case 'qc_controller':
+        return 'Cancel and return to dashboard'
+      default:
+        return 'Cancel and return to dashboard'
+    }
+  }
+
+  if (pageLoading || statusLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex items-center gap-2">
@@ -168,6 +132,16 @@ export default function ChangePasswordPage() {
       </div>
     )
   }
+
+  if (!userInfo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div>Redirecting to login...</div>
+      </div>
+    )
+  }
+
+  const isForced = userInfo.mustChangePassword
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -263,9 +237,9 @@ export default function ChangePasswordPage() {
                   <Button 
                     type="submit" 
                     className="w-full"
-                    disabled={form.formState.isSubmitting}
+                    disabled={changeLoading}
                   >
-                    {form.formState.isSubmitting ? (
+                    {changeLoading ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         Changing Password...
@@ -284,10 +258,11 @@ export default function ChangePasswordPage() {
           <div className="text-center">
             <Button 
               variant="ghost" 
-              onClick={() => router.push('/dashboard')}
+              onClick={handleCancel}
               className="text-sm"
+              disabled={changeLoading}
             >
-              Cancel and return to dashboard
+              {getCancelButtonText()}
             </Button>
           </div>
         )}

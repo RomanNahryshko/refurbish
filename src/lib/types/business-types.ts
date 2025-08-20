@@ -239,6 +239,51 @@ export interface UserPermission {
   created_by?: string
 }
 
+// Enhanced permission types for better type safety
+export type PermissionAction = 'create' | 'read' | 'update' | 'delete'
+
+export type TableName = 
+  | 'user_profiles'
+  | 'suppliers'
+  | 'batches'
+  | 'devices'
+  | 'device_status_history'
+  | 'qc_checks'
+  | 'qc_test_results'
+  | 'repair_jobs'
+  | 'repair_parts_used'
+  | 'spare_parts'
+  | 'stock_adjustments'
+  | 'production_metrics'
+
+// Permission string in format 'table:action'
+export type PermissionString = `${TableName}:${PermissionAction}`
+
+// Role-based permissions configuration
+export interface RolePermissions {
+  // General Manager: Full system access, reporting and analytics
+  general_manager: PermissionString[]
+  // Operations Manager: Batch intake, QC, repair job creation
+  ops_manager: PermissionString[]
+  // Quality Control: Post-repair QC, grading decisions  
+  qc_controller: PermissionString[]
+  // Technicians: Level-based repair permissions
+  technician: PermissionString[]
+}
+
+// Technician level permissions for specific repair types
+export interface TechnicianLevelPermissions {
+  L1: RepairType[] // Housing only
+  L2: RepairType[] // Glass only  
+  L3: RepairType[] // Battery + Others
+}
+
+// Enhanced user profile with permission context
+export interface UserWithPermissions extends UserProfile {
+  permissions?: PermissionString[]
+  can_repair_types?: RepairType[] // For technicians
+}
+
 // API response types
 export interface ApiResponse<T> {
   data?: T

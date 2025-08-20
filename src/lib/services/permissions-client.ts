@@ -1,9 +1,9 @@
 /**
- * Enhanced Permission Service with Role-Based Configuration
- * Supports both database permissions and configuration-based permissions
+ * Client-Side Permission Service
+ * Uses browser Supabase client instead of server client
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/client';
 import { getRolePermissions } from '@/lib/config/permissions';
 import { type PermissionString, type UserRole } from '@/lib/types/business-types';
 
@@ -12,7 +12,7 @@ const userRoleCache = new Map<string, { role: string; timestamp: number }>()
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 /**
- * Get cached user role or fetch from database
+ * Get cached user role or fetch from database (client version)
  */
 async function getCachedUserRole(userId: string): Promise<string | null> {
   const now = Date.now()
@@ -23,9 +23,9 @@ async function getCachedUserRole(userId: string): Promise<string | null> {
     return cached.role
   }
   
-  // Fetch from database
+  // Fetch from database using client
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
     if (!supabase) return null
     
     const { data: userProfile, error } = await supabase
@@ -46,22 +46,18 @@ async function getCachedUserRole(userId: string): Promise<string | null> {
 }
 
 /**
- * Check if a user has permission to perform an action on a table
- * @param userId - The user's ID
- * @param tableName - The database table name (e.g., 'devices', 'batches')
- * @param action - The action to perform ('create', 'read', 'update', 'delete')
- * @returns true if user has permission, false otherwise
+ * Check if a user has permission to perform an action on a table (client version)
  */
-export async function checkPermission(
+export async function checkPermissionClient(
   userId: string,
   tableName: string,
   action: 'create' | 'read' | 'update' | 'delete'
 ): Promise<boolean> {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
     
     if (!supabase) {
-      console.error('Supabase client not available in checkPermission')
+      console.error('Supabase client not available in checkPermissionClient')
       return false
     }
     
@@ -88,12 +84,7 @@ export async function checkPermission(
       .single()
     
     if (profileError || !userProfile) {
-      console.error('Error fetching user profile in checkPermission:', profileError)
-      // If no profile exists but user is authenticated, check if they're a superadmin
-      if (authUser && authUser.id === userId) {
-        // Already checked above, so this user has no permissions
-        console.log('No user profile found for:', authUser.email)
-      }
+      console.error('Error fetching user profile in checkPermissionClient:', profileError)
       return false
     }
     
@@ -102,35 +93,47 @@ export async function checkPermission(
       return true
     }
     
-    // Check if the role has this permission
-    const { data: permission } = await supabase
-      .from('permissions')
-      .select(`
-        id,
-        role_permissions!inner(role)
-      `)
-      .eq('table_name', tableName)
-      .eq('action', action)
-      .eq('role_permissions.role', userProfile.role)
-      .single()
+    // Check configuration-based permissions first
+    const configPermissions = getRolePermissions(userProfile.role as UserRole)
+    if (configPermissions.includes(`${tableName}:${action}` as PermissionString)) {
+      return true
+    }
     
-    // If role has permission, return true
-    if (permission) return true
-    
-    // Check for user-specific permission overrides
-    const { data: userPermission } = await supabase
-      .from('permissions')
-      .select(`
-        id,
-        user_permissions!inner(user_id, granted)
-      `)
-      .eq('table_name', tableName)
-      .eq('action', action)
-      .eq('user_permissions.user_id', userId)
-      .eq('user_permissions.granted', true)
-      .single()
-    
-    return !!userPermission
+    try {
+      // Check if the role has this permission in database
+      const { data: permission } = await supabase
+        .from('permissions')
+        .select(`
+          id,
+          role_permissions!inner(role)
+        `)
+        .eq('table_name', tableName)
+        .eq('action', action)
+        .eq('role_permissions.role', userProfile.role)
+        .single()
+      
+      // If role has permission, return true
+      if (permission) return true
+      
+      // Check for user-specific permission overrides
+      const { data: userPermission } = await supabase
+        .from('permissions')
+        .select(`
+          id,
+          user_permissions!inner(user_id, granted)
+        `)
+        .eq('table_name', tableName)
+        .eq('action', action)
+        .eq('user_permissions.user_id', userId)
+        .eq('user_permissions.granted', true)
+        .single()
+      
+      return !!userPermission
+    } catch (dbError) {
+      // If DB permission check fails, use config-based permissions
+      console.warn('Database permission check failed, using config-based permissions:', dbError)
+      return configPermissions.includes(`${tableName}:${action}` as PermissionString)
+    }
   } catch (error) {
     console.error('Permission check error:', error)
     return false // Fail closed - deny access on error
@@ -138,13 +141,11 @@ export async function checkPermission(
 }
 
 /**
- * Get all permissions for a user (supports both DB and config-based permissions)
- * @param userId - The user's ID
- * @returns Array of permissions in format 'table_name:action'
+ * Get all permissions for a user (client version)
  */
-export async function getUserPermissions(userId: string): Promise<PermissionString[]> {
+export async function getUserPermissionsClient(userId: string): Promise<PermissionString[]> {
   try {
-    const supabase = await createClient()
+    const supabase = createClient()
     
     // Get user's role from cache or database
     const userRole = await getCachedUserRole(userId)
@@ -220,21 +221,18 @@ export async function getUserPermissions(userId: string): Promise<PermissionStri
 /**
  * Clear user role cache (call this when user role changes)
  */
-export function clearUserRoleCache(userId: string) {
+export function clearUserRoleCacheClient(userId: string) {
   userRoleCache.delete(userId)
 }
 
 /**
- * Check if user has any of the required permissions
- * @param userId - The user's ID
- * @param requiredPermissions - Array of permissions to check (format: 'table:action')
- * @returns true if user has at least one of the required permissions
+ * Check if user has any of the required permissions (client version)
  */
-export async function hasAnyPermission(
+export async function hasAnyPermissionClient(
   userId: string,
   requiredPermissions: PermissionString[]
 ): Promise<boolean> {
-  const userPermissions = await getUserPermissions(userId)
+  const userPermissions = await getUserPermissionsClient(userId)
   
   // Admin has all permissions
   if (userPermissions.includes('*' as unknown as PermissionString)) {
@@ -245,16 +243,13 @@ export async function hasAnyPermission(
 }
 
 /**
- * Check if user has all of the required permissions
- * @param userId - The user's ID
- * @param requiredPermissions - Array of permissions to check (format: 'table:action')
- * @returns true if user has all required permissions
+ * Check if user has all of the required permissions (client version)
  */
-export async function hasAllPermissions(
+export async function hasAllPermissionsClient(
   userId: string,
   requiredPermissions: PermissionString[]
 ): Promise<boolean> {
-  const userPermissions = await getUserPermissions(userId)
+  const userPermissions = await getUserPermissionsClient(userId)
   
   // Admin has all permissions
   if (userPermissions.includes('*' as unknown as PermissionString)) {

@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { login } from '@/lib/actions/auth'
+import { getRedirectPath } from '@/lib/config/route-permissions'
+import { UserRole } from '@/lib/types/business-types'
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -33,7 +35,30 @@ export function LoginForm() {
         setError(result.error)
         setIsLoading(false)
       } else {
-        window.location.href = '/dashboard'
+        // Check password status before redirecting
+        try {
+          const statusResponse = await fetch('/api/auth/password-status')
+          if (statusResponse.ok) {
+            const statusData = await statusResponse.json()
+            
+            // If user must change password, redirect to change-password page
+            if (statusData.mustChangePassword) {
+              window.location.href = '/change-password'
+            } else {
+              // Redirect to role-appropriate page based on user role
+              const userRole = statusData.role || 'technician'
+              const redirectPath = getRedirectPath(userRole as UserRole, '/login')
+              window.location.href = redirectPath
+            }
+          } else {
+            // Fallback to dashboard if status check fails
+            window.location.href = '/dashboard'
+          }
+        } catch (error) {
+          console.error('Error checking password status:', error)
+          // Fallback to dashboard if status check fails
+          window.location.href = '/dashboard'
+        }
       }
     } catch {
       setError('An unexpected error occurred.')

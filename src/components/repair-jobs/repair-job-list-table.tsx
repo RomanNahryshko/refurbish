@@ -4,17 +4,18 @@ import { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Eye,
-  ClipboardCheck,
-  CheckCircle,
-  Clock,
-  Wrench,
-  Package,
-  AlertCircle
+    Eye,
+    ClipboardCheck,
+    CheckCircle,
+    Clock,
+    Wrench,
+    Package,
+    AlertCircle
 } from 'lucide-react'
 import { DeviceListTable, DeviceTableColumn } from '@/components/common/device-list-table'
 import { RepairJob, Batch, Device } from '@/lib/types/business-types'
 import Link from 'next/link'
+import { canTechnicianPerformRepair } from '@/lib/config/permissions'
 
 // Repair status configuration for badges
 export const repairStatusConfig = {
@@ -28,8 +29,8 @@ export const repairTypeConfig = {
   'housing_change': { label: 'Housing Change', level: 'L1', icon: Package },
   'glass_change': { label: 'Glass Change', level: 'L2', icon: AlertCircle },
   'battery_change': { label: 'Battery Change', level: 'L3', icon: Package },
-  'software_update': { label: 'Software Update', level: 'Any', icon: CheckCircle },
-  'other': { label: 'Other Repair', level: 'Any', icon: Wrench }
+  'software_update': { label: 'Software Update', level: 'L3', icon: CheckCircle },
+  'other': { label: 'Other Repair', level: 'L3', icon: Wrench }
 }
 
 // Extended RepairJob type with joined data from API
@@ -139,6 +140,11 @@ export function RepairJobListTable({
       r.assigned_to === currentUser?.id && r.status === 'in_progress'
     )
 
+    // Check if technician can perform this repair type
+    const canPerformRepair = currentUser?.technician_level 
+      ? canTechnicianPerformRepair(currentUser.technician_level, repairJob.repair_type)
+      : true // Non-technicians or unknown level can see all repairs
+
     return (
       <div className="flex items-center gap-2">
         <Link href={`/devices/${repairJob.device_internal_id}`}>
@@ -148,7 +154,7 @@ export function RepairJobListTable({
           </Button>
         </Link>
         
-        {repairJob.status === 'pending'  && (
+        {repairJob.status === 'pending' && canPerformRepair && (
           <Button 
             size="sm"
             onClick={() => onStartRepair(repairJob)}

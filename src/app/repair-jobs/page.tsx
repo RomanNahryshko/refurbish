@@ -17,6 +17,9 @@ import { useStartRepairJob, useCompleteRepairJob, useUpdateRepairJob } from '@/l
 import { RepairJob, SparePart } from '@/lib/types/business-types'
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/client'
+import { useUser } from '@/lib/hooks/use-user'
+import { useProfile } from '@/lib/hooks/use-profile'
+import { canTechnicianPerformRepair, getTechnicianRepairTypes } from '@/lib/config/permissions'
 
 // Import configs from the table component
 import { repairTypeConfig } from '@/components/repair-jobs/repair-job-list-table'
@@ -49,6 +52,10 @@ export default function RepairJobsPage() {
   const { data: repairJobsData, isLoading: repairJobsLoading, error: repairJobsError } = useRepairJobs()
   const { data: batchesData, isLoading: batchesLoading } = useBatches()
   const { data: sparePartsData, isLoading: sparePartsLoading } = useSpareParts()
+  
+  // Get current user profile for technician level
+  const { data: user } = useUser()
+  const { data: profile } = useProfile(!!user)
 
   // Get current user ID from Supabase
   useEffect(() => {
@@ -202,7 +209,7 @@ export default function RepairJobsPage() {
           if (repair.status !== 'pending') return false
           break
         case 'history':
-          if (!['completed', 'failed', 'cancelled'].includes(repair.status)) return false
+          if (!['failed', 'cancelled'].includes(repair.status)) return false
           break
         default:
           // 'all' status - no filtering
@@ -218,6 +225,17 @@ export default function RepairJobsPage() {
 
     // Type filter
     if (typeFilter !== 'all' && repair.repair_type !== typeFilter) {
+      return false
+    }
+
+    // Technician level filter - hide repairs that current technician cannot perform
+    if (profile?.role === 'technician' && profile?.technician_level) {
+      const canPerform = canTechnicianPerformRepair(profile.technician_level, repair.repair_type)
+      if (!canPerform) return false
+    }
+
+    // Hide completed repairs for all users
+    if (repair.status === 'completed') {
       return false
     }
 
@@ -352,9 +370,14 @@ export default function RepairJobsPage() {
 
   // Render filters for the table (consistent with devices/qc pages)
   const renderFilters = () => {
+    // Get available repair types for current technician
+    const availableRepairTypes = profile?.role === 'technician' && profile?.technician_level
+      ? getTechnicianRepairTypes(profile.technician_level)
+      : ['housing_change', 'glass_change', 'battery_change', 'software_update', 'other'] // All types for non-technicians
+    
     const hasActiveFilters = searchTerm.trim() !== '' || 
                            statusFilter !== 'all' || 
-                           levelFilter !== 'all' || 
+                           (profile?.role !== 'technician' && levelFilter !== 'all') || 
                            typeFilter !== 'all'
     
     return (
@@ -373,7 +396,7 @@ export default function RepairJobsPage() {
                 Status: {statusFilter}
               </Badge>
             )}
-            {levelFilter !== 'all' && (
+{profile?.role !== 'technician' && levelFilter !== 'all' && (
               <Badge variant="secondary" className="text-xs">
                 Level: {levelFilter}
               </Badge>
@@ -414,17 +437,20 @@ export default function RepairJobsPage() {
               </SelectContent>
             </Select>
 
-            <Select value={levelFilter} onValueChange={handleFilterChange(setLevelFilter)}>
-              <SelectTrigger className={`h-9 w-[120px] ${levelFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
-                <SelectValue placeholder="Level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                <SelectItem value="L1">L1 Only</SelectItem>
-                <SelectItem value="L2">L2 Only</SelectItem>
-                <SelectItem value="L3">L3 Only</SelectItem>
-              </SelectContent>
-            </Select>
+{/* Level filter - only show for non-technicians */}
+            {profile?.role !== 'technician' && (
+              <Select value={levelFilter} onValueChange={handleFilterChange(setLevelFilter)}>
+                <SelectTrigger className={`h-9 w-[120px] ${levelFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
+                  <SelectValue placeholder="Level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="L1">L1 Only</SelectItem>
+                  <SelectItem value="L2">L2 Only</SelectItem>
+                  <SelectItem value="L3">L3 Only</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
             <Select value={typeFilter} onValueChange={handleFilterChange(setTypeFilter)}>
               <SelectTrigger className={`h-9 w-[140px] ${typeFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
@@ -432,11 +458,21 @@ export default function RepairJobsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="housing_change">Housing</SelectItem>
-                <SelectItem value="glass_change">Glass</SelectItem>
-                <SelectItem value="battery_change">Battery</SelectItem>
-                <SelectItem value="software_update">Software</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                {availableRepairTypes.includes('housing_change') && (
+                  <SelectItem value="housing_change">Housing</SelectItem>
+                )}
+                {availableRepairTypes.includes('glass_change') && (
+                  <SelectItem value="glass_change">Glass</SelectItem>
+                )}
+                {availableRepairTypes.includes('battery_change') && (
+                  <SelectItem value="battery_change">Battery</SelectItem>
+                )}
+                {availableRepairTypes.includes('software_update') && (
+                  <SelectItem value="software_update">Software</SelectItem>
+                )}
+                {availableRepairTypes.includes('other') && (
+                  <SelectItem value="other">Other</SelectItem>
+                )}
               </SelectContent>
             </Select>
 
@@ -527,11 +563,11 @@ export default function RepairJobsPage() {
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}
             renderFilters={renderFilters}
-            currentUser={currentUserId ? {
+            currentUser={currentUserId && profile ? {
               id: currentUserId,
-              full_name: 'Current User', // This should come from user profile
-              role: 'technician', // This should come from user profile
-              technician_level: 'L2' // This should come from user profile
+              full_name: profile.full_name || 'Current User',
+              role: profile.role || 'technician',
+              technician_level: profile.technician_level || null
             } : undefined}
             onStartRepair={handleStartRepair}
             onCompleteRepair={handleCompleteRepair}

@@ -11,7 +11,7 @@ export const repairTypes = [
   { id: 'housing_change', label: 'Housing Change', level: 'L1' },
   { id: 'glass_change', label: 'Glass Change', level: 'L2' },
   { id: 'battery_change', label: 'Battery Change', level: 'L3' },
-  { id: 'software_update', label: 'Software Update', level: 'Any' },
+  { id: 'software_update', label: 'Software Update', level: 'L3' },
   { id: 'other', label: 'Other', level: 'L3', requiresDescription: true }
 ]
 

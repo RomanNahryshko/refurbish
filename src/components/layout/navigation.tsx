@@ -4,19 +4,24 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  navigationMenuTriggerStyle,
+    NavigationMenu,
+    NavigationMenuItem,
+    NavigationMenuLink,
+    NavigationMenuList,
+    navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu'
 import { cn } from '@/lib/utils'
+import { type UserProfile, type PermissionString } from '@/lib/types/business-types'
+import { useUIPermissions } from '@/lib/hooks/use-permissions'
 
 interface NavigationItem {
   title: string
   href: string
   description?: string
-  allowedRoles: string[]
+  allowedRoles?: string[]
+  requiredPermissions?: PermissionString[]
+  // Function to check if item should be shown based on permissions
+  showIf?: (permissions: ReturnType<typeof useUIPermissions>) => boolean
 }
 
 const navigationItems: NavigationItem[] = [
@@ -24,73 +29,100 @@ const navigationItems: NavigationItem[] = [
     title: 'Dashboard',
     href: '/dashboard',
     description: 'Overview of operations',
-          allowedRoles: ['qc_controller', 'technician', 'ops_manager', 'general_manager'],
+    showIf: (perms) => perms.isQC || perms.isOpsManager || perms.isGeneralManager // УБРАНО для technician
   },
   {
     title: 'Batch Intake',
     href: '/batch-intake',
     description: 'Register new phone batches',
-          allowedRoles: ['ops_manager', 'general_manager'],
+    showIf: (perms) => perms.canCreateBatches
   },
   {
     title: 'Devices',
     href: '/devices',
     description: 'Track phones by IMEI',
-          allowedRoles: ['qc_controller', 'technician', 'ops_manager', 'general_manager'],
+    showIf: (perms) => perms.canViewDevices && !perms.isQC // СКРЫТО для qc_controller
   },
   {
     title: 'Repair Jobs',
     href: '/repair-jobs',
     description: 'Manage repair assignments',
-    allowedRoles: ['technician', 'ops_manager'],
+    showIf: (perms) => perms.canViewRepairJobs && !perms.isQC // СКРЫТО для qc_controller
   },
   {
     title: 'Quality Control',
     href: '/qc',
     description: 'Final QC and grading',
-    allowedRoles: ['qc_controller', 'ops_manager', 'general_manager'],
+    showIf: (perms) => perms.canViewQC && !perms.isOpsManager // СКРЫТО для ops_manager
   },
   {
     title: 'Inventory',
     href: '/inventory',
     description: 'Spare parts management',
-    allowedRoles: ['technician', 'ops_manager'],
+    showIf: (perms) => perms.canViewInventory && !perms.isOpsManager // СКРЫТО для ops_manager
+  },
+  {
+    title: 'Suppliers',
+    href: '/suppliers',
+    description: 'Supplier management',
+    showIf: (perms) => perms.hasPermission('suppliers', 'read') && !perms.isOpsManager // СКРЫТО для ops_manager
   },
   {
     title: 'Admin',
     href: '/admin',
     description: 'System administration',
-    allowedRoles: ['ops_manager'],
+    showIf: (perms) => perms.canManageUsers || perms.isAdmin
   },
 ]
 
 interface NavigationProps {
-  userRole?: string
+  userProfile?: UserProfile | null
 }
 
-export function Navigation({ userRole = 'ops_manager' }: NavigationProps) {
+export function Navigation({ userProfile }: NavigationProps) {
   const pathname = usePathname()
+  const permissions = useUIPermissions(userProfile)
   
-  // Filter navigation items based on user role
-  const allowedItems = navigationItems.filter(item =>
-    item.allowedRoles.includes(userRole)
-  )
+  // Filter navigation items based on permissions
+  const allowedItems = navigationItems.filter(item => {
+    // If custom showIf function is provided, use it
+    if (item.showIf) {
+      return item.showIf(permissions)
+    }
+    
+    // If required permissions are specified, check them
+    if (item.requiredPermissions) {
+      return item.requiredPermissions.every(perm => {
+        const [table, action] = perm.split(':') as [string, 'create' | 'read' | 'update' | 'delete']
+        return permissions.hasPermission(table as any, action)
+      })
+    }
+    
+    // If legacy allowedRoles is used, fall back to role check
+    if (item.allowedRoles && userProfile) {
+      return item.allowedRoles.includes(userProfile.role)
+    }
+    
+    // Default: show if user is authenticated
+    return !!userProfile
+  })
 
   return (
     <NavigationMenu>
       <NavigationMenuList>
         {allowedItems.map((item) => (
           <NavigationMenuItem key={item.href}>
-            <Link href={item.href} legacyBehavior passHref>
-              <NavigationMenuLink
+            <NavigationMenuLink asChild>
+              <Link
+                href={item.href}
                 className={cn(
                   navigationMenuTriggerStyle(),
                   pathname === item.href && 'bg-accent text-accent-foreground'
                 )}
               >
                 {item.title}
-              </NavigationMenuLink>
-            </Link>
+              </Link>
+            </NavigationMenuLink>
           </NavigationMenuItem>
         ))}
       </NavigationMenuList>

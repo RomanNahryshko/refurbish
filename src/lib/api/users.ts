@@ -224,6 +224,7 @@ export const usersApi = {
         profileData.created_by = performedBy
       }
 
+      // Try to insert user profile with explicit RLS bypass
       const { data: profile, error: profileError } = await adminClient
         .from('user_profiles')
         .insert(profileData)
@@ -231,8 +232,20 @@ export const usersApi = {
         .single()
 
       if (profileError) {
+        console.error('Profile creation error details:', {
+          error: profileError,
+          profileData,
+          adminClientExists: !!adminClient,
+          userIdCreated: authUser.user.id
+        })
+        
         // Cleanup: delete the auth user if profile creation fails
-        await adminClient.auth.admin.deleteUser(authUser.user.id)
+        try {
+          await adminClient.auth.admin.deleteUser(authUser.user.id)
+        } catch (cleanupError) {
+          console.error('Failed to cleanup auth user:', cleanupError)
+        }
+        
         throw new Error(`Failed to create user profile: ${profileError.message}`)
       }
 

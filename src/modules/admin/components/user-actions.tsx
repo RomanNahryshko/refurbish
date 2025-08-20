@@ -5,24 +5,26 @@ import Link from 'next/link'
 import { useUpdateUserStatus, useResetUserPassword } from '@/lib/hooks/use-users'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { MoreHorizontal, Edit, Shield, ShieldOff, Key, Eye } from 'lucide-react'
 import { UserProfile } from '@/lib/types/business-types'
+import { TablePermissionGuard } from '@/components/auth/permission-guard'
+import { useProfile } from '@/lib/hooks/use-profile'
 
 interface UserActionsProps {
   user: UserProfile & { auth_user?: { email?: string }; email?: string }
@@ -37,6 +39,9 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
 
   const updateStatusMutation = useUpdateUserStatus()
   const resetPasswordMutation = useResetUserPassword()
+  
+  // Get current user profile for permission checks
+  const { data: currentUserProfile } = useProfile(!!currentUserId)
 
   const isCurrentUser = String(user.id) === currentUserId
   const isActive = String(user.status) === 'active' || !user.status
@@ -84,64 +89,78 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
   return (
     <>
       <div className="flex items-center gap-2">
-        {/* View/Edit Button */}
-        <Link href={`/admin/users/${String(user.id)}`}>
-          <Button size="sm" variant="outline">
-            <Eye className="h-4 w-4 mr-1" />
-            View
-          </Button>
-        </Link>
-
-        {/* More Actions Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
+        {/* View Button - Always available if user can read user profiles */}
+        <TablePermissionGuard 
+          userProfile={currentUserProfile || null}
+          table="user_profiles" 
+          action="read"
+          hideOnNoPermission={true}
+        >
+          <Link href={`/admin/users/${String(user.id)}`}>
+            <Button size="sm" variant="outline">
+              <Eye className="h-4 w-4 mr-1" />
+              View
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {/* Edit */}
-            <DropdownMenuItem asChild>
-              <Link href={`/admin/users/${String(user.id)}`} className="flex items-center">
-                <Edit className="h-4 w-4 mr-2" />
-                Edit User
-              </Link>
-            </DropdownMenuItem>
-            
-            <DropdownMenuSeparator />
-            
-            {/* Reset Password */}
-            <DropdownMenuItem onClick={openPasswordDialog}>
-              <Key className="h-4 w-4 mr-2" />
-              Reset Password
-            </DropdownMenuItem>
-            
-            {!isCurrentUser && (
-              <>
-                <DropdownMenuSeparator />
-                
-                {/* Enable/Disable */}
-                {isActive ? (
-                  <DropdownMenuItem 
-                    onClick={() => openStatusDialog('disable')}
-                    className="text-red-600 focus:text-red-600"
-                  >
-                    <ShieldOff className="h-4 w-4 mr-2" />
-                    Disable User
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem 
-                    onClick={() => openStatusDialog('enable')}
-                    className="text-green-600 focus:text-green-600"
-                  >
-                    <Shield className="h-4 w-4 mr-2" />
-                    Enable User
-                  </DropdownMenuItem>
-                )}
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </Link>
+        </TablePermissionGuard>
+
+        {/* More Actions Dropdown - Only show if user has update permissions */}
+        <TablePermissionGuard 
+          userProfile={currentUserProfile || null}
+          table="user_profiles" 
+          action="update"
+          hideOnNoPermission={true}
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {/* Edit */}
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/users/${String(user.id)}`} className="flex items-center">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit User
+                </Link>
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              {/* Reset Password */}
+              <DropdownMenuItem onClick={openPasswordDialog}>
+                <Key className="h-4 w-4 mr-2" />
+                Reset Password
+              </DropdownMenuItem>
+              
+              {!isCurrentUser && (
+                <>
+                  <DropdownMenuSeparator />
+                  
+                  {/* Enable/Disable */}
+                  {isActive ? (
+                    <DropdownMenuItem 
+                      onClick={() => openStatusDialog('disable')}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <ShieldOff className="h-4 w-4 mr-2" />
+                      Disable User
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem 
+                      onClick={() => openStatusDialog('enable')}
+                      className="text-green-600 focus:text-green-600"
+                    >
+                      <Shield className="h-4 w-4 mr-2" />
+                      Enable User
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TablePermissionGuard>
       </div>
 
       {/* Status Change Confirmation Dialog */}

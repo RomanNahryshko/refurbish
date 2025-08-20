@@ -10,23 +10,15 @@ import { useUser } from '@/lib/hooks/use-user'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Batch Intake', href: '/batch-intake' },
-  { name: 'Devices', href: '/devices' },
-  { name: 'Repair Jobs', href: '/repair-jobs' },
-  { name: 'Quality Control', href: '/qc' },
-  { name: 'Inventory', href: '/inventory' },
-]
+import { Navigation } from './navigation'
 
 export function Header() {
   const pathname = usePathname()
@@ -69,19 +61,9 @@ export function Header() {
           </div>
 
           {/* Desktop Navigation - Centered */}
-          <nav className="hidden md:flex items-center space-x-6">
-            {navigation.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`text-sm font-medium transition-colors hover:text-foreground/80 ${
-                  pathname === item.href ? 'text-foreground' : 'text-foreground/60'
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
-          </nav>
+          <div className="hidden md:flex items-center">
+            <Navigation userProfile={profile} />
+          </div>
 
           {/* Right side actions */}
           <div className="flex items-center space-x-4">
@@ -117,21 +99,9 @@ export function Header() {
                       className="h-24 w-24"
                     />
                   </Link>
-                  <nav className="flex flex-col space-y-3">
-                    {navigation.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`text-sm font-medium transition-colors hover:text-foreground/80 px-2 py-1 rounded-md hover:bg-accent ${
-                          pathname === item.href 
-                            ? 'text-foreground bg-accent' 
-                            : 'text-foreground/60'
-                        }`}
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
-                  </nav>
+                  <div className="flex flex-col">
+                    <Navigation userProfile={profile} />
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>
