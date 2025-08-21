@@ -101,6 +101,33 @@ export function hasRouteAccess(userRole: UserRole, pathname: string): boolean {
 }
 
 /**
+ * Check if a user role has access to dashboard
+ */
+export function hasDashboardAccess(userRole: UserRole): boolean {
+  // Only general_manager and admin have dashboard access
+  return userRole === 'general_manager' || userRole === 'admin'
+}
+
+/**
+ * Get the first available module for a user based on their role
+ */
+export function getFirstAvailableModule(userRole: UserRole): string {
+  switch (userRole) {
+    case 'admin':
+    case 'general_manager':
+      return '/dashboard'
+    case 'ops_manager':
+      return '/batch-intake'
+    case 'qc_controller':
+      return '/qc'
+    case 'technician':
+      return '/repair-jobs'
+    default:
+      return '/batch-intake' // fallback
+  }
+}
+
+/**
  * Check if a route is specifically blocked for ops_manager
  */
 export function isBlockedForOpsManager(pathname: string): boolean {

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { login } from '@/lib/actions/auth'
-import { getRedirectPath } from '@/lib/config/route-permissions'
+import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions'
 import { UserRole } from '@/lib/types/business-types'
 
 export function LoginForm() {
@@ -45,10 +45,17 @@ export function LoginForm() {
             if (statusData.mustChangePassword) {
               window.location.href = '/change-password'
             } else {
-              // Redirect to role-appropriate page based on user role
+              // Check if user has dashboard access
               const userRole = statusData.role || 'technician'
-              const redirectPath = getRedirectPath(userRole as UserRole, '/login')
-              window.location.href = redirectPath
+              
+              if (hasDashboardAccess(userRole as UserRole)) {
+                // User has dashboard access, redirect to dashboard
+                window.location.href = '/dashboard'
+              } else {
+                // User doesn't have dashboard access, redirect to first available module
+                const firstModule = getFirstAvailableModule(userRole as UserRole)
+                window.location.href = firstModule
+              }
             }
           } else {
             // Fallback to dashboard if status check fails

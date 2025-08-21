@@ -2,29 +2,40 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
 import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { useUser } from '@/lib/hooks/use-user'
+import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions'
+import { type UserRole } from '@/lib/types/business-types'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Navigation } from './navigation'
 
 export function Header() {
-  const pathname = usePathname()
   const { data: user } = useUser()
   const { data: profile, isLoading: profileLoading } = useProfile(!!user)
   const supabase = useSupabaseClient()
+
+  // Get the appropriate logo link based on user permissions
+  const getLogoLink = () => {
+    if (!profile?.role) return '/dashboard' // Default fallback
+    
+    if (hasDashboardAccess(profile.role as UserRole)) {
+      return '/dashboard'
+    } else {
+      return getFirstAvailableModule(profile.role as UserRole)
+    }
+  }
 
   const handleLogout = async () => {
     if (supabase) {
@@ -45,7 +56,7 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/dashboard">
+            <Link href={getLogoLink()}>
               <Image
                 src="/logo_remobile.svg"
                 alt="ReMobile Logo"
@@ -58,7 +69,7 @@ export function Header() {
 
           {/* Desktop Navigation - Centered */}
           <div className="hidden md:flex items-center">
-            <Navigation userProfile={profile} />
+            <Navigation userProfile={profile || null} />
           </div>
 
           {/* Right side actions */}
@@ -86,7 +97,7 @@ export function Header() {
               </SheetTrigger>
               <SheetContent side="left" className="w-[250px] sm:w-[300px]">
                 <div className="flex flex-col space-y-4 mt-4">
-                  <Link href="/dashboard" className="flex justify-center mb-6">
+                  <Link href={getLogoLink()} className="flex justify-center mb-6">
                     <Image
                       src="/logo_remobile.svg"
                       alt="ReMobile Logo"
@@ -96,7 +107,7 @@ export function Header() {
                     />
                   </Link>
                   <div className="flex flex-col">
-                    <Navigation userProfile={profile} />
+                    <Navigation userProfile={profile || null} />
                   </div>
                 </div>
               </SheetContent>
