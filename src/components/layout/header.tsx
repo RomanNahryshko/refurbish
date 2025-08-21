@@ -34,10 +34,6 @@ export function Header() {
     }
   }
 
-
-
-
-
   const userFullName = profile?.full_name || user?.user_metadata?.full_name || 'Unknown User'
   const userEmail = user?.email || 'No email'
   const userRole = profile?.role

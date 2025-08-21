@@ -61,18 +61,6 @@ const navigationItems: NavigationItem[] = [
     description: 'Spare parts management',
     showIf: (perms) => perms.canViewInventory && !perms.isOpsManager
   },
-  {
-    title: 'Suppliers',
-    href: '/suppliers',
-    description: 'Supplier management',
-    showIf: (perms) => perms.hasPermission('suppliers', 'read') && !perms.isOpsManager
-  },
-  {
-    title: 'Admin',
-    href: '/admin',
-    description: 'System administration',
-    showIf: (perms) => perms.canManageUsers || perms.isAdmin
-  },
 ]
 
 interface NavigationProps {
