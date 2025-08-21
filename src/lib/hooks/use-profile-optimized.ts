@@ -1,17 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-
-interface UserProfile {
-  id: string
-  full_name?: string
-  role?: string
-  status?: string
-  must_change_password?: boolean
-  technician_level?: string
-  phone_number?: string
-  employee_id?: string
-  created_at?: string
-  updated_at?: string
-}
+import { UserProfile } from '@/lib/types/business-types'
 
 async function fetchUserProfile(): Promise<UserProfile | null> {
   try {
@@ -34,7 +22,6 @@ async function fetchUserProfile(): Promise<UserProfile | null> {
     
     return response.json()
   } catch (error) {
-    console.error('Error fetching user profile:', error)
     throw error
   }
 }

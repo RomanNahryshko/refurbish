@@ -71,7 +71,6 @@ export async function checkPermissionClient(
                           authUser.email?.endsWith('@supabase.io')
       
       if (isSuperAdmin) {
-        console.log('Superadmin access granted for:', authUser.email)
         return true
       }
     }

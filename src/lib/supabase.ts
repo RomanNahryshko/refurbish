@@ -19,12 +19,7 @@ export const hasValidSupabaseConfig =
   !supabaseUrl.includes('your-project-ref')
 
 if (!hasValidSupabaseConfig) {
-  console.warn(
-    '⚠️  Supabase configuration is missing or invalid. Authentication features will not work.\n' +
-    'Please set up a Supabase project and update your .env.local file with:\n' +
-    '- NEXT_PUBLIC_SUPABASE_URL\n' +
-    '- NEXT_PUBLIC_SUPABASE_ANON_KEY'
-  )
+  // Supabase configuration is missing or invalid
 }
 
 // Type for Supabase client options

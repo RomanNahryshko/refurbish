@@ -14,6 +14,9 @@ import { usePartsSuppliers } from '@/modules/suppliers/hooks/use-suppliers'
 import { PART_CATEGORY_LABELS } from '@/lib/constants'
 import { SparePart } from '@/lib/types/business-types'
 import { toast } from 'sonner'
+import { Plus } from 'lucide-react'
+import { AddSupplierDialog } from '@/modules/suppliers/components/add-supplier-dialog'
+import { Supplier } from '@/lib/api/suppliers-client'
 
 interface PartFormDialogProps {
   open: boolean
@@ -44,7 +47,7 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
     primary_supplier_id: '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
-
+  const [isAddSupplierOpen, setIsAddSupplierOpen] = useState(false)
   // Hooks for data fetching and mutations
   const { data: nextSku, isLoading: skuLoading } = useNextSkuQuery()
   const { data: suppliers, isLoading: suppliersLoading, error: _suppliersError } = usePartsSuppliers()
@@ -147,9 +150,8 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
 
       onOpenChange(false)
       resetForm()
-    } catch (error) {
+    } catch {
       // Error is handled by the mutation hook's toast
-      console.error('Submit error:', error)
     } finally {
       setIsSubmitting(false)
     }
@@ -160,6 +162,10 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
       onOpenChange(false)
       resetForm()
     }
+  }
+
+  const handleSupplierAdded = (newSupplier: Supplier) => {
+    setFormData({...formData, primary_supplier_id: newSupplier.id})
   }
 
   return (
@@ -304,12 +310,24 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
                 <Label htmlFor="supplier">Primary Supplier</Label>
                 <Select 
                   value={formData.primary_supplier_id} 
-                  onValueChange={(value) => setFormData({...formData, primary_supplier_id: value})}
+                  onValueChange={(value) => {
+                    if (value === 'add-new-supplier') {
+                      setIsAddSupplierOpen(true)
+                    } else {
+                      setFormData({...formData, primary_supplier_id: value})
+                    }
+                  }}
                 >
                   <SelectTrigger id="supplier">
                     <SelectValue placeholder="Select supplier" />
                   </SelectTrigger>
-                  <SelectContent>
+                    <SelectContent>
+                       <SelectItem value="add-new-supplier" className="text-primary font-medium">
+                    <div className="flex items-center">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Supplier...
+                    </div>
+                  </SelectItem>
                     {suppliersLoading ? (
                       <SelectItem value="__loading__" disabled>Loading suppliers...</SelectItem>
                     ) : _suppliersError ? (
@@ -354,6 +372,11 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
           </form>
         )}
       </DialogContent>
+      <AddSupplierDialog
+        open={isAddSupplierOpen}
+        onOpenChange={setIsAddSupplierOpen}
+        onSupplierAdded={handleSupplierAdded}
+      />
     </Dialog>
   );
 }

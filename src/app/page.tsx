@@ -34,11 +34,8 @@ export default function Home() {
             .single()
           
           setUserRole(profile?.role || null)
-        } catch (error) {
-          console.error('Error fetching user role:', error)
-        }
-      } catch (error) {
-        console.error('Auth check error:', error)
+        } catch {
+        } catch {
       } finally {
         setLoading(false)
       }
@@ -122,7 +119,49 @@ export default function Home() {
           </div>
         )}
 
-        {userRole && userRole !== 'technician' && (
+        {userRole === 'qc_controller' && (
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  📱 Devices
+                </CardTitle>
+                <CardDescription>
+                  View and track devices by IMEI
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => router.push('/devices')}
+                  className="w-full"
+                >
+                  Go to Devices
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  🔍 Quality Control
+                </CardTitle>
+                <CardDescription>
+                  Perform final QC and grading
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => router.push('/qc')}
+                  className="w-full"
+                >
+                  Go to QC
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {userRole && userRole !== 'technician' && userRole !== 'qc_controller' && (
           <div className="text-center">
             <Card>
               <CardHeader>

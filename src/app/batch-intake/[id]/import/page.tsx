@@ -156,10 +156,9 @@ export default function ImportDrPhonePage() {
                  
                  const mappedRepairType = repairTypeMap[repairType]
                  
-                 if (!mappedRepairType) {
-                   console.error(`Invalid repair type: ${repairType}`)
-                   continue
-                 }
+                             if (!mappedRepairType) {
+              continue
+            }
                  
                  const repairJobData = {
                    device_id: createdDevice.id,
@@ -173,8 +172,7 @@ export default function ImportDrPhonePage() {
                    createdBy: await getCurrentUserId()
                  })
                }
-            } catch (error) {
-              console.error('Failed to create repair jobs:', error)
+            } catch {
               // Continue even if repair jobs fail
             }
           }

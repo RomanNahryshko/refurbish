@@ -14,8 +14,7 @@ let browserClient: ReturnType<typeof createBrowserClient> | null = null
 export function createSupabaseClient() {
   if (!hasValidSupabaseConfig) {
     // Return a mock client that won't crash the app
-    console.warn('Supabase client not configured properly')
-    return null as unknown as SupabaseClient
+    return null
   }
   
   // Return existing client if already created
@@ -28,10 +27,6 @@ export function createSupabaseClient() {
     supabaseUrl,
     supabaseAnonKey
   )
-  
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🚀 Supabase browser client created (singleton)')
-  }
   
   return browserClient
 }
@@ -50,5 +45,4 @@ export function getSupabaseClient(): SupabaseClient | null {
  */
 export function resetSupabaseClient(): void {
   browserClient = null
-  console.log('🔄 Supabase browser client reset')
 } 

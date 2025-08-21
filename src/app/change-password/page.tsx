@@ -79,8 +79,7 @@ export default function ChangePasswordPage() {
         }
 
         setPageLoading(false)
-      } catch (error) {
-        console.error('Error checking user status:', error)
+      } catch {
         router.replace('/login')
       }
     }

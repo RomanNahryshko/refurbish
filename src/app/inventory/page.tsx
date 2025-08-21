@@ -32,8 +32,7 @@ export default function InventoryPage() {
           // They might be a superadmin - let the API handle permissions
           setUserRole('admin') // Assume admin for UI purposes
         }
-      } catch (error) {
-        console.error('Error fetching user profile:', error)
+      } catch {
       }
     }
     fetchUserProfile()
@@ -64,9 +63,8 @@ export default function InventoryPage() {
       await deletePartMutation.mutateAsync(selectedPart.id)
       setIsDeleteDialogOpen(false)
       setSelectedPart(null)
-    } catch (error) {
+    } catch {
       // Error is handled by the mutation hook's toast
-      console.error('Delete error:', error)
     }
   }
 

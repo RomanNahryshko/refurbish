@@ -12,6 +12,8 @@ export interface CreateSupplierData {
   notes?: string
 }
 
+export interface UpdateSupplierData extends Partial<CreateSupplierData> {}
+
 /**
  * Optimized Suppliers API with singleton Supabase client
  */
@@ -20,8 +22,9 @@ class SuppliersAPI {
 
   /**
    * Get or create the singleton Supabase client
+   * This ensures we reuse the same client instance across all API calls
    */
-  private getClient(): SupabaseClient {
+  private getClient = (): SupabaseClient => {
     if (!this.client) {
       this.client = createSupabaseClient()
     }
@@ -32,10 +35,11 @@ class SuppliersAPI {
     
     return this.client
   }
+
   /**
    * Get all suppliers
    */
-  async getAll() {
+  getAll = async () => {
     const supabase = this.getClient()
 
     const { data, error } = await supabase
@@ -51,7 +55,7 @@ class SuppliersAPI {
   /**
    * Get suppliers by type
    */
-  async getByType(type: 'devices' | 'parts' | 'both') {
+  getByType = async (type: 'devices' | 'parts' | 'both') => {
     const supabase = this.getClient()
 
     const { data, error } = await supabase
@@ -66,9 +70,16 @@ class SuppliersAPI {
   }
 
   /**
+   * Get suppliers that provide parts (for inventory dropdowns)
+   */
+  getPartsSuppliers = async () => {
+    return this.getByType('parts')
+  }
+
+  /**
    * Get a single supplier by ID
    */
-  async getById(id: string) {
+  getById = async (id: string) => {
     const supabase = this.getClient()
 
     const { data, error } = await supabase
@@ -85,7 +96,7 @@ class SuppliersAPI {
   /**
    * Create a new supplier
    */
-  async create(supplierData: CreateSupplierData) {
+  create = async (supplierData: CreateSupplierData) => {
     const supabase = this.getClient()
 
     const { data, error } = await supabase
@@ -101,7 +112,7 @@ class SuppliersAPI {
   /**
    * Update an existing supplier
    */
-  async update(id: string, supplierData: Partial<CreateSupplierData>) {
+  update = async (id: string, supplierData: UpdateSupplierData) => {
     const supabase = this.getClient()
 
     const { data, error } = await supabase
@@ -121,7 +132,7 @@ class SuppliersAPI {
   /**
    * Delete a supplier (soft delete)
    */
-  async delete(id: string) {
+  delete = async (id: string) => {
     const supabase = this.getClient()
 
     const { error } = await supabase

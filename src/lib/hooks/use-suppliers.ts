@@ -55,8 +55,8 @@ export function useCreateSupplier() {
   return useMutation({
     mutationFn: suppliersApi.create,
     onSuccess: () => {
-      // Invalidate and refetch suppliers lists
-      queryClient.invalidateQueries({ queryKey: supplierKeys.lists() })
+      // Invalidate and refetch all suppliers queries
+      queryClient.invalidateQueries({ queryKey: supplierKeys.all })
       toast.success('Supplier created successfully')
     },
     onError: (error: Error) => {
@@ -73,9 +73,9 @@ export function useUpdateSupplier() {
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateSupplierData> }) =>
       suppliersApi.update(id, data),
     onSuccess: (_, { id }) => {
-      // Invalidate and refetch specific supplier and lists
+      // Invalidate and refetch specific supplier and all lists
       queryClient.invalidateQueries({ queryKey: supplierKeys.detail(id) })
-      queryClient.invalidateQueries({ queryKey: supplierKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: supplierKeys.all })
       toast.success('Supplier updated successfully')
     },
     onError: (error: Error) => {
@@ -91,8 +91,8 @@ export function useDeleteSupplier() {
   return useMutation({
     mutationFn: suppliersApi.delete,
     onSuccess: () => {
-      // Invalidate and refetch suppliers lists
-      queryClient.invalidateQueries({ queryKey: supplierKeys.lists() })
+      // Invalidate and refetch all suppliers queries
+      queryClient.invalidateQueries({ queryKey: supplierKeys.all })
       toast.success('Supplier deleted successfully')
     },
     onError: (error: Error) => {

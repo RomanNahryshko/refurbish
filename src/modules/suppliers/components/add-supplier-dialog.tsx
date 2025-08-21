@@ -62,9 +62,8 @@ export function AddSupplierDialog({
       // Close dialog and reset form
       onOpenChange(false)
       resetForm()
-    } catch (error) {
+    } catch {
       // Error handling is done in the mutation hooks
-      console.error('Error saving supplier:', error)
     }
   }
 

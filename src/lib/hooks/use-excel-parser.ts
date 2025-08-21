@@ -38,11 +38,11 @@ export function useExcelParser(): UseExcelParserReturn {
       
       // Test if worker is responsive
       workerRef.current.addEventListener('error', (error) => {
-        console.error('Worker error:', error)
+        // Worker error
       })
       
       workerRef.current.addEventListener('messageerror', (error) => {
-        console.error('Worker message error:', error)
+        // Worker message error
       })
       
     } catch {

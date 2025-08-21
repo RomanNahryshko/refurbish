@@ -32,6 +32,8 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
     '/',
     '/qc',
     '/qc/*',
+    '/devices',
+    '/devices/*',
     '/change-password'
   ],
   
@@ -56,7 +58,6 @@ export const OPS_MANAGER_BLOCKED_ROUTES = [
 
 // Routes that are blocked for qc_controller (should redirect to /)
 export const QC_CONTROLLER_BLOCKED_ROUTES = [
-  '/devices',
   '/repair-jobs',
   '/inventory',
   '/suppliers',

@@ -61,15 +61,13 @@ export async function middleware(request: NextRequest) {
             const changePasswordUrl = new URL('/change-password', request.url)
             return NextResponse.redirect(changePasswordUrl)
           }
-        } catch (error) {
-          console.error('Error checking password status in middleware:', error)
+        } catch {
           // Continue without redirecting if there's an error
         }
       }
       
       return supabaseResponse
-    } catch (error) {
-      console.error('Auth middleware error:', error)
+    } catch {
       return NextResponse.next()
     }
   }

@@ -34,7 +34,6 @@ export function RouteGuard({ children }: RouteGuardProps) {
     // Check if user has access to current route
     if (!hasRouteAccess(userRole, currentPath)) {
       const redirectPath = getRedirectPath(userRole, currentPath)
-      console.log(`Client-side redirect: ${userRole} denied access to ${currentPath}, redirecting to ${redirectPath}`)
       router.replace(redirectPath)
     }
   }, [user, profile, userLoading, profileLoading, router])

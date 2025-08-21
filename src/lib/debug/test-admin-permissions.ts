@@ -6,8 +6,6 @@
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 export async function testAdminPermissions() {
-  console.log('🔍 Testing admin client permissions...')
-  
   const adminClient = createSupabaseAdminClient()
   
   if (!adminClient) {
@@ -20,7 +18,6 @@ export async function testAdminPermissions() {
 
   try {
     // Test 1: Check if we can read from user_profiles
-    console.log('📖 Testing read access to user_profiles...')
     const { data: users, error: readError } = await adminClient
       .from('user_profiles')
       .select('id, full_name, role')
@@ -35,10 +32,9 @@ export async function testAdminPermissions() {
       }
     }
 
-    console.log('✅ Read access OK. Users found:', users?.length || 0)
+
 
     // Test 2: Check if we can write to user_profiles (dry run)
-    console.log('✍️ Testing write access to user_profiles (dry run)...')
     
     // Try to insert a test record (we'll roll it back)
     const testProfile = {
@@ -70,10 +66,9 @@ export async function testAdminPermissions() {
       .delete()
       .eq('id', testProfile.id)
 
-    console.log('✅ Write access OK')
+
 
     // Test 3: Check auth.users access
-    console.log('👤 Testing auth.users access...')
     const { data: authUsers, error: authError } = await adminClient.auth.admin.listUsers()
 
     if (authError) {
@@ -85,7 +80,7 @@ export async function testAdminPermissions() {
       }
     }
 
-    console.log('✅ Auth access OK. Auth users found:', authUsers.users?.length || 0)
+
 
     return {
       success: true,

@@ -34,12 +34,7 @@ export function useSupabasePerformance() {
 
     // Log performance metrics every 30 seconds
     const interval = setInterval(() => {
-      if (performanceMetrics.queriesPerformed > 0) {
-        console.log('🚀 Supabase Performance Metrics:', {
-          ...performanceMetrics,
-          clientInstanceOptimized: performanceMetrics.clientCreationCount <= 1
-        })
-      }
+      // Performance monitoring disabled
     }, 30000)
 
     return () => clearInterval(interval)
@@ -75,9 +70,6 @@ export function useSupabasePerformance() {
  */
 export function logClientCreation() {
   performanceMetrics.clientCreationCount++
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`📊 Supabase client created (count: ${performanceMetrics.clientCreationCount})`)
-  }
 }
 
 /**

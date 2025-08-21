@@ -53,9 +53,6 @@ export async function getAll(filters?: SuppliersFilters): Promise<Supplier[]> {
   
   const url = `/api/suppliers${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
   
-  // Debug logging
-  console.log('getAll suppliers URL:', url, 'filters:', filters)
-  
   const response = await fetch(url)
   if (!response.ok) {
     const error = await response.json()
@@ -63,7 +60,6 @@ export async function getAll(filters?: SuppliersFilters): Promise<Supplier[]> {
   }
   
   const data = await response.json()
-  console.log('getAll suppliers response:', data)
   
   return data
 }
@@ -74,9 +70,6 @@ export async function getAll(filters?: SuppliersFilters): Promise<Supplier[]> {
 export async function getPartsSuppliers(): Promise<Supplier[]> {
   // Fetch suppliers that provide parts or both
   const partsSuppliers = await getAll()
-  
-  // Debug logging
-  console.log('getPartsSuppliers result:', { partsSuppliers })
   
   return partsSuppliers
 }

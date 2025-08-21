@@ -75,7 +75,6 @@ export async function checkPermission(
                           authUser.email?.endsWith('@supabase.io')
       
       if (isSuperAdmin) {
-        console.log('Superadmin access granted for:', authUser.email)
         return true
       }
     }
@@ -92,7 +91,6 @@ export async function checkPermission(
       // If no profile exists but user is authenticated, check if they're a superadmin
       if (authUser && authUser.id === userId) {
         // Already checked above, so this user has no permissions
-        console.log('No user profile found for:', authUser.email)
       }
       return false
     }

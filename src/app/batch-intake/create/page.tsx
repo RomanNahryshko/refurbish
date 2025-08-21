@@ -58,8 +58,7 @@ export default function CreateBatchPage() {
 
       toast.success('Batch created successfully!')
       router.push('/batch-intake')
-    } catch (error) {
-      console.error('Error creating batch:', error)
+    } catch {
       toast.error('Failed to create batch')
     } finally {
       setIsLoading(false)

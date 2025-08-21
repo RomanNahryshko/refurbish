@@ -73,9 +73,8 @@ export function CreateUserForm({ currentUserId, onSuccess }: CreateUserFormProps
         onSuccess()
       }
       // No automatic redirect - let admin copy password and navigate manually
-    } catch (error) {
+    } catch {
       // Error is handled by the mutation hook's toast
-      console.error('Create user error:', error)
     }
   }
 

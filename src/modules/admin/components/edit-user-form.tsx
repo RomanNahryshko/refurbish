@@ -92,9 +92,8 @@ export function EditUserForm({ userId, currentUserId }: EditUserFormProps) {
       // Refresh user data
       refetch()
       setHasChanges(false)
-    } catch (error) {
+    } catch {
       // Error is handled by the mutation hook's toast
-      console.error('Update user error:', error)
     }
   }
 

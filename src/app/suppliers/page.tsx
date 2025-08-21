@@ -52,9 +52,8 @@ export default function SuppliersPage() {
       try {
         await deleteSupplierMutation.mutateAsync(id)
         // The mutation hook will automatically update the cache
-      } catch (error) {
+      } catch {
         // Error is handled by the mutation hook's toast
-        console.error('Delete error:', error)
       }
     }
   }

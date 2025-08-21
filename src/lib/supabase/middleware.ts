@@ -56,17 +56,14 @@ export async function updateSession(request: NextRequest) {
 
   // Skip middleware for home page and static assets to prevent redirect loops
   const pathname = request.nextUrl.pathname
-  console.log('🔍 Middleware processing:', pathname)
   
   if (pathname === '/') {
-    console.log('🏠 Skipping middleware for home page')
     return NextResponse.next({
       request,
     })
   }
   
   if (pathname.startsWith('/_next') || pathname.startsWith('/favicon') || pathname.includes('.') || pathname.startsWith('/api/')) {
-    console.log('🚫 Skipping middleware for:', pathname)
     return NextResponse.next({
       request,
     })
@@ -181,7 +178,6 @@ export async function updateSession(request: NextRequest) {
         // Check if user has access to this route
         if (!hasRouteAccess(userRole, request.nextUrl.pathname)) {
           const redirectPath = getRedirectPath(userRole, request.nextUrl.pathname)
-          console.log(`Access denied for ${userRole} to ${request.nextUrl.pathname}, redirecting to ${redirectPath}`)
           return NextResponse.redirect(new URL(redirectPath, request.url))
         }
       }

@@ -8,7 +8,6 @@ let adminClient: ReturnType<typeof createClient> | null = null
 
 export function createSupabaseAdminClient() {
   if (!supabaseUrl || !supabaseServiceKey) {
-    console.warn('⚠️  Admin client not configured. Set SUPABASE_SERVICE_ROLE_KEY environment variable.')
     return null
   }
 

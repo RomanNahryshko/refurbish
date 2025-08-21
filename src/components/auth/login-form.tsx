@@ -61,8 +61,7 @@ export function LoginForm() {
             // Fallback to dashboard if status check fails
             window.location.href = '/dashboard'
           }
-        } catch (error) {
-          console.error('Error checking password status:', error)
+        } catch {
           // Fallback to dashboard if status check fails
           window.location.href = '/dashboard'
         }

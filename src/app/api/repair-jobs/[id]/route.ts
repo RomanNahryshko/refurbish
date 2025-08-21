@@ -8,7 +8,6 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const resolvedParams = await params
-  console.log('🔧 PATCH /api/repair-jobs/[id] called with params:', resolvedParams)
   
   // Check permission
   const permissionCheck = await requirePermission('repair_jobs', 'update')
@@ -24,8 +23,6 @@ export async function PATCH(
 
     const { id } = resolvedParams
     const updateData = await request.json()
-    
-    console.log('🔧 Update data received:', updateData)
 
     // Validate the repair job exists
     const { data: existingRepairJob, error: fetchError } = await supabase
@@ -52,13 +49,10 @@ export async function PATCH(
       .single()
 
     if (updateError) {
-      console.error('Error updating repair job:', updateError)
       return NextResponse.json({ 
         error: `Failed to update repair job: ${updateError.message}` 
       }, { status: 500 })
     }
-    
-    console.log('🔧 Repair job updated successfully:', updatedRepairJob)
 
     // Handle device status changes based on repair job status
     if (updateData.status === 'in_progress') {
@@ -71,7 +65,6 @@ export async function PATCH(
         .eq('id', existingRepairJob.device_id)
 
       if (deviceUpdateError) {
-        console.error('Error updating device status to in_repair:', deviceUpdateError)
         // Don't fail the entire request if device update fails
       }
 
@@ -87,7 +80,6 @@ export async function PATCH(
         })
 
       if (historyError) {
-        console.error('Error recording device status history:', historyError)
         // Don't fail the entire request if history recording fails
       }
     } else if (updateData.status === 'pending') {
@@ -101,7 +93,6 @@ export async function PATCH(
         .eq('id', existingRepairJob.device_id)
 
       if (deviceUpdateError) {
-        console.error('Error updating device status to awaiting_repair:', deviceUpdateError)
         // Don't fail the entire request if device update fails
       }
 
@@ -117,19 +108,16 @@ export async function PATCH(
         })
 
       if (historyError) {
-        console.error('Error recording device status history:', historyError)
         // Don't fail the entire request if history recording fails
       }
     }
 
-    console.log('🔧 Returning successful response with data:', updatedRepairJob)
     return NextResponse.json({ 
       data: updatedRepairJob,
       message: 'Repair job updated successfully' 
     })
 
-  } catch (error) {
-    console.error('Error in repair job PATCH:', error)
+  } catch {
     return NextResponse.json({ 
       error: 'Internal server error' 
     }, { status: 500 })

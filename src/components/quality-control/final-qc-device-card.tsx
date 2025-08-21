@@ -211,7 +211,7 @@ export function FinalQCDeviceCard({
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <Calendar className="h-3 w-3" />
-                    {new Date(repair.completed_at || repair.created_at).toLocaleDateString()}
+                    {new Date(repair.completed_at || repair.created_at).toLocaleString()}
                   </div>
                 </div>
               ))

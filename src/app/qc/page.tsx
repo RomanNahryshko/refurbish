@@ -16,9 +16,6 @@ import { useDevicesForFinalQC, useDevices } from '@/lib/hooks/use-devices';
 import { useBatches } from '@/lib/hooks/use-batches';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { useQueryClient } from '@tanstack/react-query';
-import { testSupabaseClientOptimization } from '@/lib/debug/test-supabase-client';
-import { performAPIHealthCheck } from '@/lib/debug/api-health-check';
-import { testImports } from '@/lib/debug/test-imports';
 
 export default function QCPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -52,22 +49,7 @@ export default function QCPage() {
 
   
   // Refetch data every time the component mounts (page visit)
-  useEffect(() => {
-    // Test Supabase client optimization in development
-    if (process.env.NODE_ENV === 'development') {
-      const testResult = testSupabaseClientOptimization()
-      console.log('Supabase optimization test result:', testResult)
-      
-      // Test API imports
-      const importTestResult = testImports()
-      console.log('API imports test result:', importTestResult)
-      
-      // Perform API health check
-      setTimeout(() => {
-        performAPIHealthCheck()
-      }, 1000) // Delay to allow client initialization
-    }
-    
+  useEffect(() => { 
     // Force refetch when component mounts to get fresh data
     const refetchData = async () => {
       setIsRefreshing(true)
@@ -122,15 +104,6 @@ export default function QCPage() {
                 <p className="text-sm text-red-800 font-semibold">
                   ❌ Database connection error. Please check your connection and try again.
                 </p>
-                {process.env.NODE_ENV === 'development' && (
-                  <details className="mt-2 text-xs text-red-700">
-                    <summary className="cursor-pointer">Technical details (development only)</summary>
-                    <div className="mt-2 p-2 bg-red-100 rounded">
-                      {devicesError && <div>Devices error: {String(devicesError)}</div>}
-                      {batchesError && <div>Batches error: {String(batchesError)}</div>}
-                    </div>
-                  </details>
-                )}
               </div>
             )}
           </div>

@@ -164,7 +164,6 @@ export default function FinalQCPage() {
               const mappedRepairType = repairTypeMap[repairType]
               
               if (!mappedRepairType) {
-                console.error(`Invalid repair type: ${repairType}`)
                 continue
               }
               
@@ -181,8 +180,7 @@ export default function FinalQCPage() {
             }
             
             toast.success(`Created ${selectedRepairs.length} repair job(s) for device ${device.internal_id}`)
-          } catch (error) {
-            console.error('Failed to create repair jobs:', error)
+          } catch {
             toast.error('QC completed but failed to create repair jobs. Please check repair queue.')
           }
         }
@@ -199,8 +197,7 @@ export default function FinalQCPage() {
       }
       
       router.push('/qc')
-    } catch (error) {
-      console.error('Error completing final QC:', error)
+    } catch {
       toast.error('Failed to complete final QC. Please try again.')
     }
   }

@@ -276,8 +276,6 @@ export const inventoryApi = {
           throw new Error(`Failed to record usage for part ${part.spare_part_id}: ${error.message}`)
         }
       }
-      
-      console.log(`Recorded usage of ${partsUsed.length} parts for repair ${repairId}`)
     } catch (error) {
       console.error('Error in recordPartsUsage:', error)
       throw error

@@ -17,8 +17,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type')
     const search = searchParams.get('search')
     
-    // Debug logging
-    console.log('Suppliers API request params:', { type, search, url: request.url })
+
 
     // Build query
     let query = supabase
@@ -27,12 +26,10 @@ export async function GET(request: NextRequest) {
       .is('deleted_at', null)
       .order('name')
     
-    // Debug logging
-    console.log('Base query built, applying filters...')
+
 
     // Apply filters
     if (type) {
-      console.log('Applying type filter:', type)
       if (type === 'devices') {
         query = query.or('supplier_type.eq.devices,supplier_type.eq.both')
       } else if (type === 'parts') {
@@ -56,8 +53,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Debug logging
-    console.log('Suppliers API response:', { data, count: data?.length, filters: { type, search } })
+
 
     return NextResponse.json(data)
   } catch (error) {

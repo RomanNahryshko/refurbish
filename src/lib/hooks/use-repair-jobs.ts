@@ -179,7 +179,7 @@ export function useCompleteRepairJob() {
       
     },
     onError: (error, { repairJobId }) => {
-      console.error('Failed to complete repair job:', repairJobId, error)
+      // Error handled by toast
     }
   })
 }
@@ -195,11 +195,9 @@ export function useStartRepairJob() {
       repairJobId: string
       assignedTo?: string
     }) => {
-      console.log('🔧 useStartRepairJob mutationFn called with:', { repairJobId, assignedTo })
       return repairJobsApi.startRepairJob(repairJobId, assignedTo)
     },
     onSuccess: (data, { repairJobId }) => {
-      console.log('🔧 useStartRepairJob success:', data)
       // Invalidate repair jobs queries
       queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
       queryClient.invalidateQueries({ queryKey: ['repair-jobs', repairJobId] })
@@ -212,8 +210,7 @@ export function useStartRepairJob() {
       queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
     },
     onError: (error, { repairJobId }) => {
-      console.error('🔧 useStartRepairJob error:', error)
-      console.error('Failed to start repair job:', repairJobId, error)
+      // Error handled by toast
     }
   })
 }

@@ -45,7 +45,7 @@ export function StockLevelBadge({ part, showPercentage = false }: StockLevelBadg
     <Badge variant={variants[status]} className="gap-1">
       {icons[status]}
       {quantity_in_stock}
-      {minimum_stock_level && ` / ${minimum_stock_level}`}
+      {` / ${minimum_stock_level}`}
       {percentage !== null && ` (${percentage}%)`}
     </Badge>
   )

@@ -1,19 +1,17 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { LoadingSpinner } from '@/components/common/loading-spinner'
-import { StockLevelBadge } from './stock-level-badge'
-import { useAddStockMutation } from '@/modules/inventory/hooks/use-inventory'
-import { SparePart } from '@/lib/types/business-types'
-import { toast } from 'sonner'
-import { Package, TrendingUp, TrendingDown, RotateCcw } from 'lucide-react'
+'use client';
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingSpinner } from '@/components/common/loading-spinner';
+import { StockLevelBadge } from './stock-level-badge';
+import { useAddStockMutation } from '@/modules/inventory/hooks/use-inventory';
+import { SparePart } from '@/lib/types/business-types';
+import { toast } from 'sonner';
+import { Package, TrendingUp, TrendingDown, RotateCcw } from 'lucide-react';
 
 interface StockAdjustmentDialogProps {
   open: boolean
@@ -108,11 +106,6 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
       return
     }
 
-    if (formData.adjustment_type === 'add' && !formData.reference_number.trim()) {
-      toast.error('Invoice/Reference number is required when adding stock')
-      return
-    }
-
     // Note: API handles all validation including negative stock prevention
 
     setIsSubmitting(true)
@@ -130,9 +123,8 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
 
       onOpenChange(false)
       resetForm()
-    } catch (error) {
+    } catch {
       // Error is handled by the mutation hook's toast
-      console.error('Submit error:', error)
     } finally {
       setIsSubmitting(false)
     }
@@ -273,28 +265,16 @@ export function StockAdjustmentDialog({ open, onOpenChange, part }: StockAdjustm
                 {/* Reference Number (required for add) */}
                 <div className="grid gap-2">
                   <Label htmlFor="reference">
-                    {formData.adjustment_type === 'add' ? 'Invoice/Reference Number *' : 'Reference Number'}
+                    {formData.adjustment_type === 'add' ? 'Invoice/Reference Number' : 'Reference Number'}
                   </Label>
                   <Input
                     id="reference"
                     value={formData.reference_number}
                     onChange={(e) => setFormData({...formData, reference_number: e.target.value})}
                     placeholder="e.g., INV-2024-001, PO-12345"
-                    required={formData.adjustment_type === 'add'}
                   />
                 </div>
 
-                {/* Reason */}
-                <div className="grid gap-2">
-                  <Label htmlFor="reason">Reason/Notes</Label>
-                  <Textarea
-                    id="reason"
-                    value={formData.reason}
-                    onChange={(e) => setFormData({...formData, reason: e.target.value})}
-                    placeholder="Optional reason for this adjustment"
-                    rows={2}
-                  />
-                </div>
               </div>
               
               <DialogFooter>

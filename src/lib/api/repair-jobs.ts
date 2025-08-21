@@ -231,8 +231,6 @@ export const repairJobsApi = {
    * Start a repair job and update device status
    */
   async startRepairJob(id: string, assignedTo?: string) {
-    console.log('🔧 repairJobsApi.startRepairJob called with:', { id, assignedTo })
-    
     // Make HTTP request to the API endpoint
     const response = await fetch(`/api/repair-jobs/${id}`, {
       method: 'PATCH',
@@ -246,16 +244,12 @@ export const repairJobsApi = {
       }),
     })
 
-    console.log('🔧 API response status:', response.status)
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-      console.error('🔧 API error:', errorData)
       throw new Error(errorData.error || `HTTP ${response.status}`)
     }
 
     const result = await response.json()
-    console.log('🔧 API response data:', result)
     return result.data
   },
 
@@ -310,7 +304,6 @@ export const repairJobsApi = {
         .insert(partsToRecord)
 
       if (partsError) {
-        console.error('Error recording parts usage:', partsError)
         // Don't fail the entire request if parts recording fails
       }
     }

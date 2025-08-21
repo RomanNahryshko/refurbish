@@ -91,8 +91,7 @@ export default function EditBatchPage() {
 
       toast.success('Batch updated successfully!')
       router.push('/batch-intake')
-    } catch (error) {
-      console.error('Error updating batch:', error)
+    } catch {
       toast.error('Failed to update batch')
     } finally {
       setIsLoading(false)

@@ -41,7 +41,7 @@ const navigationItems: NavigationItem[] = [
     title: 'Devices',
     href: '/devices',
     description: 'Track phones by IMEI',
-    showIf: (perms) => perms.canViewDevices && !perms.isQC
+    showIf: (perms) => perms.canViewDevices
   },
   {
     title: 'Repair Jobs',

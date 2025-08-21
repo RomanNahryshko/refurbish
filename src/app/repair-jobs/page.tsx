@@ -18,7 +18,7 @@ import { RepairJob, SparePart } from '@/lib/types/business-types'
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/use-user'
-import { useProfile } from '@/lib/hooks/use-profile'
+import { useProfile } from '@/lib/hooks/use-profile-optimized'
 import { canTechnicianPerformRepair, getTechnicianRepairTypes } from '@/lib/config/permissions'
 
 // Import configs from the table component
@@ -86,20 +86,11 @@ export default function RepairJobsPage() {
   
   // Handle start repair success/error
   useEffect(() => {
-    console.log('🔧 startRepairJob state changed:', {
-      isSuccess: startRepairJob.isSuccess,
-      isError: startRepairJob.isError,
-      error: startRepairJob.error,
-      isPending: startRepairJob.isPending
-    })
-    
     if (startRepairJob.isSuccess) {
-      console.log('🔧 startRepairJob SUCCESS!')
       setStartingRepairId(null) // Clear loading state
       // The hook will automatically invalidate queries
     }
     if (startRepairJob.isError) {
-      console.error('🔧 startRepairJob ERROR:', startRepairJob.error)
       setStartingRepairId(null) // Clear loading state
       // You could show a toast notification here
     }
@@ -111,7 +102,6 @@ export default function RepairJobsPage() {
       // The hook will automatically invalidate queries
     }
     if (completeRepairJob.isError) {
-      console.error('Failed to complete repair job:', completeRepairJob.error)
       // You could show a toast notification here
     }
   }, [completeRepairJob.isSuccess, completeRepairJob.isError, completeRepairJob.error])
@@ -267,34 +257,21 @@ export default function RepairJobsPage() {
   const paginatedRepairs = sortedRepairs.slice(startIndex, endIndex)
   
   const handleStartRepair = (repair: RepairJob) => {
-    console.log('🔧 handleStartRepair called with:', repair)
-    console.log('🔧 currentUserId:', currentUserId)
-    console.log('🔧 repair.repair_type:', repair.repair_type)
-    console.log('🔧 repairTypeConfig keys:', Object.keys(repairTypeConfig))
-    
     if (!currentUserId) {
-      console.error('No current user ID found')
       return
     }
     
     // Find the transformed repair job data
     const transformedRepair = transformedRepairJobs.find(r => r.id === repair.id)
     if (!transformedRepair) {
-      console.error('❌ Transformed repair not found')
       return
     }
     
-    console.log('🔧 Found transformed repair:', transformedRepair)
-    
-    console.log('🔧 Setting confirm dialog...')
     setConfirmDialog({
       open: true,
       title: 'Start Repair',
       description: `Are you sure you want to start the ${repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.label} repair for device ${transformedRepair.device_internal_id}?`,
       action: () => {
-        console.log('🔧 🔧 🔧 CONFIRMATION DIALOG ACTION CALLED!')
-        console.log('🔧 Starting repair job with:', { repairJobId: repair.id, assignedTo: currentUserId })
-        
         try {
           // Set loading state for this specific repair job
           setStartingRepairId(repair.id)
@@ -304,17 +281,13 @@ export default function RepairJobsPage() {
             repairJobId: repair.id,
             assignedTo: currentUserId
           })
-          console.log('🔧 startRepairJob.mutate() called successfully')
-        } catch (error) {
-          console.error('🔧 Error calling startRepairJob.mutate():', error)
+        } catch {
           setStartingRepairId(null) // Clear loading state on error
         }
         
         setConfirmDialog({ open: false, title: '', description: '', action: () => {} })
-        console.log('🔧 Dialog closed')
       }
     })
-    console.log('🔧 Confirm dialog set, should be visible now')
   }
 
   const handleCompleteRepair = (repair: RepairJob) => {
@@ -426,16 +399,7 @@ export default function RepairJobsPage() {
           </div>
           
           <div className="flex items-center gap-2 flex-wrap">
-            <Select value={statusFilter} onValueChange={handleFilterChange(setStatusFilter)}>
-              <SelectTrigger className={`h-9 w-[140px] ${statusFilter !== 'all' ? 'border-blue-500 bg-blue-50' : ''}`}>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="history">History</SelectItem>
-              </SelectContent>
-            </Select>
+
 
 {/* Level filter - only show for non-technicians */}
             {profile?.role !== 'technician' && (
@@ -584,7 +548,7 @@ export default function RepairJobsPage() {
         onOpenChange={(open: boolean) => setConfirmDialog({ ...confirmDialog, open })}
         title={confirmDialog.title}
         description={confirmDialog.description}
-        confirmText="Start Repair"
+        confirmText={confirmDialog.title.includes('Cancel') ? 'Cancel Repair' : 'Start Repair'}
         onConfirm={confirmDialog.action}
       />
 
