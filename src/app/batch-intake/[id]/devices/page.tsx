@@ -7,14 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
-  ArrowLeft,
-  Search,
-  Package,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  Wrench,
-  ClipboardCheck
+    ArrowLeft,
+    Search,
+    Package,
+    AlertCircle,
+    CheckCircle,
+    Clock,
+    Wrench,
+    ClipboardCheck
 } from 'lucide-react'
 import Link from 'next/link'
 import { useBatch } from '@/lib/hooks/use-batches'
@@ -77,14 +77,12 @@ export default function BatchDevicesPage() {
     switch (status) {
       case DEVICE_STATUS.received:
         return <Package className="h-4 w-4" />
-      case DEVICE_STATUS.initial_qc:
       case DEVICE_STATUS.final_qc:
         return <ClipboardCheck className="h-4 w-4" />
       case DEVICE_STATUS.awaiting_repair:
       case DEVICE_STATUS.in_repair:
         return <Wrench className="h-4 w-4" />
       case DEVICE_STATUS.graded:
-      case DEVICE_STATUS.ready_to_ship:
         return <CheckCircle className="h-4 w-4" />
       default:
         return <Clock className="h-4 w-4" />
@@ -95,7 +93,6 @@ export default function BatchDevicesPage() {
     switch (status) {
       case DEVICE_STATUS.received:
         return 'secondary'
-      case DEVICE_STATUS.initial_qc:
       case DEVICE_STATUS.final_qc:
         return 'default'
       case DEVICE_STATUS.awaiting_repair:
@@ -103,7 +100,6 @@ export default function BatchDevicesPage() {
       case DEVICE_STATUS.in_repair:
         return 'warning'
       case DEVICE_STATUS.graded:
-      case DEVICE_STATUS.ready_to_ship:
         return 'success'
       default:
         return 'outline'
@@ -122,7 +118,7 @@ export default function BatchDevicesPage() {
     ;(batchDevices || []).forEach(device => {
       if (device.status.includes('qc')) stats.inQC++
       else if (device.status.includes('repair')) stats.inRepair++
-      else if (device.status === DEVICE_STATUS.graded || device.status === DEVICE_STATUS.ready_to_ship || device.status === DEVICE_STATUS.shipped) stats.readyToShip++
+      else if (device.status === DEVICE_STATUS.graded) stats.readyToShip++
     })
     
     return [

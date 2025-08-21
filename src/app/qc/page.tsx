@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-    ClipboardCheck,
-    Search
+  ClipboardCheck,
+  Search
 } from 'lucide-react';
 import { DeviceListTable } from '@/components/common/device-list-table';
 import { DEFAULT_ITEMS_PER_PAGE, DEVICE_STATUS } from '@/lib/constants';
@@ -144,16 +144,16 @@ export default function QCPage() {
     // Calculate inQueue from current devices
     const inQueue = transformedDevices.length
     
-    // Calculate completedToday from devices that moved to ready_to_ship today
+    // Calculate completedToday from devices that moved to graded today
     let completedToday = 0
     let totalCompleted = 0
     
     if (allDevices && Array.isArray(allDevices)) {
       const today = new Date().toDateString()
       
-      // Count devices that moved to ready_to_ship today
+      // Count devices that moved to graded today
       completedToday = allDevices.filter((device: Device) => {
-        if (device.status === DEVICE_STATUS.ready_to_ship && device.updated_at) {
+        if (device.status === DEVICE_STATUS.graded && device.updated_at) {
           const updatedDate = new Date(device.updated_at).toDateString()
           const isToday = updatedDate === today
           
@@ -164,8 +164,8 @@ export default function QCPage() {
         return false
       }).length
       
-      // Count total devices with ready_to_ship status
-      totalCompleted = allDevices.filter((device: Device) => device.status === DEVICE_STATUS.ready_to_ship).length
+      // Count total devices with graded status
+      totalCompleted = allDevices.filter((device: Device) => device.status === DEVICE_STATUS.graded).length
     }
     
 

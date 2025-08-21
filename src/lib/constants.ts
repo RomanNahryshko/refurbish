@@ -22,25 +22,19 @@ export const TECHNICIAN_LEVELS = {
 // Device status enum - matches database schema exactly
 export const DEVICE_STATUS = {
   'received': 'received',           // Just received in batch
-  'initial_qc': 'initial_qc',       // In initial quality control
   'awaiting_repair': 'awaiting_repair', // QC complete, waiting for repair
   'in_repair': 'in_repair',         // Currently being repaired
   'final_qc': 'final_qc',           // In final quality control
-  'graded': 'graded',               // QC complete and graded
-  'ready_to_ship': 'ready_to_ship', // Ready for shipping
-  'shipped': 'shipped'              // Shipped out
+  'graded': 'graded'                // QC complete and graded
 } as const
 
 // Device status labels for filter dropdowns
 export const DEVICE_STATUS_LABELS = {
   'received': 'Received',
-  'initial_qc': 'Initial QC',
   'awaiting_repair': 'Awaiting Repair',
   'in_repair': 'In Repair',
   'final_qc': 'Final QC',
-  'graded': 'Graded',
-  'ready_to_ship': 'Ready to Ship',
-  'shipped': 'Shipped'
+  'graded': 'Graded'
 } as const
 
 // Repair task types enum - matches database schema

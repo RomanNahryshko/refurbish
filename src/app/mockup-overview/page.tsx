@@ -90,7 +90,6 @@ export default function MockupOverviewPage() {
 
   const deviceStatuses = [
     { status: DEVICE_STATUS.received, description: 'Device received in batch' },
-    { status: DEVICE_STATUS.initial_qc, description: 'Undergoing initial quality control' },
     { status: DEVICE_STATUS.awaiting_repair, description: 'Waiting for repair assignment' },
     { status: DEVICE_STATUS.in_repair, description: 'Active repair in progress' },
     { status: DEVICE_STATUS.final_qc, description: 'Undergoing final quality control' },

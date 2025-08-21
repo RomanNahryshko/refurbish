@@ -11,14 +11,11 @@ import {
     ChevronDown,
     ChevronUp,
     Filter,
-    Package,
-    ClipboardCheck,
-    Clock,
+    Package, Clock,
     Wrench,
     CheckCircle,
     XCircle,
-    AlertCircle,
-    Package2
+    AlertCircle
 } from 'lucide-react';
 import { Device, Batch } from '@/lib/types/business-types';
 import { repairTypes } from '@/components/common/repair-task-selector';
@@ -32,13 +29,10 @@ interface ExtendedDevice extends Device {
 // Device status to icon/color mapping
 export const statusConfig = {
   [DEVICE_STATUS.received]: { icon: Package, color: 'bg-gray-500', label: 'Received' },
-  [DEVICE_STATUS.initial_qc]: { icon: ClipboardCheck, color: 'bg-blue-500', label: 'Initial QC' },
   [DEVICE_STATUS.awaiting_repair]: { icon: Clock, color: 'bg-yellow-500', label: 'Awaiting Repair' },
   [DEVICE_STATUS.in_repair]: { icon: Wrench, color: 'bg-orange-500', label: 'In Repair' },
   [DEVICE_STATUS.final_qc]: { icon: CheckCircle, color: 'bg-purple-500', label: 'Final QC' },
   [DEVICE_STATUS.graded]: { icon: CheckCircle, color: 'bg-green-500', label: 'Graded' },
-  [DEVICE_STATUS.ready_to_ship]: { icon: Package2, color: 'bg-indigo-500', label: 'Ready to Ship' },
-  [DEVICE_STATUS.shipped]: { icon: CheckCircle, color: 'bg-green-600', label: 'Shipped' },
   'failed': { icon: XCircle, color: 'bg-red-500', label: 'Failed' },
   'returned': { icon: AlertCircle, color: 'bg-red-600', label: 'Returned' }
 }

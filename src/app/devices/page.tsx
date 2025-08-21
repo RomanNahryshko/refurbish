@@ -7,12 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Search,
-  Eye,
-  Calendar,
-  FileText,
-  DollarSign,
-  Package
+    Search,
+    Eye,
+    Calendar,
+    FileText,
+    DollarSign,
+    Package
 } from 'lucide-react';
 import { useBatches } from '@/lib/hooks/use-batches';
 import { DeviceListTable } from '@/components/common/device-list-table';
@@ -111,10 +111,10 @@ function DevicesPageContent() {
 
   // KPI counts - use real data when available
   const totalCount = allDevices.length;
-  const readyCount = allDevices.filter(d => d.status === DEVICE_STATUS.ready_to_ship).length;
+  const readyCount = allDevices.filter(d => d.status === DEVICE_STATUS.graded).length;
   
   // Additional KPI counts for QC data
-  const repairsRequiredCount = allDevices.filter(d => d.dr_phone_data?.required_repairs && d.dr_phone_data.required_repairs.length > 0 && d.status !== DEVICE_STATUS.ready_to_ship).length;
+  const repairsRequiredCount = allDevices.filter(d => d.dr_phone_data?.required_repairs && d.dr_phone_data.required_repairs.length > 0 && d.status !== DEVICE_STATUS.graded).length;
   const gradeAssignedCount = allDevices.filter(d => d?.grade && d.grade !== DEVICE_GRADES.ungraded).length;
 
   // Loading state for devices
