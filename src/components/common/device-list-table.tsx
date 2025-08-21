@@ -5,17 +5,15 @@ import { DEVICE_STATUS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Smartphone,
-    ChevronLeft,
-    ChevronRight,
-    ChevronDown,
-    ChevronUp,
-    Filter,
-    Package, Clock,
-    Wrench,
-    CheckCircle,
-    XCircle,
-    AlertCircle
+  Smartphone,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  Package, Clock,
+  Wrench,
+  CheckCircle
 } from 'lucide-react';
 import { Device, Batch } from '@/lib/types/business-types';
 import { repairTypes } from '@/components/common/repair-task-selector';
@@ -32,9 +30,7 @@ export const statusConfig = {
   [DEVICE_STATUS.awaiting_repair]: { icon: Clock, color: 'bg-yellow-500', label: 'Awaiting Repair' },
   [DEVICE_STATUS.in_repair]: { icon: Wrench, color: 'bg-orange-500', label: 'In Repair' },
   [DEVICE_STATUS.final_qc]: { icon: CheckCircle, color: 'bg-purple-500', label: 'Final QC' },
-  [DEVICE_STATUS.graded]: { icon: CheckCircle, color: 'bg-green-500', label: 'Graded' },
-  'failed': { icon: XCircle, color: 'bg-red-500', label: 'Failed' },
-  'returned': { icon: AlertCircle, color: 'bg-red-600', label: 'Returned' }
+  [DEVICE_STATUS.graded]: { icon: CheckCircle, color: 'bg-green-500', label: 'Graded' }
 }
 
 export type DeviceTableColumn = 
@@ -168,11 +164,11 @@ export function DeviceListTable({
       
       case 'status':
         const status = statusConfig[device.status as keyof typeof statusConfig]
-        const StatusIcon = status.icon
+        const StatusIcon = status?.icon
         return (
           <Badge variant="outline" className="gap-1">
-            <StatusIcon className="h-3 w-3" />
-            {status.label}
+            {StatusIcon && <StatusIcon className="h-3 w-3" />}
+            {status?.label || device.status || 'Unknown'}
           </Badge>
         )
       

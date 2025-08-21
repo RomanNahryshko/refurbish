@@ -41,7 +41,7 @@ const navigationItems: NavigationItem[] = [
     title: 'Devices',
     href: '/devices',
     description: 'Track phones by IMEI',
-    showIf: (perms) => perms.canViewDevices && !perms.isQC && !perms.isTechnician
+    showIf: (perms) => perms.canViewDevices && !perms.isQC
   },
   {
     title: 'Repair Jobs',
@@ -59,7 +59,7 @@ const navigationItems: NavigationItem[] = [
     title: 'Inventory',
     href: '/inventory',
     description: 'Spare parts management',
-    showIf: (perms) => perms.canViewInventory && !perms.isOpsManager
+    showIf: (perms) => perms.canViewInventory && !perms.isOpsManager && !perms.isTechnician
   },
 ]
 

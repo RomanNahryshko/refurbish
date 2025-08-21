@@ -98,8 +98,9 @@ export const ROLE_PERMISSIONS: RolePermissions = {
 
   // Technicians: Level-based repair permissions
   technician: [
-    // Device access
+    // Device access - can view devices for repair work
     'devices:read',
+    'device_status_history:read',
     
     // Repair job management (only assigned jobs)
     'repair_jobs:read',
@@ -107,10 +108,9 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     
     // Parts usage tracking
     'repair_parts_used:create',
-    'repair_parts_used:read',
+    'repair_parts_used:read'
     
-    // Inventory visibility
-    'spare_parts:read'
+    // Note: No inventory access - technicians cannot view spare parts or inventory
   ]
 }
 

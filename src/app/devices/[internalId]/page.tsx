@@ -122,10 +122,10 @@ export default function DeviceJobSheetPage() {
   const StatusIcon = status.icon
 
   // Determine back link based on user role
-  // Technicians (L1) should go to repair-jobs, others can go to devices
+  // Technicians can now access both devices and repair-jobs
   // Default to repair-jobs if profile is still loading (safer for technicians)
-  const backLink = (isTechnician || !profile) ? '/repair-jobs' : '/devices'
-  const backText = (isTechnician || !profile) ? 'Back to Repair Jobs' : 'Back to Devices'
+  const backLink = (!profile) ? '/repair-jobs' : '/devices'
+  const backText = (!profile) ? 'Back to Repair Jobs' : 'Back to Devices'
 
 
 
