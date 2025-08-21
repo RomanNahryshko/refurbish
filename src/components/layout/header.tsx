@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { createSupabaseClient } from '@/lib/supabase/client'
+import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { useUser } from '@/lib/hooks/use-user'
 
@@ -24,9 +24,9 @@ export function Header() {
   const pathname = usePathname()
   const { data: user } = useUser()
   const { data: profile, isLoading: profileLoading } = useProfile(!!user)
+  const supabase = useSupabaseClient()
 
   const handleLogout = async () => {
-    const supabase = createSupabaseClient()
     if (supabase) {
       await supabase.auth.signOut()
       // Clear caches when logging out

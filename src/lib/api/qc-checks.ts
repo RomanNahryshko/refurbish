@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { QCCheck, QCTestResult, DeviceGrade } from '@/lib/types/business-types'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface CreateQCCheckData {
   device_id: string
@@ -16,13 +17,28 @@ export interface CreateQCTestResultData {
   notes?: string
 }
 
-export const qcChecksApi = {
+/**
+ * Optimized QC Checks API with singleton Supabase client
+ */
+class QCChecksAPI {
+  private client: SupabaseClient | null = null
+
+  private getClient(): SupabaseClient {
+    if (!this.client) {
+      this.client = createSupabaseClient()
+    }
+    
+    if (!this.client) {
+      throw new Error('Supabase client not initialized')
+    }
+    
+    return this.client
+  }
   /**
    * Get QC checks for a device
    */
   async getByDeviceId(deviceId: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('qc_checks')
@@ -35,14 +51,13 @@ export const qcChecksApi = {
 
     if (error) throw error
     return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
-  },
+  }
 
   /**
    * Get a single QC check by ID
    */
   async getById(id: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('qc_checks')
@@ -55,7 +70,7 @@ export const qcChecksApi = {
 
     if (error) throw error
     return data as QCCheck & { qc_test_results: QCTestResult[] }
-  },
+  }
 
   /**
    * Create a new QC check
@@ -82,14 +97,13 @@ export const qcChecksApi = {
 
     const result = await response.json()
     return result.data
-  },
+  }
 
   /**
    * Update an existing QC check
    */
   async update(id: string, qcData: Partial<CreateQCCheckData>, testResults?: CreateQCTestResultData[]) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     // Update QC check
     const { error: qcError } = await supabase
@@ -126,14 +140,13 @@ export const qcChecksApi = {
 
     // Return the updated QC check with test results
     return this.getById(id)
-  },
+  }
 
   /**
    * Delete a QC check
    */
   async delete(id: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     // Delete test results first (due to foreign key constraint)
     const { error: testError } = await supabase
@@ -151,14 +164,13 @@ export const qcChecksApi = {
 
     if (error) throw error
     return true
-  },
+  }
 
   /**
    * Get QC test results for a specific check
    */
   async getTestResults(qcCheckId: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('qc_test_results')
@@ -168,14 +180,13 @@ export const qcChecksApi = {
 
     if (error) throw error
     return data as QCTestResult[]
-  },
+  }
 
   /**
    * Add a single test result
    */
   async addTestResult(testResult: CreateQCTestResultData) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('qc_test_results')
@@ -187,3 +198,6 @@ export const qcChecksApi = {
     return data as QCTestResult
   }
 }
+
+// Export singleton instance
+export const qcChecksApi = new QCChecksAPI()

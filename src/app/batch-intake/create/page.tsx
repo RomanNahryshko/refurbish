@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { BatchForm } from '@/modules/batch-intake/components/batch-form'
 import { useCreateBatch } from '@/lib/hooks/use-batches'
-import { createSupabaseClient } from '@/lib/supabase/client'
+import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
 import { BatchFormInputData } from '@/lib/types/business-types'
 
 export default function CreateBatchPage() {
@@ -16,18 +16,18 @@ export default function CreateBatchPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const createBatch = useCreateBatch()
+  const supabase = useSupabaseClient()
 
   // Get current user ID on component mount
   useEffect(() => {
     const getCurrentUser = async () => {
-      const supabase = createSupabaseClient()
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser()
         setCurrentUserId(user?.id || null)
       }
     }
     getCurrentUser()
-  }, [])
+  }, [supabase])
 
   const handleSubmit = async (formData: BatchFormInputData) => {
     setIsLoading(true)

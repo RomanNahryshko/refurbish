@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/common/theme-provider";
 import { ToastProvider } from "@/components/common/toast-provider";
 import { QueryProvider } from "@/lib/providers/query-provider";
+import { SupabaseProvider } from "@/lib/providers/supabase-provider";
 import { ConditionalLayout } from "@/components/layout/conditional-layout";
 
 const inter = Inter({
@@ -45,10 +46,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <QueryProvider>
-            <ConditionalLayout>{children}</ConditionalLayout>
-            <ToastProvider />
-          </QueryProvider>
+          <SupabaseProvider>
+            <QueryProvider>
+              <ConditionalLayout>{children}</ConditionalLayout>
+              <ToastProvider />
+            </QueryProvider>
+          </SupabaseProvider>
         </ThemeProvider>
       </body>
     </html>

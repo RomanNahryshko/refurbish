@@ -1,5 +1,6 @@
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { Supplier } from '@/lib/types/business-types'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface CreateSupplierData {
   name: string
@@ -11,13 +12,31 @@ export interface CreateSupplierData {
   notes?: string
 }
 
-export const suppliersApi = {
+/**
+ * Optimized Suppliers API with singleton Supabase client
+ */
+class SuppliersAPI {
+  private client: SupabaseClient | null = null
+
+  /**
+   * Get or create the singleton Supabase client
+   */
+  private getClient(): SupabaseClient {
+    if (!this.client) {
+      this.client = createSupabaseClient()
+    }
+    
+    if (!this.client) {
+      throw new Error('Supabase client not initialized')
+    }
+    
+    return this.client
+  }
   /**
    * Get all suppliers
    */
   async getAll() {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('suppliers')
@@ -27,14 +46,13 @@ export const suppliersApi = {
 
     if (error) throw error
     return data as Supplier[]
-  },
+  }
 
   /**
    * Get suppliers by type
    */
   async getByType(type: 'devices' | 'parts' | 'both') {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('suppliers')
@@ -45,14 +63,13 @@ export const suppliersApi = {
 
     if (error) throw error
     return data as Supplier[]
-  },
+  }
 
   /**
    * Get a single supplier by ID
    */
   async getById(id: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('suppliers')
@@ -63,14 +80,13 @@ export const suppliersApi = {
 
     if (error) throw error
     return data as Supplier
-  },
+  }
 
   /**
    * Create a new supplier
    */
   async create(supplierData: CreateSupplierData) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('suppliers')
@@ -80,14 +96,13 @@ export const suppliersApi = {
 
     if (error) throw error
     return data as Supplier
-  },
+  }
 
   /**
    * Update an existing supplier
    */
   async update(id: string, supplierData: Partial<CreateSupplierData>) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('suppliers')
@@ -101,14 +116,13 @@ export const suppliersApi = {
 
     if (error) throw error
     return data as Supplier
-  },
+  }
 
   /**
    * Delete a supplier (soft delete)
    */
   async delete(id: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { error } = await supabase
       .from('suppliers')
@@ -119,4 +133,7 @@ export const suppliersApi = {
     return true
   }
 }
+
+// Export singleton instance
+export const suppliersApi = new SuppliersAPI()
 

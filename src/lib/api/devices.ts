@@ -1,6 +1,7 @@
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { Device, DeviceStatus, DeviceGrade, DrPhoneData } from '@/lib/types/business-types'
 import { DEVICE_STATUS } from '@/lib/constants'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface CreateDeviceData {
   batch_id: string
@@ -14,13 +15,31 @@ export interface CreateDeviceData {
   notes?: string
 }
 
-export const devicesApi = {
+/**
+ * Optimized Devices API with singleton Supabase client
+ */
+class DevicesAPI {
+  private client: SupabaseClient | null = null
+
+  /**
+   * Get or create the singleton Supabase client
+   */
+  private getClient(): SupabaseClient {
+    if (!this.client) {
+      this.client = createSupabaseClient()
+    }
+    
+    if (!this.client) {
+      throw new Error('Supabase client not initialized')
+    }
+    
+    return this.client
+  }
   /**
    * Get all devices
    */
   async getAll() {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('devices')
@@ -30,14 +49,13 @@ export const devicesApi = {
 
     if (error) throw error
     return data as Device[]
-  },
+  }
 
   /**
    * Get devices by batch ID
    */
   async getByBatchId(batchId: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('devices')
@@ -48,14 +66,13 @@ export const devicesApi = {
 
     if (error) throw error
     return data as Device[]
-  },
+  }
 
   /**
    * Get a single device by ID
    */
   async getById(id: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('devices')
@@ -66,14 +83,13 @@ export const devicesApi = {
 
     if (error) throw error
     return data as Device
-  },
+  }
 
   /**
    * Get a single device by internal ID
    */
   async getByInternalId(internalId: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('devices')
@@ -101,14 +117,13 @@ export const devicesApi = {
         notes?: string
       }
     }
-  },
+  }
 
   /**
    * Create a new device
    */
   async create(deviceData: CreateDeviceData) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     // Get current user for created_by field
     const { data: { user } } = await supabase.auth.getUser()
@@ -129,7 +144,7 @@ export const devicesApi = {
 
     if (error) throw error
     return data as Device
-  },
+  }
 
   /**
    * Create multiple devices from imported data
@@ -143,8 +158,7 @@ export const devicesApi = {
     grade?: string
     notes?: string
   }>) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     // Get current user for created_by field
     const { data: { user } } = await supabase.auth.getUser()
@@ -185,14 +199,13 @@ export const devicesApi = {
       if (qcCheckError) throw qcCheckError
     }
     return data as Device[]
-  },
+  }
 
   /**
    * Update a device
    */
   async update(id: string, deviceData: Partial<CreateDeviceData>) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('devices')
@@ -206,14 +219,13 @@ export const devicesApi = {
 
     if (error) throw error
     return data as Device
-  },
+  }
 
   /**
    * Update device status
    */
   async updateStatus(id: string, status: DeviceStatus, _notes?: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('devices')
@@ -227,14 +239,13 @@ export const devicesApi = {
 
     if (error) throw error
     return data as Device
-  },
+  }
 
   /**
    * Update device grade
    */
   async updateGrade(id: string, grade: DeviceGrade) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { data, error } = await supabase
       .from('devices')
@@ -248,14 +259,13 @@ export const devicesApi = {
 
     if (error) throw error
     return data as Device
-  },
+  }
 
   /**
    * Delete a device (soft delete)
    */
   async delete(id: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     const { error } = await supabase
       .from('devices')
@@ -264,14 +274,13 @@ export const devicesApi = {
 
     if (error) throw error
     return true
-  },
+  }
 
   /**
    * Get devices that need final QC
    */
   async getDevicesForFinalQC() {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     // Get devices that are in 'final_qc' status
     const { data, error } = await supabase
@@ -283,14 +292,13 @@ export const devicesApi = {
 
     if (error) throw error
     return data as Device[]
-  },
+  }
 
   /**
    * Get QC checks for devices
    */
   async getQCChecks(deviceIds?: string[]) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     // If no device IDs provided or empty array, return empty array instead of all QC checks
     if (!deviceIds || deviceIds.length === 0) {
@@ -309,14 +317,13 @@ export const devicesApi = {
     }
     
     return data
-  },
+  }
 
   /**
    * Get device status history
    */
   async getDeviceStatusHistory(deviceId: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+    const supabase = this.getClient()
 
     // First get the status history
     const { data: statusHistory, error: historyError } = await supabase
@@ -368,4 +375,5 @@ export const devicesApi = {
   }
 }
 
-
+// Export singleton instance
+export const devicesApi = new DevicesAPI()

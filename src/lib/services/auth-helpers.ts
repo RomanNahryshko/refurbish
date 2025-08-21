@@ -33,7 +33,7 @@ export async function requirePermission(
     return null // Superadmin has all permissions
   }
   
-  if (!await checkPermission(user.id, tableName, action)) {
+  if (!(await checkPermission(user.id, tableName, action))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   

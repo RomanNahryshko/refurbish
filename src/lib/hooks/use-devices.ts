@@ -1,11 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { devicesApi } from '@/lib/api/devices'
 import { Device, DeviceStatus, DeviceGrade, DeviceFormData } from '@/lib/types/business-types'
+
+// Dynamic import to avoid circular dependency issues
+async function getDevicesApi() {
+  const { devicesApi } = await import('@/lib/api/devices')
+  return devicesApi
+}
 
 export function useDevices() {
   return useQuery({
     queryKey: ['devices'],
-    queryFn: devicesApi.getAll,
+    queryFn: async () => {
+      const api = await getDevicesApi()
+      return api.getAll()
+    },
     staleTime: 0, // Always consider data stale - refetch on every mount
     gcTime: 5 * 60 * 1000, // 5 minutes in cache
     refetchOnMount: true, // Always refetch when component mounts
@@ -16,7 +24,10 @@ export function useDevices() {
 export function useDevice(id: string) {
   return useQuery({
     queryKey: ['devices', id],
-    queryFn: () => devicesApi.getById(id),
+    queryFn: async () => {
+      const api = await getDevicesApi()
+      return api.getById(id)
+    },
     enabled: !!id,
   })
 }
@@ -24,7 +35,10 @@ export function useDevice(id: string) {
 export function useDeviceByInternalId(internalId: string) {
   return useQuery({
     queryKey: ['devices', 'internal', internalId],
-    queryFn: () => devicesApi.getByInternalId(internalId),
+    queryFn: async () => {
+      const api = await getDevicesApi()
+      return api.getByInternalId(internalId)
+    },
     enabled: !!internalId,
   })
 }
@@ -32,7 +46,10 @@ export function useDeviceByInternalId(internalId: string) {
 export function useDevicesByBatch(batchId: string) {
   return useQuery({
     queryKey: ['devices', 'batch', batchId],
-    queryFn: () => devicesApi.getByBatchId(batchId),
+    queryFn: async () => {
+      const api = await getDevicesApi()
+      return api.getByBatchId(batchId)
+    },
     enabled: !!batchId,
     staleTime: 0, // Always consider data stale - refetch on every mount
     gcTime: 5 * 60 * 1000, // 5 minutes in cache
@@ -44,7 +61,10 @@ export function useDevicesByBatch(batchId: string) {
 export function useDevicesForFinalQC() {
   return useQuery({
     queryKey: ['devices', 'final-qc'],
-    queryFn: devicesApi.getDevicesForFinalQC,
+    queryFn: async () => {
+      const api = await getDevicesApi()
+      return api.getDevicesForFinalQC()
+    },
     staleTime: 0, // Always consider data stale - refetch on every mount
     gcTime: 5 * 60 * 1000, // 5 minutes in cache
     refetchOnMount: true, // Always refetch when component mounts
@@ -60,7 +80,10 @@ export function useQCChecks(deviceIds?: string[], options?: { enabled?: boolean 
   
   return useQuery({
     queryKey: ['qc-checks', deviceIds],
-    queryFn: () => devicesApi.getQCChecks(deviceIds),
+    queryFn: async () => {
+      const api = await getDevicesApi()
+      return api.getQCChecks(deviceIds)
+    },
     enabled: shouldEnable,
     staleTime: 5 * 60 * 1000, // 5 minutes - QC checks don't change often
     gcTime: 10 * 60 * 1000, // 10 minutes in cache
@@ -73,7 +96,10 @@ export function useCreateDevice() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: devicesApi.create,
+    mutationFn: async (deviceData: DeviceFormData) => {
+      const api = await getDevicesApi()
+      return api.create(deviceData)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
       queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
@@ -85,8 +111,10 @@ export function useCreateDevicesFromImport() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ batchId, devices }: { batchId: string; devices: DeviceFormData[] }) =>
-      devicesApi.createFromImport(batchId, devices),
+    mutationFn: async ({ batchId, devices }: { batchId: string; devices: DeviceFormData[] }) => {
+      const api = await getDevicesApi()
+      return api.createFromImport(batchId, devices)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
       queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
@@ -98,8 +126,10 @@ export function useUpdateDevice() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Device> }) =>
-      devicesApi.update(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Device> }) => {
+      const api = await getDevicesApi()
+      return api.update(id, data)
+    },
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
       queryClient.invalidateQueries({ queryKey: ['devices', id] })
@@ -112,8 +142,10 @@ export function useUpdateDeviceStatus() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: DeviceStatus }) =>
-      devicesApi.updateStatus(id, status),
+    mutationFn: async ({ id, status }: { id: string; status: DeviceStatus }) => {
+      const api = await getDevicesApi()
+      return api.updateStatus(id, status)
+    },
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
       queryClient.invalidateQueries({ queryKey: ['devices', id] })
@@ -126,8 +158,10 @@ export function useUpdateDeviceGrade() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, grade }: { id: string; grade: DeviceGrade }) =>
-      devicesApi.updateGrade(id, grade),
+    mutationFn: async ({ id, grade }: { id: string; grade: DeviceGrade }) => {
+      const api = await getDevicesApi()
+      return api.updateGrade(id, grade)
+    },
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
       queryClient.invalidateQueries({ queryKey: ['devices', id] })
@@ -140,7 +174,10 @@ export function useDeleteDevice() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: devicesApi.delete,
+    mutationFn: async (id: string) => {
+      const api = await getDevicesApi()
+      return api.delete(id)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['devices'] })
     },
@@ -150,7 +187,10 @@ export function useDeleteDevice() {
 export function useDeviceStatusHistory(deviceId: string) {
   return useQuery({
     queryKey: ['device-status-history', deviceId],
-    queryFn: () => devicesApi.getDeviceStatusHistory(deviceId),
+    queryFn: async () => {
+      const api = await getDevicesApi()
+      return api.getDeviceStatusHistory(deviceId)
+    },
     enabled: !!deviceId,
     staleTime: 0, // Always consider data stale - refetch on every mount
     gcTime: 5 * 60 * 1000, // 5 minutes in cache

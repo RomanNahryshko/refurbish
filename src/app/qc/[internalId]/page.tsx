@@ -4,8 +4,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
-  ArrowLeft,
-  ClipboardCheck
+    ArrowLeft,
+    ClipboardCheck
 } from 'lucide-react';
 import { useDeviceByInternalId } from '@/lib/hooks/use-devices';
 import { useBatches } from '@/lib/hooks/use-batches';
@@ -15,13 +15,14 @@ import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
 import { toast } from 'sonner';
 import { FinalQCDeviceCard } from '@/components/quality-control/final-qc-device-card';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
-import { createSupabaseClient } from '@/lib/supabase/client';
+import { useSupabaseClient } from '@/lib/hooks/use-supabase-client';
 import { RepairType } from '@/lib/types/business-types';
 
 export default function FinalQCPage() {
   const params = useParams()
   const router = useRouter()
   const internalId = params.internalId as string
+  const supabase = useSupabaseClient()
   
   // State for QC form - must be called before any early returns
   const [qcNotes, setQcNotes] = useState<string>('')
@@ -122,7 +123,6 @@ export default function FinalQCPage() {
     
     try {
       // Create QC check record in database
-      const supabase = createSupabaseClient()
       if (supabase) {
         // Get current user
         const { data: { user } } = await supabase.auth.getUser()
