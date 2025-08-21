@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { requirePermission } from '@/lib/services/auth-helpers'
 
 export async function POST(request: NextRequest) {
@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   if (permissionCheck) return permissionCheck
 
   try {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
   if (permissionCheck) return permissionCheck
 
   try {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     const { searchParams } = new URL(request.url)
     const repairJobId = searchParams.get('repair_job_id')
     const sparePartId = searchParams.get('spare_part_id')

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { SparePart } from '@/lib/types/business-types'
 
 export interface CreateSparePartData {
@@ -33,7 +33,7 @@ export const inventoryApi = {
    * Get next available SKU number
    */
   async getNextSku(): Promise<string> {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -62,7 +62,7 @@ export const inventoryApi = {
    * Get all spare parts with filters
    */
   async getAllParts(filters?: PartsFilters) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     let query = supabase
@@ -102,7 +102,7 @@ export const inventoryApi = {
    * Get single spare part by ID
    */
   async getPartById(id: string) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -123,7 +123,7 @@ export const inventoryApi = {
    * Get parts with low stock
    */
   async getLowStockParts() {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -144,7 +144,7 @@ export const inventoryApi = {
    * Create a new spare part
    */
   async createPart(partData: CreateSparePartData) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // Generate next SKU
@@ -171,7 +171,7 @@ export const inventoryApi = {
    * Update spare part details
    */
   async updatePart(id: string, partData: UpdateSparePartData) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -193,7 +193,7 @@ export const inventoryApi = {
    * Soft delete spare part
    */
   async deletePart(id: string) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -211,7 +211,7 @@ export const inventoryApi = {
    * Check if SKU is unique
    */
   async isSkuUnique(sku: string, excludeId?: string): Promise<boolean> {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     let query = supabase
@@ -256,7 +256,7 @@ export const inventoryApi = {
    * This will trigger the DB trigger to deduct stock automatically
    */
   async recordPartsUsage(repairId: string, partsUsed: Array<{ spare_part_id: string; quantity_used: number; notes?: string }>): Promise<void> {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
     
     try {

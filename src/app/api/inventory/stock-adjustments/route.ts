@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stockAdjustmentsApi } from '@/lib/api/stock-adjustments'
 import { requirePermission } from '@/lib/services/auth-helpers'
-import { createClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 // POST /api/inventory/stock-adjustments - Create stock adjustment (ops_manager/admin only)
 export async function POST(request: NextRequest) {
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if spare part exists
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) {
       return NextResponse.json(
         { error: 'Database connection failed' },

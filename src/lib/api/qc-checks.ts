@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { createSupabaseClient } from '@/lib/supabase/client'
 import { QCCheck, QCTestResult, DeviceGrade } from '@/lib/types/business-types'
 
 export interface CreateQCCheckData {
@@ -21,7 +21,7 @@ export const qcChecksApi = {
    * Get QC checks for a device
    */
   async getByDeviceId(deviceId: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -41,7 +41,7 @@ export const qcChecksApi = {
    * Get a single QC check by ID
    */
   async getById(id: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -88,7 +88,7 @@ export const qcChecksApi = {
    * Update an existing QC check
    */
   async update(id: string, qcData: Partial<CreateQCCheckData>, testResults?: CreateQCTestResultData[]) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // Update QC check
@@ -132,7 +132,7 @@ export const qcChecksApi = {
    * Delete a QC check
    */
   async delete(id: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // Delete test results first (due to foreign key constraint)
@@ -157,7 +157,7 @@ export const qcChecksApi = {
    * Get QC test results for a specific check
    */
   async getTestResults(qcCheckId: string) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase
@@ -174,7 +174,7 @@ export const qcChecksApi = {
    * Add a single test result
    */
   async addTestResult(testResult: CreateQCTestResultData) {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data, error } = await supabase

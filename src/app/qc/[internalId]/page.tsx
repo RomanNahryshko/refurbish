@@ -15,7 +15,7 @@ import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
 import { toast } from 'sonner';
 import { FinalQCDeviceCard } from '@/components/quality-control/final-qc-device-card';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
-import { createClient } from '@/lib/supabase/client';
+import { createSupabaseClient } from '@/lib/supabase/client';
 import { RepairType } from '@/lib/types/business-types';
 
 export default function FinalQCPage() {
@@ -122,7 +122,7 @@ export default function FinalQCPage() {
     
     try {
       // Create QC check record in database
-      const supabase = createClient()
+      const supabase = createSupabaseClient()
       if (supabase) {
         // Get current user
         const { data: { user } } = await supabase.auth.getUser()

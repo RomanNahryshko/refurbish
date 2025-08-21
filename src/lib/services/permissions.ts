@@ -3,7 +3,7 @@
  * Supports both database permissions and configuration-based permissions
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getRolePermissions } from '@/lib/config/permissions';
 import { type PermissionString, type UserRole } from '@/lib/types/business-types';
 
@@ -25,7 +25,7 @@ async function getCachedUserRole(userId: string): Promise<string | null> {
   
   // Fetch from database
   try {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) return null
     
     const { data: userProfile, error } = await supabase
@@ -58,7 +58,7 @@ export async function checkPermission(
   action: 'create' | 'read' | 'update' | 'delete'
 ): Promise<boolean> {
   try {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     
     if (!supabase) {
       console.error('Supabase client not available in checkPermission')
@@ -70,7 +70,7 @@ export async function checkPermission(
     
     // Check if this is a Supabase superadmin
     if (authUser && authUser.id === userId) {
-      const isSuperAdmin = authUser.app_metadata?.role === 'service_role' || 
+      const isSuperAdmin = authUser.app_metadata?.role === 'service_role' || // TODO: use enum
                           authUser.user_metadata?.role === 'superadmin' ||
                           authUser.email?.endsWith('@supabase.io')
       
@@ -144,7 +144,7 @@ export async function checkPermission(
  */
 export async function getUserPermissions(userId: string): Promise<PermissionString[]> {
   try {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     
     // Get user's role from cache or database
     const userRole = await getCachedUserRole(userId)

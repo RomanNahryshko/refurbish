@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { createSupabaseClient } from '@/lib/supabase/client'
 
 async function getCurrentUser() {
-  const supabase = createClient()
+  const supabase = createSupabaseClient()
   if (!supabase) return null
   
   const { data: { user } } = await supabase.auth.getUser()

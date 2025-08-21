@@ -9,7 +9,7 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 // Create a Supabase client for use in Server Components
 // Uses service role key for full database access (since we don't have RLS)
-export async function createClient() {
+export async function createSupabaseServerClient() {
   if (!hasValidSupabaseConfig) {
     // Return a mock client that won't crash the app
     console.warn('Supabase server client not configured properly')

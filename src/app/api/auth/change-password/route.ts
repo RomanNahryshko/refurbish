@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { clearUserProfileCache } from '@/lib/supabase/middleware'
 import { getRedirectPath } from '@/lib/config/route-permissions'
 import { UserRole } from '@/lib/types/business-types'
@@ -11,7 +11,7 @@ interface ChangePasswordRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     
     if (!supabase) {
       return NextResponse.json(

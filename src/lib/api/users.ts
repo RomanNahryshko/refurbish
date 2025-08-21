@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient, generateTemporaryPassword } from '@/lib/supabase/admin'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseAdminClient, generateTemporaryPassword } from '@/lib/supabase/admin'
 import { UserRole, TechnicianLevel, UserAccountStatus } from '@/lib/types/business-types'
 
 // Types for user management - matches database schema exactly
@@ -30,7 +30,7 @@ export const usersApi = {
    * Requires ops_manager role
    */
   async getAll(filters?: UserFilters) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
 
     // Get user profiles
     let query = supabase
@@ -75,7 +75,7 @@ export const usersApi = {
     }
 
     // Try to get user emails if admin client is available
-    const adminClient = createAdminClient()
+    const adminClient = createSupabaseAdminClient()
     let authUsers = null
     
     if (adminClient) {
@@ -125,7 +125,7 @@ export const usersApi = {
    * Requires ops_manager role
    */
   async getById(userId: string) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
 
     // Get user profile
     const { data: profile, error: profileError } = await supabase
@@ -152,7 +152,7 @@ export const usersApi = {
     }
 
     // Try to get auth user data if admin client is available
-    const adminClient = createAdminClient()
+    const adminClient = createSupabaseAdminClient()
     let authUser = null
     
     if (adminClient) {
@@ -180,7 +180,7 @@ export const usersApi = {
    * Requires service role key - admin operation
    */
   async create(userData: CreateUserData, performedBy: string) {
-    const adminClient = createAdminClient()
+    const adminClient = createSupabaseAdminClient()
     if (!adminClient) {
       throw new Error('Admin client not configured. Set SUPABASE_SERVICE_ROLE_KEY environment variable.')
     }
@@ -266,7 +266,7 @@ export const usersApi = {
    * Requires ops_manager role
    */
   async update(userId: string, userData: UpdateUserData, _performedBy: string) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     // Prepare update data with technician_level constraint handling
@@ -306,7 +306,7 @@ export const usersApi = {
    * Requires ops_manager role
    */
   async updateStatus(userId: string, status: UserAccountStatus, _performedBy: string) {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     if (!supabase) throw new Error('Supabase client not initialized')
 
     const { data: statusData, error } = await supabase
@@ -331,7 +331,7 @@ export const usersApi = {
    * Requires service role key
    */
   async resetPassword(userId: string, _email: string, _performedBy: string) {
-    const adminClient = createAdminClient()
+    const adminClient = createSupabaseAdminClient()
     if (!adminClient) {
       throw new Error('Admin client not configured. Set SUPABASE_SERVICE_ROLE_KEY environment variable.')
     }

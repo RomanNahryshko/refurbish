@@ -79,7 +79,7 @@ export default function ImportDrPhonePage() {
 
   // Helper function to get current user ID - should be moved to a hook
   const getCurrentUserId = async (): Promise<string> => {
-    const { createClient } = await import('@/lib/supabase/client')
+    const { createSupabaseClient: createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
     if (supabase) {
       const { data: { user } } = await supabase.auth.getUser()

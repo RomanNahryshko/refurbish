@@ -1,16 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthorizedClient } from '@/lib/services/auth-helpers'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { checkPermission } from '@/lib/services/permissions'
 
 // GET /api/suppliers - Get all suppliers
 export async function GET(request: NextRequest) {
   try {
-    // Complete auth and permission check with database connection
-    const authResult = await getAuthorizedClient('suppliers', 'read')
-    if ('error' in authResult) {
-      return authResult.error
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      )
     }
-    
-    const { client: supabase } = authResult
+
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Check permission
+    const hasPermission = await checkPermission(user.id, 'suppliers', 'read')
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
 
     // Get URL parameters for filtering
     const { searchParams } = new URL(request.url)
@@ -72,13 +91,31 @@ export async function GET(request: NextRequest) {
 // POST /api/suppliers - Create a new supplier
 export async function POST(request: NextRequest) {
   try {
-    // Complete auth and permission check with database connection
-    const authResult = await getAuthorizedClient('suppliers', 'create')
-    if ('error' in authResult) {
-      return authResult.error
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      )
     }
-    
-    const { client: supabase, user } = authResult
+
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Check permission
+    const hasPermission = await checkPermission(user.id, 'suppliers', 'create')
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
 
     // Parse request body
     const body = await request.json()

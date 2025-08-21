@@ -7,7 +7,7 @@ import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '../supabas
 let browserClient: ReturnType<typeof createBrowserClient> | null = null
 
 // Create a Supabase client for use in the browser
-export function createClient() {
+export function createSupabaseClient() {
   if (!hasValidSupabaseConfig) {
     // Return a mock client that won't crash the app
     console.warn('Supabase client not configured properly')

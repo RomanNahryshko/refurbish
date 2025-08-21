@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DEVICE_STATUS } from '@/lib/constants'
-import { createClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { requirePermission } from '@/lib/services/auth-helpers'
 
 export async function POST(request: NextRequest) {
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   if (permissionCheck) return permissionCheck
 
   try {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
   if (permissionCheck) return permissionCheck
 
   try {
-    const supabase = await createClient()
+    const supabase = await createSupabaseServerClient()
     const { searchParams } = new URL(request.url)
     const deviceId = searchParams.get('device_id')
     const technicianId = searchParams.get('technician_id')
