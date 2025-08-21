@@ -51,7 +51,7 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     'user_profiles:update'
   ],
 
-  // Operations Manager: Batch intake, initial QC, repair job creation (ОГРАНИЧЕННЫЙ ДОСТУП)
+  // Operations Manager: Batch intake, initial QC, repair job creation
   ops_manager: [
     // Batch management
     'batches:create',
@@ -69,18 +69,18 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     'repair_jobs:read',
     'repair_jobs:update',
     
-    // Initial QC только (НЕ final QC)
-    'qc_checks:create', // Может создавать initial QC checks в batch-intake
-    'qc_checks:read',   // Может читать QC results
+    // Initial QC only (not final QC)
+    'qc_checks:create', // Can create initial QC checks in batch-intake
+    'qc_checks:read',   // Can read QC results
     'qc_test_results:read'
     
-    // УДАЛЕНО: suppliers, spare_parts, stock_adjustments - больше не доступны ops_manager
-    // ВАЖНО: НЕТ доступа к /qc странице - только initial QC в batch-intake
+    // Note: suppliers, spare_parts, stock_adjustments not available to ops_manager
+    // Important: No access to /qc page - only initial QC in batch-intake
   ],
 
-  // Quality Control: Post-repair QC, grading decisions ТОЛЬКО
+  // Quality Control: Post-repair QC, grading decisions only
   qc_controller: [
-    // QC operations ТОЛЬКО - НЕ управляет устройствами напрямую
+    // QC operations only - does not manage devices directly
     'qc_checks:create',
     'qc_checks:read',
     'qc_checks:update',
@@ -88,12 +88,12 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     'qc_test_results:read',
     'qc_test_results:update',
     
-    // Минимальные права для обновления grade через QC API
-    'devices:update' // ТОЛЬКО для записи grade через QC process
+    // Minimal rights to update grade through QC API
+    'devices:update' // Only for writing grade through QC process
     
-    // УБРАНО: devices:read, device_status_history:read - доступ только через QC страницу
-    // УБРАНО: repair_jobs:read - НЕ управляет ремонтами
-    // QC Controller работает ТОЛЬКО с QC страницей для final grading
+    // Note: devices:read, device_status_history:read - access only through QC page
+    // Note: repair_jobs:read - does not manage repairs
+    // QC Controller works only with QC page for final grading
   ],
 
   // Technicians: Level-based repair permissions

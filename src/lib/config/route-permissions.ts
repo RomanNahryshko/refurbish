@@ -18,9 +18,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
   ],
   
   ops_manager: [
-    // ОГРАНИЧЕННЫЙ доступ только к указанным разделам
     '/',
-    '/dashboard',
     '/batch-intake',
     '/batch-intake/*',
     '/devices',
@@ -28,27 +26,20 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
     '/repair-jobs',
     '/repair-jobs/*',
     '/change-password'
-    // УБРАНО: '/qc', '/qc/*' - ops_manager делает только initial QC в batch-intake
   ],
   
   qc_controller: [
     '/',
-    '/dashboard',
     '/qc',
     '/qc/*',
     '/change-password'
-    // УБРАНО: '/devices', '/devices/*' - QC не управляет устройствами напрямую
-    // УБРАНО: '/repair-jobs' - QC не управляет ремонтами, только проверяет результат
   ],
   
   technician: [
     '/',
-    '/devices',
-    '/devices/*',
     '/repair-jobs',
     '/repair-jobs/*',
     '/change-password'
-    // УБРАНО: '/dashboard' - техники должны работать с устройствами и ремонтами, не с dashboard
   ]
 }
 
@@ -58,7 +49,7 @@ export const OPS_MANAGER_BLOCKED_ROUTES = [
   '/suppliers',
   '/admin',
   '/mockup-overview',
-  '/qc' // ДОБАВЛЕНО: Quality Control страница заблокирована для ops_manager
+  '/qc' 
 ]
 
 // Routes that are blocked for qc_controller (should redirect to /)
@@ -74,7 +65,7 @@ export const QC_CONTROLLER_BLOCKED_ROUTES = [
 
 // Routes that are blocked for technician (should redirect to /)
 export const TECHNICIAN_BLOCKED_ROUTES = [
-  '/dashboard',
+  '/devices', 
   '/inventory',
   '/suppliers',
   '/admin',
@@ -147,7 +138,7 @@ export function getRedirectPath(userRole: UserRole, pathname: string): string {
   
   // For qc_controller accessing blocked routes, redirect to dashboard
   if (userRole === 'qc_controller' && isBlockedForQCController(pathname)) {
-    return '/dashboard'
+    return '/'
   }
   
   // For technician accessing blocked routes, redirect to home
@@ -159,5 +150,5 @@ export function getRedirectPath(userRole: UserRole, pathname: string): string {
   if (userRole === 'technician') {
     return '/'
   }
-  return '/dashboard'
+  return '/'
 }

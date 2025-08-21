@@ -4,14 +4,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import {
-    NavigationMenu,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    navigationMenuTriggerStyle,
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu'
 import { cn } from '@/lib/utils'
-import { type UserProfile, type PermissionString } from '@/lib/types/business-types'
+import { type UserProfile, type PermissionString, type TableName, type PermissionAction } from '@/lib/types/business-types'
 import { useUIPermissions } from '@/lib/hooks/use-permissions'
 
 interface NavigationItem {
@@ -29,7 +29,7 @@ const navigationItems: NavigationItem[] = [
     title: 'Dashboard',
     href: '/dashboard',
     description: 'Overview of operations',
-    showIf: (perms) => perms.isQC || perms.isOpsManager || perms.isGeneralManager // УБРАНО для technician
+    showIf: (perms) => perms.isGeneralManager 
   },
   {
     title: 'Batch Intake',
@@ -41,31 +41,31 @@ const navigationItems: NavigationItem[] = [
     title: 'Devices',
     href: '/devices',
     description: 'Track phones by IMEI',
-    showIf: (perms) => perms.canViewDevices && !perms.isQC // СКРЫТО для qc_controller
+    showIf: (perms) => perms.canViewDevices && !perms.isQC && !perms.isTechnician
   },
   {
     title: 'Repair Jobs',
     href: '/repair-jobs',
     description: 'Manage repair assignments',
-    showIf: (perms) => perms.canViewRepairJobs && !perms.isQC // СКРЫТО для qc_controller
+    showIf: (perms) => perms.canViewRepairJobs && !perms.isQC
   },
   {
     title: 'Quality Control',
     href: '/qc',
     description: 'Final QC and grading',
-    showIf: (perms) => perms.canViewQC && !perms.isOpsManager // СКРЫТО для ops_manager
+    showIf: (perms) => perms.canViewQC && !perms.isOpsManager
   },
   {
     title: 'Inventory',
     href: '/inventory',
     description: 'Spare parts management',
-    showIf: (perms) => perms.canViewInventory && !perms.isOpsManager // СКРЫТО для ops_manager
+    showIf: (perms) => perms.canViewInventory && !perms.isOpsManager
   },
   {
     title: 'Suppliers',
     href: '/suppliers',
     description: 'Supplier management',
-    showIf: (perms) => perms.hasPermission('suppliers', 'read') && !perms.isOpsManager // СКРЫТО для ops_manager
+    showIf: (perms) => perms.hasPermission('suppliers', 'read') && !perms.isOpsManager
   },
   {
     title: 'Admin',
@@ -93,8 +93,8 @@ export function Navigation({ userProfile }: NavigationProps) {
     // If required permissions are specified, check them
     if (item.requiredPermissions) {
       return item.requiredPermissions.every(perm => {
-        const [table, action] = perm.split(':') as [string, 'create' | 'read' | 'update' | 'delete']
-        return permissions.hasPermission(table as any, action)
+        const [table, action] = perm.split(':') as [TableName, PermissionAction]
+        return permissions.hasPermission(table, action)
       })
     }
     

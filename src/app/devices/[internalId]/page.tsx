@@ -17,6 +17,8 @@ import {
 import { useDeviceByInternalId, useDeviceStatusHistory } from '@/lib/hooks/use-devices';
 import { statusConfig } from '@/components/common/device-list-table';
 import { DeviceStatusHistoryTable } from '@/components/devices/device-status-history-table';
+import { useUser } from '@/lib/hooks/use-user';
+import { useProfile } from '@/lib/hooks/use-profile';
 
 
 
@@ -24,6 +26,13 @@ export default function DeviceJobSheetPage() {
   const params = useParams()
   const router = useRouter()
   const internalId = params.internalId as string
+  
+  // Get user and profile for role checking
+  const { data: user } = useUser()
+  const { data: profile } = useProfile(!!user)
+  
+  // Check if user is technician (L1 level)
+  const isTechnician = profile?.role === 'technician'
   
   // Fetch device data by internal ID
   const { data: device, isLoading: deviceLoading, error: deviceError } = useDeviceByInternalId(internalId)
@@ -112,6 +121,12 @@ export default function DeviceJobSheetPage() {
   const status = statusConfig[device.status as keyof typeof statusConfig]
   const StatusIcon = status.icon
 
+  // Determine back link based on user role
+  // Technicians (L1) should go to repair-jobs, others can go to devices
+  // Default to repair-jobs if profile is still loading (safer for technicians)
+  const backLink = (isTechnician || !profile) ? '/repair-jobs' : '/devices'
+  const backText = (isTechnician || !profile) ? 'Back to Repair Jobs' : 'Back to Devices'
+
 
 
 
@@ -121,10 +136,10 @@ export default function DeviceJobSheetPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/devices">
+          <Link href={backLink}>
             <Button variant="ghost" size="sm" className="cursor-pointer">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Devices
+              {backText}
             </Button>
           </Link>
           <div>
