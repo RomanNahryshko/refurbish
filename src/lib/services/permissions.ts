@@ -70,7 +70,7 @@ export async function checkPermission(
     
     // Check if this is a Supabase superadmin
     if (authUser && authUser.id === userId) {
-      const isSuperAdmin = authUser.app_metadata?.role === 'service_role' || 
+      const isSuperAdmin = authUser.app_metadata?.role === 'service_role' || // TODO: use enum
                           authUser.user_metadata?.role === 'superadmin' ||
                           authUser.email?.endsWith('@supabase.io')
       
