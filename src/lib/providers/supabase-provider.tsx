@@ -8,16 +8,18 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { createSupabaseClient } from '@/lib/supabase/client'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient, User, Session } from '@supabase/supabase-js'
 
 interface SupabaseContextType {
   client: SupabaseClient | null
   isReady: boolean
+  user: User | null
 }
 
 const SupabaseContext = createContext<SupabaseContextType>({
   client: null,
   isReady: false,
+  user: null,
 })
 
 // Export the context for direct usage
@@ -30,16 +32,33 @@ interface SupabaseProviderProps {
 export function SupabaseProvider({ children }: SupabaseProviderProps) {
   const [client, setClient] = useState<SupabaseClient | null>(null)
   const [isReady, setIsReady] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
     // Initialize the singleton client
     const supabaseClient = createSupabaseClient()
     setClient(supabaseClient)
     setIsReady(true)
+
+    if (supabaseClient) {
+      // Get initial session
+      supabaseClient.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
+        setUser(session?.user ?? null)
+      })
+
+      // Listen for auth changes
+      const {
+        data: { subscription },
+      } = supabaseClient.auth.onAuthStateChange((_event: string, session: Session | null) => {
+        setUser(session?.user ?? null)
+      })
+
+      return () => subscription.unsubscribe()
+    }
   }, [])
 
   return (
-    <SupabaseContext.Provider value={{ client, isReady }}>
+    <SupabaseContext.Provider value={{ client, isReady, user }}>
       {children}
     </SupabaseContext.Provider>
   )
@@ -64,6 +83,14 @@ export function useSupabaseContext(): SupabaseContextType {
 export function useSupabaseClient(): SupabaseClient | null {
   const { client } = useSupabaseContext()
   return client
+}
+
+/**
+ * Hook to get the current user from context
+ */
+export function useSupabaseUser(): User | null {
+  const { user } = useSupabaseContext()
+  return user
 }
 
 /**

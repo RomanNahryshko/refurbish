@@ -11,12 +11,14 @@ import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-
 import { UserRole } from '@/lib/types/business-types'
 import { useRouter } from 'next/navigation'
 import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { useSupabaseUser } from '@/lib/providers/supabase-provider'
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const {push} = useRouter()
   const supabase = useSupabaseClient()
+  const contextUser = useSupabaseUser()
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -42,12 +44,42 @@ export function LoginForm() {
         // Check password status using Supabase client instead of API
         try {
           if (supabase) {
-            // Get current user after successful login
-            const { data: { user }, error: userError } = await supabase.auth.getUser()
+            // First try to use user from context if available
+            let user = contextUser
             
-            if (userError || !user) {
-              console.error('Error getting current user:', userError)
-              // Fallback to dashboard if user fetch fails
+            // If no user in context, try to get from auth with retry logic
+            if (!user) {
+              let retries = 3
+              
+              while (retries > 0 && !user) {
+                const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser()
+                
+                if (userError) {
+                  console.error('Error getting current user:', userError)
+                  retries--
+                  if (retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 500)) // Wait 500ms before retry
+                    continue
+                  }
+                  // Fallback to dashboard if all retries fail
+                  push('/dashboard')
+                  return
+                }
+                
+                if (currentUser) {
+                  user = currentUser
+                  break
+                }
+                
+                retries--
+                if (retries > 0) {
+                  await new Promise(resolve => setTimeout(resolve, 500)) // Wait 500ms before retry
+                }
+              }
+            }
+            
+            if (!user) {
+              // Fallback to dashboard if no user after retries
               push('/dashboard')
               return
             }
