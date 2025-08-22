@@ -151,7 +151,13 @@ export function DeviceListTable({
           <div>
             <div className="font-medium">{device.brand} {device.model}</div>
             <div className="text-sm text-gray-600">
-              {device.color} • {device.storage_capacity}
+              {
+                device.color && device.storage_capacity ? (
+                  `${device.color} • ${device.storage_capacity}`
+                ) : (
+                  ''
+                )
+              }
             </div>
           </div>
         )
