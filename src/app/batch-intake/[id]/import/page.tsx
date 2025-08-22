@@ -14,7 +14,8 @@ import { useCreateDevicesFromImport } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 // Removed: Direct Supabase import - using hooks instead
 import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
-import { REPAIR_TYPES } from '@/lib/constants';
+import { REPAIR_TYPE_MAP } from '@/lib/constants';
+import { LegacyRepairType } from '@/lib/types/business-types';
 import {
   useFilterDevicesByExisting,
   useCompletedQCByDevices,
@@ -30,6 +31,11 @@ interface DrPhoneData {
   brand: string
   serialNumber: string
   faults: string
+}
+
+// Type guard function to check if a string is a valid legacy repair type
+function isLegacyRepairType(value: string): value is LegacyRepairType {
+  return value in REPAIR_TYPE_MAP
 }
 
 export default function ImportDrPhonePage() {
@@ -140,22 +146,15 @@ export default function ImportDrPhonePage() {
             try {
                              for (const repairType of selectedRepairs) {
                  // Map old values to new schema values (backward compatibility)
-                 const repairTypeMap: Record<string, keyof typeof REPAIR_TYPES> = {
-                   'housing_replace': 'housing_change',
-                   'glass_replace': 'glass_change',
-                   'battery_replace': 'battery_change',
-                   'housing_change': 'housing_change',
-                   'glass_change': 'glass_change',
-                   'battery_change': 'battery_change',
-                   'software_update': 'software_update',
-                   'other': 'other'
+                 if (!isLegacyRepairType(repairType)) {
+                   continue
                  }
                  
-                 const mappedRepairType = repairTypeMap[repairType]
+                 const mappedRepairType = REPAIR_TYPE_MAP[repairType]
                  
-                             if (!mappedRepairType) {
-              continue
-            }
+                 if (!mappedRepairType) {
+                   continue
+                 }
                  
                  const repairJobData = {
                    device_id: createdDevice.id,

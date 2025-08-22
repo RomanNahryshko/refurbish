@@ -4,8 +4,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
-    ArrowLeft,
-    ClipboardCheck
+  ArrowLeft,
+  ClipboardCheck
 } from 'lucide-react';
 import { useDeviceByInternalId } from '@/lib/hooks/use-devices';
 import { useBatches } from '@/lib/hooks/use-batches';
@@ -16,7 +16,13 @@ import { toast } from 'sonner';
 import { FinalQCDeviceCard } from '@/components/quality-control/final-qc-device-card';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { useSupabaseClient } from '@/lib/hooks/use-supabase-client';
-import { RepairType } from '@/lib/types/business-types';
+import { RepairType, LegacyRepairType } from '@/lib/types/business-types';
+import { REPAIR_TYPE_MAP } from '@/lib/constants';
+
+// Type guard function to check if a string is a valid legacy repair type
+function isLegacyRepairType(value: string): value is LegacyRepairType {
+  return value in REPAIR_TYPE_MAP
+}
 
 export default function FinalQCPage() {
   const params = useParams()
@@ -149,19 +155,12 @@ export default function FinalQCPage() {
         if (decision === 'fail' && selectedRepairs.length > 0) {
           try {
             for (const repairType of selectedRepairs) {
-              // Map repair type to the correct format
-              const repairTypeMap: Record<string, string> = {
-                'housing_replace': 'housing_change',
-                'glass_replace': 'glass_change',
-                'battery_replace': 'battery_change',
-                'housing_change': 'housing_change',
-                'glass_change': 'glass_change',
-                'battery_change': 'battery_change',
-                'software_update': 'software_update',
-                'other': 'other'
+              // Map repair type to the correct format using centralized mapping
+              if (!isLegacyRepairType(repairType)) {
+                continue
               }
               
-              const mappedRepairType = repairTypeMap[repairType]
+              const mappedRepairType = REPAIR_TYPE_MAP[repairType]
               
               if (!mappedRepairType) {
                 continue

@@ -46,6 +46,18 @@ export const REPAIR_TYPES = {
   'other': 'other'                      // Other repairs with description
 } as const
 
+// Legacy repair type mapping for backward compatibility
+export const REPAIR_TYPE_MAP = {
+  'housing_replace': 'housing_change',
+  'glass_replace': 'glass_change',
+  'battery_replace': 'battery_change',
+  'housing_change': 'housing_change',
+  'glass_change': 'glass_change',
+  'battery_change': 'battery_change',
+  'software_update': 'software_update',
+  'other': 'other'
+} as const
+
 // Repair job status enum - matches database schema
 export const REPAIR_STATUS = {
   'pending': 'pending',       // Created but not started

@@ -131,6 +131,19 @@ export interface QCTestResult {
 export type RepairType = ValueOf<typeof REPAIR_TYPES>
 export type RepairJobStatus = ValueOf<typeof REPAIR_STATUS>
 
+// Legacy repair type mapping for backward compatibility
+export type LegacyRepairType = 
+  | 'housing_replace' 
+  | 'glass_replace' 
+  | 'battery_replace'
+  | 'housing_change'
+  | 'glass_change'
+  | 'battery_change'
+  | 'software_update'
+  | 'other'
+
+export type RepairTypeMap = Record<LegacyRepairType, RepairType>
+
 export interface RepairJob {
   id: string
   device_id: string

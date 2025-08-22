@@ -31,9 +31,6 @@ export default function DeviceJobSheetPage() {
   const { data: user } = useUser()
   const { data: profile } = useProfile(!!user)
   
-  // Check if user is technician (L1 level)
-  const isTechnician = profile?.role === 'technician'
-  
   // Fetch device data by internal ID
   const { data: device, isLoading: deviceLoading, error: deviceError } = useDeviceByInternalId(internalId)
   
