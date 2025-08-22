@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useToast } from './use-toast'
+import { useToast } from '@/lib/hooks/use-toast'
+import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
 
 interface PasswordStatus {
   user: {
     id: string
-    email: string | null
+    email: string
   }
   mustChangePassword: boolean
   role: string
@@ -19,23 +20,45 @@ interface ChangePasswordData {
 export function usePasswordStatus() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const supabase = useSupabaseClient()
 
   const checkPasswordStatus = async (): Promise<PasswordStatus | null> => {
     setLoading(true)
     setError(null)
 
     try {
-      const response = await fetch('/api/auth/password-status')
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          return null // User not authenticated
-        }
-        throw new Error('Failed to check password status')
+      if (!supabase) {
+        setError('Supabase client not available')
+        return null
       }
 
-      const data = await response.json()
-      return data
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        return null // User not authenticated
+      }
+
+      // Get user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('must_change_password, role')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) {
+        setError('Failed to fetch user profile')
+        return null
+      }
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email || ''
+        },
+        mustChangePassword: profile?.must_change_password === true,
+        role: profile?.role || 'technician'
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       setError(errorMessage)

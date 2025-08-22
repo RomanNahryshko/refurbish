@@ -10,11 +10,13 @@ import { login } from '@/lib/actions/auth'
 import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions'
 import { UserRole } from '@/lib/types/business-types'
 import { useRouter } from 'next/navigation'
+import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const {push} = useRouter()
+  const supabase = useSupabaseClient()
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -37,18 +39,38 @@ export function LoginForm() {
         setError(result.error)
         setIsLoading(false)
       } else {
-        // Check password status before redirecting
+        // Check password status using Supabase client instead of API
         try {
-          const statusResponse = await fetch('/api/auth/password-status')
-          if (statusResponse.ok) {
-            const statusData = await statusResponse.json()
+          if (supabase) {
+            // Get current user after successful login
+            const { data: { user }, error: userError } = await supabase.auth.getUser()
             
+            if (userError || !user) {
+              console.error('Error getting current user:', userError)
+              // Fallback to dashboard if user fetch fails
+              push('/dashboard')
+              return
+            }
+
+            const { data: profile, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('must_change_password, role')
+              .eq('id', user.id)
+              .single()
+
+            if (profileError) {
+              console.error('Error fetching user profile:', profileError)
+              // Fallback to dashboard if profile fetch fails
+              push('/dashboard')
+              return
+            }
+
             // If user must change password, redirect to change-password page
-            if (statusData.mustChangePassword) {
+            if (profile?.must_change_password === true) {
               push('/change-password')
             } else {
               // Check if user has dashboard access
-              const userRole = statusData.role || 'technician'
+              const userRole = profile?.role || 'technician'
               
               if (hasDashboardAccess(userRole as UserRole)) {
                 // User has dashboard access, redirect to dashboard
@@ -60,7 +82,7 @@ export function LoginForm() {
               }
             }
           } else {
-            // Fallback to dashboard if status check fails
+            // Fallback to dashboard if no supabase client
             push('/dashboard')
           }
         } catch {
