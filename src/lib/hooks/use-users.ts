@@ -1,14 +1,14 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CreateUserData, UpdateUserData, UserFilters } from '@/lib/api/users'
+import { CreateUserData, UpdateUserData, UserFilters, UserWithAuth } from '@/lib/api/users'
 import { useToast } from '@/lib/hooks/use-toast'
 
 /**
  * Hook to fetch all users with filters
  */
 export function useUsers(filters?: UserFilters) {
-  return useQuery({
+  return useQuery<UserWithAuth[]>({
     queryKey: ['users', filters],
     queryFn: async () => {
       const params = new URLSearchParams()

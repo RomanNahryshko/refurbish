@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { QCCheck, QCTestResult, DeviceGrade } from '@/lib/types/business-types'
+import { QCCheck, QCTestResult, DeviceGrade, QCCheckFilterFields } from '@/lib/types/business-types'
 
 // Enhanced types for better type safety and validation
 export interface CreateQCCheckData {
@@ -346,7 +346,7 @@ export class QCChecksAPI {
   /**
    * Get QC checks by device, type, result, grade, date range and all other fields
    */
-  async getByAllFields(deviceId: string, checkType: 'initial' | 'final', result: 'not_tested' | 'pass' | 'fail', grade: DeviceGrade, startDate: string, endDate: string, allOtherFields: any) {
+  async getByAllFields(deviceId: string, checkType: 'initial' | 'final', result: 'not_tested' | 'pass' | 'fail', grade: DeviceGrade, startDate: string, endDate: string, allOtherFields: QCCheckFilterFields) {
     const { data, error } = await this.supabase
       .from('qc_checks')
       .select(`

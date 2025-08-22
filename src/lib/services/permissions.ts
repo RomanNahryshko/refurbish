@@ -5,7 +5,7 @@
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getRolePermissions } from '@/lib/config/permissions';
-import { type PermissionString, type UserRole } from '@/lib/types/business-types';
+import { type PermissionString, type UserRole, type PermissionOrAdmin } from '@/lib/types/business-types';
 
 // Simple in-memory cache for user roles to prevent duplicate queries
 const userRoleCache = new Map<string, { role: string; timestamp: number }>()
@@ -140,7 +140,7 @@ export async function checkPermission(
  * @param userId - The user's ID
  * @returns Array of permissions in format 'table_name:action'
  */
-export async function getUserPermissions(userId: string): Promise<PermissionString[]> {
+export async function getUserPermissions(userId: string): Promise<PermissionOrAdmin[]> {
   try {
     const supabase = await createSupabaseServerClient()
     
@@ -150,7 +150,7 @@ export async function getUserPermissions(userId: string): Promise<PermissionStri
     
     // Admin gets all permissions
     if (userRole === 'admin') {
-      return ['*'] as unknown as PermissionString[] // Special marker for admin
+      return ['*'] as PermissionOrAdmin[] // Special marker for admin
     }
     
     // Start with configuration-based permissions for the role
@@ -235,7 +235,7 @@ export async function hasAnyPermission(
   const userPermissions = await getUserPermissions(userId)
   
   // Admin has all permissions
-  if (userPermissions.includes('*' as unknown as PermissionString)) {
+  if (userPermissions.includes('*' as PermissionOrAdmin)) {
     return true
   }
   
@@ -255,7 +255,7 @@ export async function hasAllPermissions(
   const userPermissions = await getUserPermissions(userId)
   
   // Admin has all permissions
-  if (userPermissions.includes('*' as unknown as PermissionString)) {
+  if (userPermissions.includes('*' as PermissionOrAdmin)) {
     return true
   }
   

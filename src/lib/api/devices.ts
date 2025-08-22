@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { Device, DeviceStatus, DeviceGrade, DrPhoneData } from '@/lib/types/business-types'
+import { Device, DeviceStatus, DeviceGrade, DrPhoneData, DeviceStatusUpdateData } from '@/lib/types/business-types'
 
 // Enhanced types for better type safety and structure
 export interface CreateDeviceData {
@@ -221,7 +221,7 @@ export class DevicesAPI {
    * Update device status
    */
   async updateStatus(id: string, status: DeviceStatus, grade?: DeviceGrade) {
-    const updateData: any = { 
+    const updateData: DeviceStatusUpdateData = { 
       status, 
       updated_at: new Date().toISOString() 
     }

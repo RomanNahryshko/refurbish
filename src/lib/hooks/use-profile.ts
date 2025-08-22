@@ -1,9 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-
-interface UserProfile {
-  full_name?: string
-  role?: string
-}
+import { UserProfile } from '@/lib/types/business-types'
 
 async function fetchUserProfile(): Promise<UserProfile> {
   const response = await fetch('/api/user/profile')

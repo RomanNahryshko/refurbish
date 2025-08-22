@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { UserActions } from './user-actions'
-import { UserFilters } from '@/lib/api/users'
-import { UserProfile } from '@/lib/types/business-types'
+import { UserFilters, UserWithAuth } from '@/lib/api/users'
 
 interface UserListProps {
   currentUserId?: string
@@ -175,47 +174,47 @@ export function UserList({ currentUserId }: UserListProps) {
                   </tr>
                 </thead>
                 <tbody>
-                                      {users.map((user: Record<string, unknown>) => (
-                    <tr key={String(user.id)} className="border-b hover:bg-accent/50">
+                                      {users.map((user: UserWithAuth) => (
+                    <tr key={user.id} className="border-b hover:bg-accent/50">
                       <td className="p-3">
                         <div>
                           <div className="font-medium">
-                            {String(user.full_name || 'No name set')}
+                            {user.full_name || 'No name set'}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {String((user as { auth_user?: { email?: string } })?.auth_user?.email || 'No email')}
+                            {user.auth_user?.email || 'No email'}
                           </div>
                         </div>
                       </td>
                       <td className="p-3">
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {String(user.role)}
+                          {user.role}
                         </span>
                       </td>
                       <td className="p-3">
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          String(user.status) === 'active' 
+                          user.status === 'active' 
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {String(user.status || 'active')}
+                          {user.status || 'active'}
                         </span>
                       </td>
                       <td className="p-3 text-sm text-muted-foreground">
                         {user.last_login 
-                          ? new Date(String(user.last_login)).toLocaleDateString()
+                          ? new Date(user.last_login).toLocaleDateString()
                           : 'Never'
                         }
                       </td>
                       <td className="p-3 text-sm text-muted-foreground">
                         {user.created_at 
-                          ? new Date(String(user.created_at)).toLocaleDateString()
+                          ? new Date(user.created_at).toLocaleDateString()
                           : 'Unknown'
                         }
                       </td>
                       <td className="p-3">
                         <UserActions 
-                          user={user as unknown as UserProfile}
+                          user={user}
                           currentUserId={currentUserId}
                           onUpdate={handleRefresh}
                         />

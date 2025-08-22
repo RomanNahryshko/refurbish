@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseAdminClient, generateTemporaryPassword } from '@/lib/supabase/admin'
-import { UserRole, TechnicianLevel, UserAccountStatus } from '@/lib/types/business-types'
+import { UserRole, TechnicianLevel, UserAccountStatus, SupabaseAuthUser } from '@/lib/types/business-types'
 
 // Enhanced types for better type safety
 export interface CreateUserData {
@@ -401,11 +401,11 @@ export class UsersAPI {
   /**
    * Map auth user to our interface
    */
-  private mapAuthUser(authUser: any): AuthUser {
+  private mapAuthUser(authUser: SupabaseAuthUser): AuthUser {
     return {
       id: authUser.id,
-      email: authUser.email,
-      created_at: authUser.created_at,
+      email: authUser.email || '',
+      created_at: authUser.created_at || new Date().toISOString(),
       last_sign_in_at: authUser.last_sign_in_at,
       email_confirmed_at: authUser.email_confirmed_at
     }

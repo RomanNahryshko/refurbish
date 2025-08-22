@@ -22,12 +22,12 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { MoreHorizontal, Edit, Shield, ShieldOff, Key, Eye } from 'lucide-react'
-import { UserProfile } from '@/lib/types/business-types'
+import { UserWithAuth } from '@/lib/api/users'
 import { TablePermissionGuard } from '@/components/auth/permission-guard'
 import { useProfile } from '@/lib/hooks/use-profile'
 
 interface UserActionsProps {
-  user: UserProfile & { auth_user?: { email?: string }; email?: string }
+  user: UserWithAuth
   currentUserId?: string
   onUpdate: () => void
 }
@@ -66,7 +66,7 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
     try {
       await resetPasswordMutation.mutateAsync({
         userId: String(user.id),
-        email: String(user.auth_user?.email || user.email || ''),
+        email: String(user.auth_user?.email || ''),
         performedBy: currentUserId || 'unknown-admin'
       })
       onUpdate()

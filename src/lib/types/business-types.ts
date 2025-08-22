@@ -207,7 +207,7 @@ export interface ProductionMetrics {
   created_at: string
 }
 
-// Permission types - matches database schema
+// Permission types - matches database schema exactly
 export interface Permission {
   id: string
   table_name: string // Actual database table name
@@ -468,3 +468,48 @@ export interface PartUsageData {
   recorded_by?: string
   recorded_at: string
 }
+
+// Supabase Auth User types
+export interface SupabaseAuthUser {
+  id: string
+  email?: string
+  created_at?: string
+  last_sign_in_at?: string
+  email_confirmed_at?: string
+  app_metadata?: {
+    role?: string
+    [key: string]: unknown
+  }
+  user_metadata?: {
+    role?: string
+    [key: string]: unknown
+  }
+}
+
+// Device status update data
+export interface DeviceStatusUpdateData {
+  status: DeviceStatus
+  updated_at: string
+  grade?: DeviceGrade
+}
+
+// QC check filter fields
+export interface QCCheckFilterFields {
+  [key: string]: unknown
+}
+
+// Batch creation data
+export interface BatchCreationData {
+  supplier_id: string
+  invoice_number?: string
+  invoice_date?: string
+  invoice_amount?: number
+  device_count: number
+  received_date: string
+  notes?: string
+  created_by: string
+}
+
+// Admin permission marker type
+export type AdminPermissionMarker = '*'
+export type PermissionOrAdmin = PermissionString | AdminPermissionMarker

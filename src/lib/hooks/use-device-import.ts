@@ -49,7 +49,7 @@ export function useExistingDevices() {
 export function useCompletedQCChecks(deviceIds: string[]) {
   const supabase = useSupabaseClient()
   
-  return useQuery<Record<string, QCCheck[]>>({
+  return useQuery<Record<string, Partial<QCCheck>[]>>({
     queryKey: ['qc-checks', 'completed', deviceIds],
     queryFn: async () => {
       if (deviceIds.length === 0) return {}
@@ -66,13 +66,13 @@ export function useCompletedQCChecks(deviceIds: string[]) {
       if (error) throw error
   
       // Group by device_id
-      const grouped = (data || []).reduce((acc: Record<string, QCCheck[]>, qc: any) => {
+      const grouped = (data || []).reduce((acc: Record<string, Partial<QCCheck>[]>, qc: Partial<QCCheck> & { device_id: string }) => {
         if (!acc[qc.device_id]) {
           acc[qc.device_id] = []
         }
         acc[qc.device_id].push(qc)
         return acc
-      }, {} as Record<string, QCCheck[]>)
+      }, {} as Record<string, Partial<QCCheck>[]>)
 
       return grouped
     },

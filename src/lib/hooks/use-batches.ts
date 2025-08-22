@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Batch } from '@/lib/types/business-types'
+import { Batch, BatchCreationData } from '@/lib/types/business-types'
 import { useSupabaseContext } from '@/lib/providers/supabase-provider'
 import { createBatchesAPI } from '@/lib/api/batches'
 
@@ -60,7 +60,7 @@ export function useCreateBatch() {
   const { client } = useSupabaseContext()
   
   return useMutation({
-    mutationFn: async (batchData: any) => {
+    mutationFn: async (batchData: BatchCreationData) => {
       if (!client) throw new Error('Supabase client not available')
       const batchesApi = createBatchesAPI(client)
       return batchesApi.create(batchData)
