@@ -235,7 +235,7 @@ export function DeviceListTable({
             variant="ghost"
             size="sm"
             onClick={toggleFilters}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 cursor-pointer"
           >
             <Filter className="h-4 w-4" />
             <span>Filters</span>
@@ -309,6 +309,7 @@ export function DeviceListTable({
               size="sm"
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
+              className="cursor-pointer"
             >
               <ChevronLeft className="h-4 w-4" />
               Previous
@@ -321,6 +322,7 @@ export function DeviceListTable({
               size="sm"
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
+              className="cursor-pointer"
             >
               Next
               <ChevronRight className="h-4 w-4" />

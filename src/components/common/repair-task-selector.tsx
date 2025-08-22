@@ -64,7 +64,7 @@ export function RepairTaskSelector({
         <div className="space-y-3">       
          {repairTypes.map((repair) => (
             <div key={repair.id}>
-              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+              <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
                 <input
                   type="checkbox"
                   id={repair.id}
@@ -74,7 +74,7 @@ export function RepairTaskSelector({
                       onRepairToggle(repair.id)
                     }
                   }}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                 />
                 <Label htmlFor={repair.id} className="cursor-pointer flex-1">
                   <div className="flex items-center justify-between">
