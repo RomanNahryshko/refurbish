@@ -1,7 +1,7 @@
-import { createSupabaseClient } from '@/lib/supabase/client'
-import { Supplier } from '@/lib/types/business-types'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { Supplier } from '@/lib/types/business-types'
 
+// Enhanced types for better type safety and validation
 export interface CreateSupplierData {
   name: string
   contact_person?: string
@@ -12,110 +12,137 @@ export interface CreateSupplierData {
   notes?: string
 }
 
-export interface UpdateSupplierData extends Partial<CreateSupplierData> {}
+export type UpdateSupplierData = Partial<CreateSupplierData>
+
+// Additional types for better structure
+export interface SupplierFilters {
+  type?: 'devices' | 'parts' | 'both'
+  search?: string
+  active_only?: boolean
+}
+
+export interface SupplierWithStats extends Supplier {
+  device_count?: number
+  parts_count?: number
+  total_orders?: number
+}
 
 /**
- * Optimized Suppliers API with singleton Supabase client
+ * Suppliers API with dependency injection pattern
+ * Accepts Supabase client as parameter to avoid creating multiple clients
  */
-class SuppliersAPI {
-  private client: SupabaseClient | null = null
-
-  /**
-   * Get or create the singleton Supabase client
-   * This ensures we reuse the same client instance across all API calls
-   */
-  private getClient = (): SupabaseClient => {
-    if (!this.client) {
-      this.client = createSupabaseClient()
-    }
-    
-    if (!this.client) {
-      throw new Error('Supabase client not initialized')
-    }
-    
-    return this.client
-  }
+export class SuppliersAPI {
+  constructor(private supabase: SupabaseClient) {}
 
   /**
    * Get all suppliers
    */
-  getAll = async () => {
-    const supabase = this.getClient()
+  async getAll(): Promise<Supplier[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('suppliers')
+        .select('*')
+        .is('deleted_at', null)
+        .order('name')
 
-    const { data, error } = await supabase
-      .from('suppliers')
-      .select('*')
-      .is('deleted_at', null)
-      .order('name')
+      if (error) {
+        throw new Error(`Failed to fetch suppliers: ${error.message}`)
+      }
 
-    if (error) throw error
-    return data as Supplier[]
+      return data as Supplier[]
+    } catch (error) {
+      console.error('Error in getAll:', error)
+      throw error
+    }
   }
 
   /**
    * Get suppliers by type
    */
-  getByType = async (type: 'devices' | 'parts' | 'both') => {
-    const supabase = this.getClient()
+  async getByType(type: 'devices' | 'parts' | 'both'): Promise<Supplier[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('suppliers')
+        .select('*')
+        .or(`supplier_type.eq.${type},supplier_type.eq.both`)
+        .is('deleted_at', null)
+        .order('name')
 
-    const { data, error } = await supabase
-      .from('suppliers')
-      .select('*')
-      .or(`supplier_type.eq.${type},supplier_type.eq.both`)
-      .is('deleted_at', null)
-      .order('name')
+      if (error) {
+        throw new Error(`Failed to fetch suppliers by type: ${error.message}`)
+      }
 
-    if (error) throw error
-    return data as Supplier[]
+      return data as Supplier[]
+    } catch (error) {
+      console.error('Error in getByType:', error)
+      throw error
+    }
   }
 
   /**
    * Get suppliers that provide parts (for inventory dropdowns)
    */
-  getPartsSuppliers = async () => {
-    return this.getByType('parts')
+  async getPartsSuppliers(): Promise<Supplier[]> {
+    try {
+      return await this.getByType('parts')
+    } catch (error) {
+      console.error('Error in getPartsSuppliers:', error)
+      throw error
+    }
   }
 
   /**
    * Get a single supplier by ID
    */
-  getById = async (id: string) => {
-    const supabase = this.getClient()
+  async getById(id: string): Promise<Supplier> {
+    try {
+      const { data, error } = await this.supabase
+        .from('suppliers')
+        .select('*')
+        .eq('id', id)
+        .is('deleted_at', null)
+        .single()
 
-    const { data, error } = await supabase
-      .from('suppliers')
-      .select('*')
-      .eq('id', id)
-      .is('deleted_at', null)
-      .single()
+      if (error) {
+        throw new Error(`Failed to fetch supplier: ${error.message}`)
+      }
 
-    if (error) throw error
-    return data as Supplier
+      return data as Supplier
+    } catch (error) {
+      console.error('Error in getById:', error)
+      throw error
+    }
   }
 
   /**
    * Create a new supplier
    */
-  create = async (supplierData: CreateSupplierData) => {
-    const supabase = this.getClient()
+  async create(supplierData: CreateSupplierData): Promise<Supplier> {
+    try {
+      const { data, error } = await this.supabase
+        .from('suppliers')
+        .insert(supplierData)
+        .select()
+        .single()
 
-    const { data, error } = await supabase
-      .from('suppliers')
-      .insert(supplierData)
-      .select()
-      .single()
+      if (error) {
+        throw new Error(`Failed to create supplier: ${error.message}`)
+      }
 
-    if (error) throw error
-    return data as Supplier
+      return data as Supplier
+    } catch (error) {
+      console.error('Error in create:', error)
+      throw error
+    }
   }
 
   /**
    * Update an existing supplier
    */
   update = async (id: string, supplierData: UpdateSupplierData) => {
-    const supabase = this.getClient()
 
-    const { data, error } = await supabase
+
+    const { data, error } = await this.supabase
       .from('suppliers')
       .update({
         ...supplierData,
@@ -133,9 +160,9 @@ class SuppliersAPI {
    * Delete a supplier (soft delete)
    */
   delete = async (id: string) => {
-    const supabase = this.getClient()
 
-    const { error } = await supabase
+
+    const { error } = await this.supabase
       .from('suppliers')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
@@ -145,6 +172,18 @@ class SuppliersAPI {
   }
 }
 
-// Export singleton instance
-export const suppliersApi = new SuppliersAPI()
+/**
+ * Factory function to create SuppliersAPI instance with client
+ * This maintains backward compatibility while implementing dependency injection
+ */
+export function createSuppliersAPI(supabase: SupabaseClient): SuppliersAPI {
+  return new SuppliersAPI(supabase)
+}
+
+/**
+ * Legacy singleton instance for backward compatibility
+ * @deprecated Use createSuppliersAPI() with dependency injection instead
+ */
+import { createSupabaseClient } from '@/lib/supabase/client'
+export const suppliersApi = new SuppliersAPI(createSupabaseClient()!)
 

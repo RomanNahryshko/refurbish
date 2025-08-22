@@ -3,20 +3,17 @@
  * Ensures we use the singleton client pattern throughout the app
  */
 
-import { useMemo } from 'react'
-import { createSupabaseClient } from '@/lib/supabase/client'
+import { useContext } from 'react'
+import { SupabaseContext } from '@/lib/providers/supabase-provider'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
- * Hook to get the singleton Supabase client
+ * Hook to get the singleton Supabase client from context
  * Returns the same client instance across all components/hooks
  */
 export function useSupabaseClient(): SupabaseClient | null {
-  const client = useMemo(() => {
-    return createSupabaseClient()
-  }, [])
-
-  return client
+  const context = useContext(SupabaseContext)
+  return context?.client || null
 }
 
 /**
@@ -24,11 +21,15 @@ export function useSupabaseClient(): SupabaseClient | null {
  * Throws an error if client is not available
  */
 export function useSupabaseClientRequired(): SupabaseClient {
-  const client = useSupabaseClient()
+  const context = useContext(SupabaseContext)
   
-  if (!client) {
+  if (!context) {
+    throw new Error('useSupabaseClientRequired must be used within a SupabaseProvider')
+  }
+  
+  if (!context.client) {
     throw new Error('Supabase client is not available. Check your configuration.')
   }
   
-  return client
+  return context.client
 }

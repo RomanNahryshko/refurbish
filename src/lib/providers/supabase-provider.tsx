@@ -20,6 +20,9 @@ const SupabaseContext = createContext<SupabaseContextType>({
   isReady: false,
 })
 
+// Export the context for direct usage
+export { SupabaseContext }
+
 interface SupabaseProviderProps {
   children: ReactNode
 }

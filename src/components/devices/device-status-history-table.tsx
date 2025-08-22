@@ -123,19 +123,14 @@ export function DeviceStatusHistoryTable({
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-500" />
                         <div className="text-sm">
-                          {history.changed_by_user ? (
+                          {history.changed_by ? (
                             <>
                               <div className="font-medium">
-                                {history.changed_by_user.full_name}
+                                User ID: {history.changed_by}
                               </div>
-                              {history.changed_by_user.role && (
-                                <div className="text-xs text-gray-500 capitalize">
-                                  {history.changed_by_user.role}
-                                  {history.changed_by_user.technician_level && 
-                                    ` (${history.changed_by_user.technician_level})`
-                                  }
-                                </div>
-                              )}
+                              <div className="text-xs text-gray-500">
+                                User details not loaded
+                              </div>
                             </>
                           ) : (
                             <>

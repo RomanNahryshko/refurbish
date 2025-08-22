@@ -21,6 +21,7 @@ import {
   useFindExistingDevice
 } from '@/lib/hooks/use-device-import';
 import { useDeviceImportState } from '@/lib/hooks/use-device-import-state';
+import { useSupabaseClient } from '@/lib/hooks/use-supabase-client';
 
 // Mock Dr. Phone data format
 interface DrPhoneData {
@@ -77,10 +78,9 @@ export default function ImportDrPhonePage() {
   const createRepairJob = useCreateRepairJob()
   const findExistingDevice = useFindExistingDevice()
 
+    const supabase = useSupabaseClient()
   // Helper function to get current user ID - should be moved to a hook
   const getCurrentUserId = async (): Promise<string> => {
-    const { createSupabaseClient: createClient } = await import('@/lib/supabase/client')
-    const supabase = createClient()
     if (supabase) {
       const { data: { user } } = await supabase.auth.getUser()
       return user?.id || 'unknown'
@@ -130,10 +130,7 @@ export default function ImportDrPhonePage() {
         notes: `Imported from Dr. Phone Excel file`
       }
       
-      const result = await createDevicesFromImport.mutateAsync({
-        batchId,
-        devices: [deviceToCreate]
-      })
+      const result = await createDevicesFromImport.mutateAsync([deviceToCreate])
 
               if (result && result.length > 0) {
           const createdDevice = result[0]

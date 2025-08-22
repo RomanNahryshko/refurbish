@@ -16,10 +16,10 @@ import { useSpareParts } from '@/lib/hooks/use-spare-parts'
 import { useStartRepairJob, useCompleteRepairJob, useUpdateRepairJob } from '@/lib/hooks/use-repair-jobs'
 import { RepairJob, SparePart } from '@/lib/types/business-types'
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
-import { createSupabaseClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/use-user'
 import { useProfile } from '@/lib/hooks/use-profile-optimized'
 import { canTechnicianPerformRepair, getTechnicianRepairTypes } from '@/lib/config/permissions'
+import { useSupabaseContext } from '@/lib/providers/supabase-provider'
 
 // Import configs from the table component
 import { repairTypeConfig } from '@/components/repair-jobs/repair-job-list-table'
@@ -57,17 +57,27 @@ export default function RepairJobsPage() {
   const { data: user } = useUser()
   const { data: profile } = useProfile(!!user)
 
-  // Get current user ID from Supabase
+  // Get current user ID from Supabase context
+  const { client: supabase, isReady } = useSupabaseContext()
+  
   useEffect(() => {
     const getCurrentUser = async () => {
-      const supabase = createSupabaseClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setCurrentUserId(user.id)
+      console.log('Getting current user', { supabase: !!supabase, isReady })
+      if (supabase && isReady) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          console.log('User from auth.getUser():', user)
+          if (user) {
+            setCurrentUserId(user.id)
+            console.log('Set currentUserId to:', user.id)
+          }
+        } catch (error) {
+          console.error('Error getting user:', error)
+        }
       }
     }
     getCurrentUser()
-  }, [])
+  }, [supabase, isReady])
   
   // Get current user ID for repair assignments
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -257,22 +267,29 @@ export default function RepairJobsPage() {
   const paginatedRepairs = sortedRepairs.slice(startIndex, endIndex)
   
   const handleStartRepair = (repair: RepairJob) => {
+    console.log('handleStartRepair called', { repair, currentUserId })
+    
     if (!currentUserId) {
+      console.log('No currentUserId, returning early')
       return
     }
     
     // Find the transformed repair job data
     const transformedRepair = transformedRepairJobs.find(r => r.id === repair.id)
     if (!transformedRepair) {
+      console.log('No transformedRepair found, returning early')
       return
     }
     
+    console.log('Setting confirm dialog')
     setConfirmDialog({
       open: true,
       title: 'Start Repair',
       description: `Are you sure you want to start the ${repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.label} repair for device ${transformedRepair.device_internal_id}?`,
       action: () => {
         try {
+          console.log('Starting repair job', { repairId: repair.id, assignedTo: currentUserId })
+          
           // Set loading state for this specific repair job
           setStartingRepairId(repair.id)
           
@@ -281,7 +298,8 @@ export default function RepairJobsPage() {
             repairJobId: repair.id,
             assignedTo: currentUserId
           })
-        } catch {
+        } catch (error) {
+          console.error('Error starting repair job:', error)
           setStartingRepairId(null) // Clear loading state on error
         }
         

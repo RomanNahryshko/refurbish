@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { usersApi } from '@/lib/api/users'
+import { createUsersAPI } from '@/lib/api/users'
 import { requirePermission } from '@/lib/services/auth-helpers'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 // PUT /api/admin/users/[id]/status - Update user status
 export async function PUT(
@@ -23,6 +24,12 @@ export async function PUT(
       )
     }
 
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json({ error: 'Supabase client not configured' }, { status: 500 })
+    }
+    
+    const usersApi = createUsersAPI(supabase)
     const result = await usersApi.updateStatus(id, status, performedBy)
     
     return NextResponse.json(result)

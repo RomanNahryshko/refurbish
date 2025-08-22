@@ -2,25 +2,27 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { createSupabaseClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { UserList } from '@/modules/admin/components/user-list'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
+import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
 
 export default function UsersPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const supabase = useSupabaseClient()
 
   useEffect(() => {
     const getCurrentUser = async () => {
-      const supabase = createSupabaseClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      setCurrentUserId(user?.id || null)
-      setLoading(false)
+      if (supabase) {
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUserId(user?.id || null)
+        setLoading(false)
+      }
     }
 
     getCurrentUser()
-  }, [])
+  }, [supabase])
 
   if (loading) {
     return (

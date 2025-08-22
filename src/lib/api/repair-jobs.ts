@@ -1,7 +1,7 @@
-import { createSupabaseClient } from '@/lib/supabase/client'
-import { DEVICE_STATUS } from '@/lib/constants'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { RepairJob, RepairType, RepairJobStatus, RepairPartsUsed } from '@/lib/types/business-types'
 
+// Enhanced types for better type safety and validation
 export interface CreateRepairJobData {
   device_id: string
   repair_type: RepairType
@@ -27,82 +27,132 @@ export interface CreateRepairPartsUsedData {
   notes?: string
 }
 
-export const repairJobsApi = {
+// Additional types for better structure
+export interface RepairJobWithDevice extends RepairJob {
+  device: {
+    internal_id: string
+    imei: string
+    brand?: string
+    model?: string
+  }
+}
+
+export interface RepairJobWithDetails extends RepairJob {
+  device: {
+    internal_id: string
+    imei: string
+    brand?: string
+    model?: string
+  }
+  assigned_technician?: {
+    full_name: string
+    role: string
+  }
+}
+
+/**
+ * Repair Jobs API with dependency injection pattern
+ * Accepts Supabase client as parameter to avoid creating multiple clients
+ */
+export class RepairJobsAPI {
+  constructor(private supabase: SupabaseClient) {}
+
   /**
    * Get all repair jobs
    */
-  async getAll() {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+  async getAll(): Promise<RepairJobWithDevice[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('repair_jobs')
+        .select(`
+          *,
+          device:devices(internal_id, imei, brand, model)
+        `)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
 
-    const { data, error } = await supabase
-      .from('repair_jobs')
-      .select(`
-        *,
-        device:devices(internal_id, imei, brand, model)
-      `)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
+      if (error) {
+        throw new Error(`Failed to fetch repair jobs: ${error.message}`)
+      }
 
-    if (error) throw error
-    return data as (RepairJob & {
-      device: { internal_id: string; imei: string; brand?: string; model?: string }
-    })[]
-  },
+      return data as RepairJobWithDevice[]
+    } catch (error) {
+      console.error('Error in getAll:', error)
+      throw error
+    }
+  }
 
   /**
    * Get repair jobs by device ID
    */
-  async getByDeviceId(deviceId: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+  async getByDeviceId(deviceId: string): Promise<RepairJob[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('repair_jobs')
+        .select('*')
+        .eq('device_id', deviceId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
 
-    const { data, error } = await supabase
-      .from('repair_jobs')
-      .select('*')
-      .eq('device_id', deviceId)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
+      if (error) {
+        throw new Error(`Failed to fetch repair jobs for device: ${error.message}`)
+      }
 
-    if (error) throw error
-    return data as RepairJob[]
-  },
+      return data as RepairJob[]
+    } catch (error) {
+      console.error('Error in getByDeviceId:', error)
+      throw error
+    }
+  }
 
   /**
    * Get repair jobs by technician
    */
-  async getByTechnician(technicianId: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+  async getByTechnician(technicianId: string): Promise<RepairJobWithDevice[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('repair_jobs')
+        .select(`
+          *,
+          device:devices(internal_id, imei, brand, model)
+        `)
+        .eq('assigned_to', technicianId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
 
-    const { data, error } = await supabase
-      .from('repair_jobs')
-      .select(`
-        *,
-        device:devices(internal_id, imei, brand, model)
-      `)
-      .eq('assigned_to', technicianId)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
+      if (error) {
+        throw new Error(`Failed to fetch repair jobs for technician: ${error.message}`)
+      }
 
-    if (error) throw error
-    return data as (RepairJob & {
-      device: { internal_id: string; imei: string; brand?: string; model?: string }
-    })[]
-  },
+      return data as RepairJobWithDevice[]
+    } catch (error) {
+      console.error('Error in getByTechnician:', error)
+      throw error
+    }
+  }
 
   /**
    * Get a single repair job by ID
    */
   async getById(id: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
 
-    const { data, error } = await supabase
+
+    const { data, error } = await this.supabase
       .from('repair_jobs')
       .select(`
         *,
-        device:devices(internal_id, imei, brand, model)
+        device:devices(internal_id, imei, brand, model),
+        spare_parts_used:repair_parts_used(
+          id,
+          quantity_used,
+          notes,
+          spare_part:spare_parts(
+            id,
+            name,
+            sku,
+            description
+          )
+        )
       `)
       .eq('id', id)
       .is('deleted_at', null)
@@ -111,290 +161,417 @@ export const repairJobsApi = {
     if (error) throw error
     return data as RepairJob & {
       device: { internal_id: string; imei: string; brand?: string; model?: string }
+      spare_parts_used: (RepairPartsUsed & {
+        spare_part: { id: string; name: string; sku: string; description?: string }
+      })[]
     }
-  },
+  }
 
   /**
    * Create a new repair job
    */
-  async create(repairJobData: CreateRepairJobData, createdBy: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+  async create(repairJobData: CreateRepairJobData) {
 
-    // Validate description for 'other' repair type
-    if (repairJobData.repair_type === 'other' && !repairJobData.description) {
-      throw new Error('Description is required for "other" repair type')
-    }
 
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('repair_jobs')
-      .insert({
-        ...repairJobData,
-        status: 'pending' as RepairJobStatus,
-        created_by: createdBy,
-        assigned_at: repairJobData.assigned_to ? new Date().toISOString() : undefined
-      })
+      .insert([repairJobData])
       .select()
       .single()
 
     if (error) throw error
     return data as RepairJob
-  },
+  }
 
   /**
    * Update an existing repair job
    */
-  async update(id: string, repairJobData: UpdateRepairJobData) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+  async update(id: string, updateData: UpdateRepairJobData) {
 
-    // Validate description for 'other' repair type
-    if (repairJobData.repair_type === 'other' && !repairJobData.description) {
-      throw new Error('Description is required for "other" repair type')
-    }
 
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('repair_jobs')
-      .update({
-        ...repairJobData,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()
 
     if (error) throw error
     return data as RepairJob
-  },
+  }
 
   /**
    * Delete a repair job (soft delete)
    */
   async delete(id: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
 
-    const { error } = await supabase
+
+    const { error } = await this.supabase
       .from('repair_jobs')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
 
     if (error) throw error
     return true
-  },
+  }
 
   /**
-   * Get parts used in a repair job
+   * Start a repair job (update status and assigned_at)
    */
-  async getPartsUsed(repairJobId: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+  async startRepair(id: string, technicianId: string) {
 
-    const { data, error } = await supabase
-      .from('repair_parts_used')
-      .select(`
-        *,
-        spare_part:spare_parts(name, sku)
-      `)
-      .eq('repair_job_id', repairJobId)
-      .order('created_at', { ascending: true })
 
-    if (error) throw error
-    return data as (RepairPartsUsed & {
-      spare_part: { name: string; sku: string }
-    })[]
-  },
-
-  /**
-   * Record parts usage in a repair job
-   */
-  async recordPartsUsage(partsData: CreateRepairPartsUsedData[], recordedBy: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
-
-    const partsToRecord = partsData.map(part => ({
-      ...part,
-      recorded_by: recordedBy,
-      recorded_at: new Date().toISOString()
-    }))
-
-    const { data, error } = await supabase
-      .from('repair_parts_used')
-      .insert(partsToRecord)
-      .select()
-
-    if (error) throw error
-    return data as RepairPartsUsed[]
-  },
-
-  /**
-   * Start a repair job and update device status
-   */
-  async startRepairJob(id: string, assignedTo?: string) {
-    // Make HTTP request to the API endpoint
-    const response = await fetch(`/api/repair-jobs/${id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        status: 'in_progress',
-        assigned_to: assignedTo,
-        assigned_at: new Date().toISOString()
-      }),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-      throw new Error(errorData.error || `HTTP ${response.status}`)
-    }
-
-    const result = await response.json()
-    return result.data
-  },
-
-  /**
-   * Complete a repair job and handle device status transition
-   */
-  async completeRepairJob(id: string, completionData: {
-    completion_notes?: string
-    parts_used?: CreateRepairPartsUsedData[]
-  }) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
-
-    // Get current user for recorded_by field
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('User not authenticated')
-
-    // First, get the repair job to check device_id
-    const { data: repairJob, error: fetchError } = await supabase
+    const { data, error } = await this.supabase
       .from('repair_jobs')
-      .select('device_id, repair_type')
+      .update({
+        status: 'in_progress' as RepairJobStatus,
+        assigned_to: technicianId,
+        assigned_at: new Date().toISOString()
+      })
       .eq('id', id)
+      .select()
       .single()
 
-    if (fetchError) throw fetchError
+    if (error) throw error
+    return data as RepairJob
+  }
 
-    // Update repair job status to completed
-    const { data, error } = await supabase
+  /**
+   * Complete a repair job
+   */
+  async completeRepair(id: string, completionNotes?: string) {
+
+
+    const { data, error } = await this.supabase
       .from('repair_jobs')
       .update({
         status: 'completed' as RepairJobStatus,
         completed_at: new Date().toISOString(),
-        completion_notes: completionData.completion_notes,
-        updated_at: new Date().toISOString()
+        completion_notes: completionNotes
       })
       .eq('id', id)
       .select()
       .single()
 
     if (error) throw error
-
-    // Record parts usage if provided
-    if (completionData.parts_used && completionData.parts_used.length > 0) {
-      const partsToRecord = completionData.parts_used.map(part => ({
-        ...part,
-        recorded_by: user.id,
-        recorded_at: new Date().toISOString()
-      }))
-
-      const { error: partsError } = await supabase
-        .from('repair_parts_used')
-        .insert(partsToRecord)
-
-      if (partsError) {
-        // Don't fail the entire request if parts recording fails
-      }
-    }
-
-    // Check if all repairs for this device are completed
-    const { data: pendingRepairs, error: pendingError } = await supabase
-      .from('repair_jobs')
-      .select('id, status')
-      .eq('device_id', repairJob.device_id)
-      .in('status', ['pending', 'in_progress'])
-
-    if (pendingError) {
-      console.error('Error checking pending repairs:', pendingError)
-      // Don't fail the entire request if this check fails
-    } else if (!pendingRepairs || pendingRepairs.length === 0) {
-      // All repairs completed, send device to final QC
-      await this.sendDeviceToFinalQC(supabase, repairJob.device_id, user.id, repairJob.repair_type)
-    }
-
     return data as RepairJob
-  },
+  }
 
   /**
-   * Send device to final QC after all repairs are completed
+   * Add spare parts used in a repair
    */
-  async sendDeviceToFinalQC(
-    supabase: ReturnType<typeof createSupabaseClient>, 
-    deviceId: string, 
-    userId: string, 
-    repairType: string
-  ) {
-    // Update device status to final_qc
-    const { error: deviceUpdateError } = await supabase
-      .from('devices')
-      .update({ 
-        status: DEVICE_STATUS.final_qc
-      })
-      .eq('id', deviceId)
+  async addSparePartsUsed(partsData: CreateRepairPartsUsedData[]) {
 
-    if (deviceUpdateError) {
-      console.error('Error updating device status to final_qc:', deviceUpdateError)
-      // Don't fail the entire request if device update fails
-    }
 
-    // Create QC check record for final quality control
-    const { error: qcCheckError } = await supabase
-      .from('qc_checks')
-      .insert({
-        device_id: deviceId,
-        check_type: 'final',
-        overall_result: 'not_tested',
-        performed_by: userId,
-        notes: `Device sent to final QC after completing ${repairType} repair`
-      })
-
-    if (qcCheckError) {
-      console.error('Error creating QC check record:', qcCheckError)
-      // Don't fail the entire request if QC check creation fails
-    }
-
-    // Record device status change in history
-    const { error: historyError } = await supabase
-      .from('device_status_history')
-      .insert({
-        device_id: deviceId,
-        old_status: DEVICE_STATUS.in_repair,
-        new_status: DEVICE_STATUS.final_qc,
-        changed_by: userId,
-        notes: `Device sent to final QC after completing ${repairType} repair`
-      })
-
-    if (historyError) {
-      console.error('Error recording device status history:', historyError)
-      // Don't fail the entire request if history recording fails
-    }
-  },
-
-  /**
-   * Check if all repairs for a device are completed
-   */
-  async areAllRepairsCompleted(deviceId: string) {
-    const supabase = createSupabaseClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
-
-    const { data, error } = await supabase
-      .from('repair_jobs')
-      .select('id, status')
-      .eq('device_id', deviceId)
-      .in('status', ['pending', 'in_progress'])
+    const { data, error } = await this.supabase
+      .from('repair_parts_used')
+      .insert(partsData)
+      .select()
 
     if (error) throw error
-    return !data || data.length === 0
+    return data as RepairPartsUsed[]
+  }
+
+  /**
+   * Get spare parts used for a repair job
+   */
+  async getSparePartsUsed(repairJobId: string) {
+
+
+    const { data, error } = await this.supabase
+      .from('repair_parts_used')
+      .select(`
+        *,
+        spare_part:spare_parts(
+          id,
+          name,
+          sku,
+          description
+        )
+      `)
+      .eq('repair_job_id', repairJobId)
+      .is('deleted_at', null)
+
+    if (error) throw error
+    return data as (RepairPartsUsed & {
+      spare_part: { id: string; name: string; sku: string; description?: string }
+    })[]
+  }
+
+  /**
+   * Get repair jobs by status
+   */
+  async getByStatus(status: RepairJobStatus) {
+
+
+    const { data, error } = await this.supabase
+      .from('repair_jobs')
+      .select(`
+        *,
+        device:devices(internal_id, imei, brand, model)
+      `)
+      .eq('status', status)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (RepairJob & {
+      device: { internal_id: string; imei: string; brand?: string; model?: string }
+    })[]
+  }
+
+  /**
+   * Get repair jobs by repair type
+   */
+  async getByRepairType(repairType: RepairType) {
+
+
+    const { data, error } = await this.supabase
+      .from('repair_jobs')
+      .select(`
+        *,
+        device:devices(internal_id, imei, brand, model)
+      `)
+      .eq('repair_type', repairType)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (RepairJob & {
+      device: { internal_id: string; imei: string; brand?: string; model?: string }
+    })[]
+  }
+
+  /**
+   * Get repair jobs statistics
+   */
+  async getStatistics() {
+
+
+    const { data, error } = await this.supabase
+      .from('repair_jobs')
+      .select('status, created_at')
+      .is('deleted_at', null)
+
+    if (error) throw error
+
+    const stats = {
+      total: data.length,
+      pending: data.filter(job => job.status === 'pending').length,
+      inProgress: data.filter(job => job.status === 'in_progress').length,
+      completed: data.filter(job => job.status === 'completed').length,
+      cancelled: data.filter(job => job.status === 'cancelled').length
+    }
+
+    return stats
+  }
+
+  /**
+   * Get repair jobs with pagination
+   */
+  async getWithPagination(page: number = 1, limit: number = 10, filters?: {
+    status?: RepairJobStatus
+    repairType?: RepairType
+    technicianId?: string
+  }) {
+
+
+    let query = this.supabase
+      .from('repair_jobs')
+      .select(`
+        *,
+        device:devices(internal_id, imei, brand, model)
+      `, { count: 'exact' })
+      .is('deleted_at', null)
+
+    // Apply filters
+    if (filters?.status) {
+      query = query.eq('status', filters.status)
+    }
+    if (filters?.repairType) {
+      query = query.eq('repair_type', filters.repairType)
+    }
+    if (filters?.technicianId) {
+      query = query.eq('assigned_to', filters.technicianId)
+    }
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range((page - 1) * limit, page * limit - 1)
+
+    if (error) throw error
+
+    return {
+      data: data as (RepairJob & {
+        device: { internal_id: string; imei: string; brand?: string; model?: string }
+      })[],
+      total: count || 0,
+      page,
+      limit,
+      totalPages: Math.ceil((count || 0) / limit)
+    }
+  }
+
+  /**
+   * Bulk update repair jobs
+   */
+  async bulkUpdate(updates: Array<{ id: string; data: UpdateRepairJobData }>) {
+
+
+    const { data, error } = await this.supabase
+      .from('repair_jobs')
+      .upsert(
+        updates.map(update => ({
+          id: update.id,
+          ...update.data,
+          updated_at: new Date().toISOString()
+        }))
+      )
+      .select()
+
+    if (error) throw error
+    return data as RepairJob[]
+  }
+
+  /**
+   * Get repair jobs for a specific date range
+   */
+  async getByDateRange(startDate: string, endDate: string) {
+
+
+    const { data, error } = await this.supabase
+      .from('repair_jobs')
+      .select(`
+        *,
+        device:devices(internal_id, imei, brand, model)
+      `)
+      .gte('created_at', startDate)
+      .lte('created_at', endDate)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (RepairJob & {
+      device: { internal_id: string; imei: string; brand?: string; model?: string }
+    })[]
+  }
+
+  /**
+   * Start a repair job (assign technician and update status)
+   */
+  async startRepairJob(repairJobId: string, assignedTo?: string) {
+    // First, update the repair job status and assignment
+    const { data: repairJob, error: repairError } = await this.supabase
+      .from('repair_jobs')
+      .update({
+        status: 'in_progress',
+        assigned_to: assignedTo,
+        assigned_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', repairJobId)
+      .select()
+      .single()
+
+    if (repairError) throw repairError
+
+    // Then, update the device status to 'in_repair'
+    const { error: deviceError } = await this.supabase
+      .from('devices')
+      .update({
+        status: 'in_repair',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', repairJob.device_id)
+
+    if (deviceError) throw deviceError
+
+    // Record the status change in device_status_history
+    const { error: historyError } = await this.supabase
+      .from('device_status_history')
+      .insert({
+        device_id: repairJob.device_id,
+        old_status: 'awaiting_repair',
+        new_status: 'in_repair',
+        changed_by: assignedTo,
+        notes: `Repair started by technician`
+      })
+
+    if (historyError) throw historyError
+
+    return repairJob
+  }
+
+  /**
+   * Complete a repair job (send device to QC)
+   */
+  async completeRepairJob(repairJobId: string, completionData: {
+    completion_notes?: string
+    parts_used?: RepairPartsUsed[]
+  }) {
+    // First, update the repair job status
+    const { data: repairJob, error: repairError } = await this.supabase
+      .from('repair_jobs')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        completion_notes: completionData.completion_notes,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', repairJobId)
+      .select()
+      .single()
+
+    if (repairError) throw repairError
+
+    // Then, update the device status to 'final_qc'
+    const { error: deviceError } = await this.supabase
+      .from('devices')
+      .update({
+        status: 'final_qc',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', repairJob.device_id)
+
+    if (deviceError) throw deviceError
+
+    // Record the status change in device_status_history
+    const { error: historyError } = await this.supabase
+      .from('device_status_history')
+      .insert({
+        device_id: repairJob.device_id,
+        old_status: 'in_repair',
+        new_status: 'final_qc',
+        changed_by: repairJob.assigned_to,
+        notes: `Repair completed: ${completionData.completion_notes || 'No notes'}`
+      })
+
+    if (historyError) throw historyError
+
+    // If parts were used, record them
+    if (completionData.parts_used && completionData.parts_used.length > 0) {
+      const { error: partsError } = await this.supabase
+        .from('repair_parts_used')
+        .insert(completionData.parts_used)
+
+      if (partsError) throw partsError
+    }
+
+    return repairJob
   }
 }
+
+/**
+ * Factory function to create RepairJobsAPI instance with client
+ * This maintains backward compatibility while implementing dependency injection
+ */
+export function createRepairJobsAPI(supabase: SupabaseClient): RepairJobsAPI {
+  return new RepairJobsAPI(supabase)
+}
+
+/**
+ * Legacy singleton instance for backward compatibility
+ * @deprecated Use createRepairJobsAPI() with dependency injection instead
+ */
+import { createSupabaseClient } from '@/lib/supabase/client'
+export const repairJobsApi = new RepairJobsAPI(createSupabaseClient()!)

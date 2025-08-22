@@ -1,5 +1,6 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
+// Enhanced types with better validation
 export interface StockAdjustment {
   id: string
   spare_part_id: string
@@ -19,91 +20,149 @@ export interface CreateStockAdjustmentData {
   reference_number?: string
 }
 
-export const stockAdjustmentsApi = {
+// Additional types for better structure
+export interface StockAdjustmentWithDetails extends StockAdjustment {
+  spare_parts?: {
+    name: string
+    sku: string
+  } | null
+  user_profiles?: {
+    full_name: string
+  } | null
+}
+
+export interface StockValidationResult {
+  isValid: boolean
+  message?: string
+  currentStock?: number
+}
+
+/**
+ * Stock Adjustments API with dependency injection pattern
+ * Accepts Supabase client as parameter to avoid creating multiple clients
+ */
+export class StockAdjustmentsAPI {
+  constructor(private supabase: SupabaseClient) {}
+
   /**
    * Add stock to a spare part
    */
-  async addStock(data: CreateStockAdjustmentData & { adjustment_type: 'add' }) {
-    const supabase = await createSupabaseServerClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+  async addStock(data: CreateStockAdjustmentData & { adjustment_type: 'add' }): Promise<StockAdjustment> {
+    try {
+      // Validate input data
+      const validation = this.validateAddStockData(data)
+      if (!validation.isValid) {
+        throw new Error(validation.message)
+      }
 
-    // For adding stock, quantity should be positive and reference_number is required
-    if (data.quantity <= 0) {
-      throw new Error('Quantity must be positive when adding stock')
+      const { data: result, error } = await this.supabase
+        .from('stock_adjustments')
+        .insert({
+          ...data,
+          quantity: Math.abs(data.quantity), // Ensure positive for additions
+        })
+        .select()
+        .single()
+
+      if (error) {
+        throw new Error(`Failed to add stock: ${error.message}`)
+      }
+
+      return result as StockAdjustment
+    } catch (error) {
+      console.error('Error in addStock:', error)
+      throw error
     }
-
-    if (!data.reference_number) {
-      throw new Error('Invoice/Reference number is required when adding stock')
-    }
-
-    const { data: result, error } = await supabase
-      .from('stock_adjustments')
-      .insert({
-        ...data,
-        quantity: Math.abs(data.quantity), // Ensure positive for additions
-      })
-      .select()
-      .single()
-
-    if (error) throw error
-    return result as StockAdjustment
-  },
+  }
 
   /**
    * Remove stock from a spare part
    */
-  async removeStock(data: CreateStockAdjustmentData & { adjustment_type: 'remove' }) {
-    const supabase = await createSupabaseServerClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+  async removeStock(data: CreateStockAdjustmentData & { adjustment_type: 'remove' }): Promise<StockAdjustment> {
+    try {
+      // Validate input data
+      if (data.quantity <= 0) {
+        throw new Error('Quantity must be positive when removing stock')
+      }
 
-    // For removing stock, quantity should be negative
+      // Check current stock level to prevent negative stock
+      const { data: part, error: fetchError } = await this.supabase
+        .from('spare_parts')
+        .select('quantity_in_stock')
+        .eq('id', data.spare_part_id)
+        .single()
+
+      if (fetchError) {
+        throw new Error(`Failed to fetch current stock: ${fetchError.message}`)
+      }
+
+      if (part.quantity_in_stock < data.quantity) {
+        throw new Error(`Cannot remove more stock than available. Current stock: ${part.quantity_in_stock}`)
+      }
+
+      const { data: result, error } = await this.supabase
+        .from('stock_adjustments')
+        .insert({
+          ...data,
+          quantity: -Math.abs(data.quantity), // Ensure negative for removals
+        })
+        .select()
+        .single()
+
+      if (error) {
+        throw new Error(`Failed to remove stock: ${error.message}`)
+      }
+
+      return result as StockAdjustment
+    } catch (error) {
+      console.error('Error in removeStock:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Validate add stock data
+   */
+  private validateAddStockData(data: CreateStockAdjustmentData & { adjustment_type: 'add' }): StockValidationResult {
     if (data.quantity <= 0) {
-      throw new Error('Quantity must be positive when removing stock')
+      return {
+        isValid: false,
+        message: 'Quantity must be positive when adding stock'
+      }
     }
 
-    // Check current stock level to prevent negative stock
-    const { data: part, error: fetchError } = await supabase
-      .from('spare_parts')
-      .select('quantity_in_stock')
-      .eq('id', data.spare_part_id)
-      .single()
-
-    if (fetchError) throw fetchError
-
-    if (part.quantity_in_stock < data.quantity) {
-      throw new Error('Cannot remove more stock than available. Current stock: ' + part.quantity_in_stock)
+    if (!data.reference_number) {
+      return {
+        isValid: false,
+        message: 'Invoice/Reference number is required when adding stock'
+      }
     }
 
-    const { data: result, error } = await supabase
-      .from('stock_adjustments')
-      .insert({
-        ...data,
-        quantity: -Math.abs(data.quantity), // Ensure negative for removals
-      })
-      .select()
-      .single()
-
-    if (error) throw error
-    return result as StockAdjustment
-  },
+    return { isValid: true }
+  }
 
   /**
    * Make stock correction (can be positive or negative)
    */
-  async correctStock(data: CreateStockAdjustmentData & { adjustment_type: 'correction' }) {
-    const supabase = await createSupabaseServerClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+  async correctStock(data: CreateStockAdjustmentData & { adjustment_type: 'correction' }): Promise<StockAdjustment> {
+    try {
+      // Insert the exact quantity the user entered without any modifications
+      const { data: result, error } = await this.supabase
+        .from('stock_adjustments')
+        .insert(data)
+        .select()
+        .single()
 
-    // Insert the exact quantity the user entered without any modifications
-    const { data: result, error } = await supabase
-      .from('stock_adjustments')
-      .insert(data)
-      .select()
-      .single()
+      if (error) {
+        throw new Error(`Failed to correct stock: ${error.message}`)
+      }
 
-    if (error) throw error
-    return result as StockAdjustment
-  },
+      return result as StockAdjustment
+    } catch (error) {
+      console.error('Error in correctStock:', error)
+      throw error
+    }
+  }
 
   /**
    * Create any type of stock adjustment with validation
@@ -119,47 +178,72 @@ export const stockAdjustmentsApi = {
       default:
         throw new Error('Invalid adjustment type')
     }
-  },
+  }
 
   /**
    * Get stock adjustments for a specific part
    */
-  async getAdjustmentsForPart(partId: string) {
-    const supabase = await createSupabaseServerClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+  async getAdjustmentsForPart(partId: string): Promise<StockAdjustmentWithDetails[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('stock_adjustments')
+        .select(`
+          *,
+          spare_parts(name, sku),
+          user_profiles:performed_by(full_name)
+        `)
+        .eq('spare_part_id', partId)
+        .order('created_at', { ascending: false })
 
-    const { data, error } = await supabase
-      .from('stock_adjustments')
-      .select(`
-        *,
-        spare_parts(name, sku),
-        user_profiles:performed_by(full_name)
-      `)
-      .eq('spare_part_id', partId)
-      .order('created_at', { ascending: false })
+      if (error) {
+        throw new Error(`Failed to fetch adjustments for part: ${error.message}`)
+      }
 
-    if (error) throw error
-    return data as StockAdjustment[]
-  },
+      return data as StockAdjustmentWithDetails[]
+    } catch (error) {
+      console.error('Error in getAdjustmentsForPart:', error)
+      throw error
+    }
+  }
 
   /**
    * Get all recent stock adjustments
    */
-  async getRecentAdjustments(limit: number = 50) {
-    const supabase = await createSupabaseServerClient()
-    if (!supabase) throw new Error('Supabase client not initialized')
+  async getRecentAdjustments(limit: number = 50): Promise<StockAdjustmentWithDetails[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('stock_adjustments')
+        .select(`
+          *,
+          spare_parts(name, sku),
+          user_profiles:performed_by(full_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(limit)
 
-    const { data, error } = await supabase
-      .from('stock_adjustments')
-      .select(`
-        *,
-        spare_parts(name, sku),
-        user_profiles:performed_by(full_name)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(limit)
+      if (error) {
+        throw new Error(`Failed to fetch recent adjustments: ${error.message}`)
+      }
 
-    if (error) throw error
-    return data as StockAdjustment[]
-  },
+      return data as StockAdjustmentWithDetails[]
+    } catch (error) {
+      console.error('Error in getRecentAdjustments:', error)
+      throw error
+    }
+  }
 }
+
+/**
+ * Factory function to create StockAdjustmentsAPI instance with client
+ * This maintains backward compatibility while implementing dependency injection
+ */
+export function createStockAdjustmentsAPI(supabase: SupabaseClient): StockAdjustmentsAPI {
+  return new StockAdjustmentsAPI(supabase)
+}
+
+/**
+ * Legacy singleton instance for backward compatibility
+ * @deprecated Use createStockAdjustmentsAPI() with dependency injection instead
+ */
+import { createSupabaseClient } from '@/lib/supabase/client'
+export const stockAdjustmentsApi = new StockAdjustmentsAPI(createSupabaseClient()!)

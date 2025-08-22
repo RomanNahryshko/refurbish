@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { inventoryApi } from '@/lib/api/inventory'
 import { requirePermission } from '@/lib/services/auth-helpers'
+import { apiFactory } from '@/lib/api/api-factory'
 
 // GET /api/inventory/parts - List spare parts (all authenticated users can view)
 export async function GET(request: NextRequest) {
@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       Object.entries(filters).filter(([_, value]) => value !== undefined)
     )
 
+    const inventoryApi = await apiFactory.getInventoryAPI()
     const parts = await inventoryApi.getAllParts(Object.keys(cleanFilters).length > 0 ? cleanFilters : undefined)
     
     return NextResponse.json(parts)
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const inventoryApi = await apiFactory.getInventoryAPI()
     const result = await inventoryApi.createPart(partData)
     
     return NextResponse.json(result)

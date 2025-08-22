@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stockAdjustmentsApi } from '@/lib/api/stock-adjustments'
 import { requirePermission } from '@/lib/services/auth-helpers'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { apiFactory } from '@/lib/api/api-factory'
 
 // POST /api/inventory/stock-adjustments - Create stock adjustment (ops_manager/admin only)
 export async function POST(request: NextRequest) {
@@ -37,28 +36,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if spare part exists
-    const supabase = await createSupabaseServerClient()
-    if (!supabase) {
-      return NextResponse.json(
-        { error: 'Database connection failed' },
-        { status: 500 }
-      )
-    }
-
-    const { data: sparePart, error: sparePartError } = await supabase
-      .from('spare_parts')
-      .select('id, quantity_in_stock')
-      .eq('id', spare_part_id)
-      .is('deleted_at', null)
-      .single()
-
-    if (sparePartError) {
-      return NextResponse.json(
-        { error: `Database error: ${sparePartError.message}` },
-        { status: 500 }
-      )
-    }
+    // Check if spare part exists using inventory API
+    const inventoryApi = await apiFactory.getInventoryAPI()
+    const sparePart = await inventoryApi.getPartById(spare_part_id)
 
     if (!sparePart) {
       return NextResponse.json(
@@ -83,35 +63,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Call appropriate method based on adjustment type
-    let result
-    switch (adjustment_type) {
-      case 'add':
-        result = await stockAdjustmentsApi.addStock({
-          spare_part_id,
-          adjustment_type,
-          quantity,
-          reference_number,
-          reason
-        })
-        break
-      case 'remove':
-        result = await stockAdjustmentsApi.removeStock({
-          spare_part_id,
-          adjustment_type,
-          quantity,
-          reason
-        })
-        break
-      case 'correction':
-        result = await stockAdjustmentsApi.correctStock({
-          spare_part_id,
-          adjustment_type,
-          quantity,
-          reason
-        })
-        break
-    }
+    // Create stock adjustment using API
+    const stockAdjustmentsApi = await apiFactory.getStockAdjustmentsAPI()
+    const result = await stockAdjustmentsApi.createAdjustment({
+      spare_part_id,
+      adjustment_type,
+      quantity,
+      reason,
+      reference_number
+    })
 
     // Note: Stock levels are automatically updated by database triggers
     // - 'add' and 'remove' triggers update spare_parts.quantity_in_stock

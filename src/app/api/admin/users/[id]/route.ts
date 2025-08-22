@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { usersApi } from '@/lib/api/users'
+import { createUsersAPI } from '@/lib/api/users'
 import { requirePermission } from '@/lib/services/auth-helpers'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 // GET /api/admin/users/[id] - Get user by ID
 export async function GET(
@@ -13,6 +14,12 @@ export async function GET(
 
   try {
     const { id } = await params
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json({ error: 'Supabase client not configured' }, { status: 500 })
+    }
+    
+    const usersApi = createUsersAPI(supabase)
     const user = await usersApi.getById(id)
     
     return NextResponse.json(user)
@@ -39,6 +46,12 @@ export async function PUT(
     const body = await request.json()
     const { userData, performedBy } = body
 
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json({ error: 'Supabase client not configured' }, { status: 500 })
+    }
+    
+    const usersApi = createUsersAPI(supabase)
     const result = await usersApi.update(id, userData, performedBy)
     
     return NextResponse.json(result)

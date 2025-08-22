@@ -1,12 +1,12 @@
 import {
-    USER_ROLES,
-    TECHNICIAN_LEVELS,
-    DEVICE_STATUS,
-    DEVICE_GRADES,
-    REPAIR_TYPES,
-    REPAIR_STATUS,
-    TEST_RESULT,
-    USER_STATUS
+  USER_ROLES,
+  TECHNICIAN_LEVELS,
+  DEVICE_STATUS,
+  DEVICE_GRADES,
+  REPAIR_TYPES,
+  REPAIR_STATUS,
+  TEST_RESULT,
+  USER_STATUS
 } from '../constants'
 
 // Type utilities
@@ -67,13 +67,7 @@ export interface DeviceStatusHistory {
   changed_by?: string
   notes?: string
   created_at: string
-  // Enriched data from API (not in database schema)
-  changed_by_user?: {
-    id: string
-    full_name: string
-    role: string
-    technician_level?: string
-  } | null
+  // Note: changed_by contains the user ID, but we don't join user data in this query
 }
 
 // Batch types - matches database schema exactly

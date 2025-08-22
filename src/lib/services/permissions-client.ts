@@ -146,6 +146,15 @@ export async function getUserPermissionsClient(userId: string): Promise<Permissi
   try {
     const supabase = createSupabaseClient()
     
+    if (!supabase) {
+      console.warn('Supabase client not available, using config-based permissions only')
+      const userRole = await getCachedUserRole(userId)
+      if (userRole && userRole !== 'admin') {
+        return getRolePermissions(userRole as UserRole)
+      }
+      return []
+    }
+    
     // Get user's role from cache or database
     const userRole = await getCachedUserRole(userId)
     if (!userRole) return []
@@ -181,12 +190,12 @@ export async function getUserPermissionsClient(userId: string): Promise<Permissi
         .eq('user_permissions.user_id', userId)
       
       // Add database role permissions
-      rolePermissions?.forEach(p => {
+      rolePermissions?.forEach((p: { table_name: string; action: string }) => {
         permissions.add(`${p.table_name}:${p.action}` as PermissionString)
       })
       
       // Add/remove user-specific permissions
-      userPermissions?.forEach(p => {
+      userPermissions?.forEach((p: { table_name: string; action: string; user_permissions: { granted: boolean }[] }) => {
         const permString = `${p.table_name}:${p.action}` as PermissionString
         if (p.user_permissions[0].granted) {
           permissions.add(permString)

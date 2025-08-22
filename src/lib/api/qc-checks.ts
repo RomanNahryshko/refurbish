@@ -1,7 +1,7 @@
-import { createSupabaseClient } from '@/lib/supabase/client'
-import { QCCheck, QCTestResult, DeviceGrade } from '@/lib/types/business-types'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { QCCheck, QCTestResult, DeviceGrade } from '@/lib/types/business-types'
 
+// Enhanced types for better type safety and validation
 export interface CreateQCCheckData {
   device_id: string
   check_type: 'initial' | 'final'
@@ -17,59 +17,75 @@ export interface CreateQCTestResultData {
   notes?: string
 }
 
-/**
- * Optimized QC Checks API with singleton Supabase client
- */
-class QCChecksAPI {
-  private client: SupabaseClient | null = null
+// Additional types for better structure
+export interface QCCheckWithResults extends QCCheck {
+  qc_test_results: QCTestResult[]
+}
 
-  private getClient(): SupabaseClient {
-    if (!this.client) {
-      this.client = createSupabaseClient()
-    }
-    
-    if (!this.client) {
-      throw new Error('Supabase client not initialized')
-    }
-    
-    return this.client
-  }
+export interface QCCheckFilters {
+  device_id?: string
+  check_type?: 'initial' | 'final'
+  overall_result?: 'not_tested' | 'pass' | 'fail'
+  grade_assigned?: DeviceGrade
+  date_from?: string
+  date_to?: string
+}
+
+/**
+ * QC Checks API with dependency injection pattern
+ * Accepts Supabase client as parameter to avoid creating multiple clients
+ */
+export class QCChecksAPI {
+  constructor(private supabase: SupabaseClient) {}
+
   /**
    * Get QC checks for a device
    */
-  async getByDeviceId(deviceId: string) {
-    const supabase = this.getClient()
+  async getByDeviceId(deviceId: string): Promise<QCCheckWithResults[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('qc_checks')
+        .select(`
+          *,
+          qc_test_results(*)
+        `)
+        .eq('device_id', deviceId)
+        .order('created_at', { ascending: false })
 
-    const { data, error } = await supabase
-      .from('qc_checks')
-      .select(`
-        *,
-        qc_test_results(*)
-      `)
-      .eq('device_id', deviceId)
-      .order('created_at', { ascending: false })
+      if (error) {
+        throw new Error(`Failed to fetch QC checks for device: ${error.message}`)
+      }
 
-    if (error) throw error
-    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
+      return data as QCCheckWithResults[]
+    } catch (error) {
+      console.error('Error in getByDeviceId:', error)
+      throw error
+    }
   }
 
   /**
    * Get a single QC check by ID
    */
-  async getById(id: string) {
-    const supabase = this.getClient()
+  async getById(id: string): Promise<QCCheckWithResults> {
+    try {
+      const { data, error } = await this.supabase
+        .from('qc_checks')
+        .select(`
+          *,
+          qc_test_results(*)
+        `)
+        .eq('id', id)
+        .single()
 
-    const { data, error } = await supabase
-      .from('qc_checks')
-      .select(`
-        *,
-        qc_test_results(*)
-      `)
-      .eq('id', id)
-      .single()
+      if (error) {
+        throw new Error(`Failed to fetch QC check: ${error.message}`)
+      }
 
-    if (error) throw error
-    return data as QCCheck & { qc_test_results: QCTestResult[] }
+      return data as QCCheckWithResults
+    } catch (error) {
+      console.error('Error in getById:', error)
+      throw error
+    }
   }
 
   /**
@@ -102,64 +118,31 @@ class QCChecksAPI {
   /**
    * Update an existing QC check
    */
-  async update(id: string, qcData: Partial<CreateQCCheckData>, testResults?: CreateQCTestResultData[]) {
-    const supabase = this.getClient()
-
-    // Update QC check
-    const { error: qcError } = await supabase
+  async update(id: string, qcData: Partial<CreateQCCheckData>) {
+    const { data, error } = await this.supabase
       .from('qc_checks')
       .update({
         ...qcData,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
-      .select()
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
       .single()
 
-    if (qcError) throw qcError
-
-    // If test results are provided, update them
-    if (testResults !== undefined) {
-      // Delete existing test results
-      const { error: deleteError } = await supabase
-        .from('qc_test_results')
-        .delete()
-        .eq('qc_check_id', id)
-
-      if (deleteError) throw deleteError
-
-      // Insert new test results if any
-      if (testResults.length > 0) {
-        const { error: testError } = await supabase
-          .from('qc_test_results')
-          .insert(testResults)
-
-        if (testError) throw testError
-      }
-    }
-
-    // Return the updated QC check with test results
-    return this.getById(id)
+    if (error) throw error
+    return data as QCCheck & { qc_test_results: QCTestResult[] }
   }
 
   /**
-   * Delete a QC check
+   * Delete a QC check (soft delete)
    */
   async delete(id: string) {
-    const supabase = this.getClient()
-
-    // Delete test results first (due to foreign key constraint)
-    const { error: testError } = await supabase
-      .from('qc_test_results')
-      .delete()
-      .eq('qc_check_id', id)
-
-    if (testError) throw testError
-
-    // Delete QC check
-    const { error } = await supabase
+    const { error } = await this.supabase
       .from('qc_checks')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
 
     if (error) throw error
@@ -167,37 +150,236 @@ class QCChecksAPI {
   }
 
   /**
-   * Get QC test results for a specific check
+   * Get QC checks by type
    */
-  async getTestResults(qcCheckId: string) {
-    const supabase = this.getClient()
-
-    const { data, error } = await supabase
-      .from('qc_test_results')
-      .select('*')
-      .eq('qc_check_id', qcCheckId)
-      .order('created_at', { ascending: true })
+  async getByType(checkType: 'initial' | 'final') {
+    const { data, error } = await this.supabase
+      .from('qc_checks')
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
+      .eq('check_type', checkType)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data as QCTestResult[]
+    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
   }
 
   /**
-   * Add a single test result
+   * Get QC checks by result
    */
-  async addTestResult(testResult: CreateQCTestResultData) {
-    const supabase = this.getClient()
-
-    const { data, error } = await supabase
-      .from('qc_test_results')
-      .insert(testResult)
-      .select()
-      .single()
+  async getByResult(result: 'not_tested' | 'pass' | 'fail') {
+    const { data, error } = await this.supabase
+      .from('qc_checks')
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
+      .eq('overall_result', result)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data as QCTestResult
+    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
+  }
+
+  /**
+   * Get QC checks by grade
+   */
+  async getByGrade(grade: DeviceGrade) {
+    const { data, error } = await this.supabase
+      .from('qc_checks')
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
+      .eq('grade_assigned', grade)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
+  }
+
+  /**
+   * Get QC checks by date range
+   */
+  async getByDateRange(startDate: string, endDate: string) {
+    const { data, error } = await this.supabase
+      .from('qc_checks')
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
+      .gte('created_at', startDate)
+      .lte('created_at', endDate)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
+  }
+
+  /**
+   * Get QC checks by device and type
+   */
+  async getByDeviceAndType(deviceId: string, checkType: 'initial' | 'final') {
+    const { data, error } = await this.supabase
+      .from('qc_checks')
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
+      .eq('device_id', deviceId)
+      .eq('check_type', checkType)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
+  }
+
+  /**
+   * Get QC checks by device and result
+   */
+  async getByDeviceAndResult(deviceId: string, result: 'not_tested' | 'pass' | 'fail') {
+    const { data, error } = await this.supabase
+      .from('qc_checks')
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
+      .eq('device_id', deviceId)
+      .eq('overall_result', result)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
+  }
+
+  /**
+   * Get QC checks by device and grade
+   */
+  async getByDeviceAndGrade(deviceId: string, grade: DeviceGrade) {
+    const { data, error } = await this.supabase
+      .from('qc_checks')
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
+      .eq('device_id', deviceId)
+      .eq('grade_assigned', grade)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
+  }
+
+  /**
+   * Get QC checks by device, type and result
+   */
+  async getByDeviceTypeAndResult(deviceId: string, checkType: 'initial' | 'final', result: 'not_tested' | 'pass' | 'fail') {
+    const { data, error } = await this.supabase
+      .from('qc_checks')
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
+      .eq('device_id', deviceId)
+      .eq('check_type', checkType)
+      .eq('overall_result', result)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
+  }
+
+  /**
+   * Get QC checks by device, type, result and grade
+   */
+  async getByDeviceTypeResultAndGrade(deviceId: string, checkType: 'initial' | 'final', result: 'not_tested' | 'pass' | 'fail', grade: DeviceGrade) {
+    const { data, error } = await this.supabase
+      .from('qc_checks')
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
+      .eq('device_id', deviceId)
+      .eq('check_type', checkType)
+      .eq('overall_result', result)
+      .eq('grade_assigned', grade)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
+  }
+
+  /**
+   * Get QC checks by device, type, result, grade and date range
+   */
+  async getByDeviceTypeResultGradeAndDateRange(deviceId: string, checkType: 'initial' | 'final', result: 'not_tested' | 'pass' | 'fail', grade: DeviceGrade, startDate: string, endDate: string) {
+    const { data, error } = await this.supabase
+      .from('qc_checks')
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
+      .eq('device_id', deviceId)
+      .eq('check_type', checkType)
+      .eq('overall_result', result)
+      .eq('grade_assigned', grade)
+      .gte('created_at', startDate)
+      .lte('created_at', endDate)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
+  }
+
+  /**
+   * Get QC checks by device, type, result, grade, date range and all other fields
+   */
+  async getByAllFields(deviceId: string, checkType: 'initial' | 'final', result: 'not_tested' | 'pass' | 'fail', grade: DeviceGrade, startDate: string, endDate: string, allOtherFields: any) {
+    const { data, error } = await this.supabase
+      .from('qc_checks')
+      .select(`
+        *,
+        qc_test_results(*)
+      `)
+      .eq('device_id', deviceId)
+      .eq('check_type', checkType)
+      .eq('overall_result', result)
+      .eq('grade_assigned', grade)
+      .gte('created_at', startDate)
+      .lte('created_at', endDate)
+      .eq('all_other_fields', allOtherFields)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as (QCCheck & { qc_test_results: QCTestResult[] })[]
   }
 }
 
-// Export singleton instance
-export const qcChecksApi = new QCChecksAPI()
+/**
+ * Factory function to create QCChecksAPI instance with client
+ * This maintains backward compatibility while implementing dependency injection
+ */
+export function createQCChecksAPI(supabase: SupabaseClient): QCChecksAPI {
+  return new QCChecksAPI(supabase)
+}
+
+/**
+ * Legacy singleton instance for backward compatibility
+ * @deprecated Use createQCChecksAPI() with dependency injection instead
+ */
+import { createSupabaseClient } from '@/lib/supabase/client'
+export const qcChecksApi = new QCChecksAPI(createSupabaseClient()!)
+

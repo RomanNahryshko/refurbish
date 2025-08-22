@@ -1,19 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Batch } from '@/lib/types/business-types'
-
-// Dynamic import to avoid circular dependency issues
-async function getBatchesApi() {
-  const { batchesApi } = await import('@/lib/api/batches')
-  return batchesApi
-}
+import { useSupabaseContext } from '@/lib/providers/supabase-provider'
+import { createBatchesAPI } from '@/lib/api/batches'
 
 export function useBatches() {
+  const { client, isReady } = useSupabaseContext()
+  
   return useQuery({
     queryKey: ['batches'],
     queryFn: async () => {
-      const api = await getBatchesApi()
-      return api.getAll()
+      if (!client) throw new Error('Supabase client not available')
+      const batchesApi = createBatchesAPI(client)
+      return batchesApi.getAll()
     },
+    enabled: isReady && !!client,
     staleTime: 0, // Always consider data stale - refetch on every mount
     gcTime: 5 * 60 * 1000, // 5 minutes in cache
     refetchOnMount: true, // Always refetch when component mounts
@@ -22,13 +22,16 @@ export function useBatches() {
 }
 
 export function useBatch(id: string) {
+  const { client, isReady } = useSupabaseContext()
+  
   return useQuery({
     queryKey: ['batches', id],
     queryFn: async () => {
-      const api = await getBatchesApi()
-      return api.getById(id)
+      if (!client) throw new Error('Supabase client not available')
+      const batchesApi = createBatchesAPI(client)
+      return batchesApi.getById(id)
     },
-    enabled: !!id,
+    enabled: isReady && !!client && !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes - individual batches change less frequently
     gcTime: 10 * 60 * 1000, // 10 minutes in cache
     refetchOnMount: false,
@@ -36,12 +39,16 @@ export function useBatch(id: string) {
 }
 
 export function useBatchesWithDeviceCounts() {
+  const { client, isReady } = useSupabaseContext()
+  
   return useQuery({
     queryKey: ['batches', 'with-device-counts'],
     queryFn: async () => {
-      const api = await getBatchesApi()
-      return api.getAllWithDeviceCounts()
+      if (!client) throw new Error('Supabase client not available')
+      const batchesApi = createBatchesAPI(client)
+      return batchesApi.getAllWithDeviceCounts()
     },
+    enabled: isReady && !!client,
     staleTime: 2 * 60 * 1000, // 2 minutes - batches don't change frequently
     gcTime: 5 * 60 * 1000, // 5 minutes in cache
     refetchOnMount: false, // Don't refetch on mount if data exists
@@ -50,11 +57,13 @@ export function useBatchesWithDeviceCounts() {
 
 export function useCreateBatch() {
   const queryClient = useQueryClient()
-
+  const { client } = useSupabaseContext()
+  
   return useMutation({
     mutationFn: async (batchData: any) => {
-      const api = await getBatchesApi()
-      return api.create(batchData)
+      if (!client) throw new Error('Supabase client not available')
+      const batchesApi = createBatchesAPI(client)
+      return batchesApi.create(batchData)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['batches'] })
@@ -64,11 +73,13 @@ export function useCreateBatch() {
 
 export function useUpdateBatch() {
   const queryClient = useQueryClient()
-
+  const { client } = useSupabaseContext()
+  
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Batch> }) => {
-      const api = await getBatchesApi()
-      return api.update(id, data)
+      if (!client) throw new Error('Supabase client not available')
+      const batchesApi = createBatchesAPI(client)
+      return batchesApi.update(id, data)
     },
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['batches'] })
@@ -79,11 +90,13 @@ export function useUpdateBatch() {
 
 export function useDeleteBatch() {
   const queryClient = useQueryClient()
-
+  const { client } = useSupabaseContext()
+  
   return useMutation({
     mutationFn: async (id: string) => {
-      const api = await getBatchesApi()
-      return api.delete(id)
+      if (!client) throw new Error('Supabase client not available')
+      const batchesApi = createBatchesAPI(client)
+      return batchesApi.delete(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['batches'] })

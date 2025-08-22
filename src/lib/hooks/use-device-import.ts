@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { createSupabaseClient } from '@/lib/supabase/client'
+import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
 
 interface DrPhoneData {
   imei: string
@@ -26,10 +26,11 @@ interface QCCheck {
 
 // Hook to check for existing devices by IMEIs
 export function useExistingDevices() {
+  const supabase = useSupabaseClient()
+  
   return useQuery<ExistingDevice[]>({
     queryKey: ['devices', 'existing'],
     queryFn: async () => {
-      const supabase = createSupabaseClient()
       if (!supabase) throw new Error('Supabase client not initialized')
 
       const { data, error } = await supabase
@@ -46,12 +47,13 @@ export function useExistingDevices() {
 
 // Hook to check completed QC for specific device IDs
 export function useCompletedQCChecks(deviceIds: string[]) {
+  const supabase = useSupabaseClient()
+  
   return useQuery<Record<string, QCCheck[]>>({
     queryKey: ['qc-checks', 'completed', deviceIds],
     queryFn: async () => {
       if (deviceIds.length === 0) return {}
 
-      const supabase = createSupabaseClient()
       if (!supabase) throw new Error('Supabase client not initialized')
 
       const { data, error } = await supabase
@@ -81,12 +83,13 @@ export function useCompletedQCChecks(deviceIds: string[]) {
 
 // Hook to get device by IMEI and batch
 export function useDeviceByImeiAndBatch(imei: string, batchId: string) {
+  const supabase = useSupabaseClient()
+  
   return useQuery<ExistingDevice | null>({
     queryKey: ['devices', 'by-imei-batch', imei, batchId],
     queryFn: async () => {
       if (!imei || !batchId) return null
 
-      const supabase = createSupabaseClient()
       if (!supabase) throw new Error('Supabase client not initialized')
 
       const { data, error } = await supabase
@@ -180,9 +183,10 @@ import React from 'react'
 
 // Hook to find existing device by IMEI and batch (used for error handling)
 export function useFindExistingDevice() {
+  const supabase = useSupabaseClient()
+  
   return useMutation<ExistingDevice | null, Error, { imei: string; batchId: string }>({
     mutationFn: async ({ imei, batchId }) => {
-      const supabase = createSupabaseClient()
       if (!supabase) throw new Error('Supabase client not initialized')
 
       const { data, error } = await supabase

@@ -7,6 +7,9 @@ import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '../supabas
 // Get service role key from environment
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
+// Singleton instance to avoid creating new clients for each request
+let supabaseClientInstance: SupabaseClient | null = null
+
 // Create a Supabase client for use in Server Components
 // Uses service role key for full database access (since we don't have RLS)
 export async function createSupabaseServerClient() {
@@ -15,13 +18,18 @@ export async function createSupabaseServerClient() {
     return null as unknown as SupabaseClient
   }
 
+  // Return existing instance if already created
+  if (supabaseClientInstance) {
+    return supabaseClientInstance
+  }
+
   const cookieStore = await cookies()
 
   // Use service role key if available (for database access without RLS)
   // Fall back to anon key for auth operations
   const key = supabaseServiceRoleKey || supabaseAnonKey
 
-  return createServerClient(
+  supabaseClientInstance = createServerClient(
     supabaseUrl,
     key,
     {
@@ -43,4 +51,11 @@ export async function createSupabaseServerClient() {
       },
     }
   )
+
+  return supabaseClientInstance
+}
+
+// Alternative function to get the singleton instance directly
+export function getSupabaseServerClient(): SupabaseClient | null {
+  return supabaseClientInstance
 } 

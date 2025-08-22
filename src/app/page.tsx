@@ -2,47 +2,50 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createSupabaseClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
 
 export default function Home() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const supabase = useSupabaseClient()
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const supabase = createSupabaseClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        if (supabase) {
+          const { data: { user } } = await supabase.auth.getUser()
         
-        if (!user) {
-          router.replace('/login')
-          return
+          if (!user) {
+            router.replace('/login')
+            return
+          }
+
+          setUser(user)
+
+          // Get user role
+          try {
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('role')
+              .eq('id', user.id)
+              .single()
+            
+            setUserRole(profile?.role || null)
+          } catch {
+            // Handle profile fetch error silently
+          }
         }
-
-        setUser(user)
-
-        // Get user role
-        try {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single()
-          
-          setUserRole(profile?.role || null)
-        } catch {
-        } catch {
       } finally {
         setLoading(false)
       }
     }
 
     checkAuth()
-  }, [router])
+  }, [supabase, router])
 
   if (loading) {
     return (

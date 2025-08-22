@@ -31,13 +31,12 @@ import {
 const getRepairLabel = (repairId: string): string => {
   // Basic mapping for common repair types
   const repairLabels: Record<string, string> = {
-    'screen': 'Screen Replacement',
-    'battery': 'Battery Replacement', 
-    'camera': 'Camera Repair',
-    'speaker': 'Speaker Repair',
-    'charging_port': 'Charging Port Repair',
-    'water_damage': 'Water Damage Repair',
-    'software': 'Software Issues'
+    housing_change: 'Housing Change',
+    screen_change: 'Screen Change',
+    battery_change: 'Battery Change',
+    software_update: 'Software Update',
+    glass_change: 'Glass Change',
+    other: 'Other'
   }
   return repairLabels[repairId] || repairId
 }

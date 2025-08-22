@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { usersApi } from '@/lib/api/users'
+import { createUsersAPI } from '@/lib/api/users'
 import { requirePermission } from '@/lib/services/auth-helpers'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 // POST /api/admin/users/[id]/reset-password - Reset user password
 export async function POST(
@@ -23,6 +24,12 @@ export async function POST(
       )
     }
 
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json({ error: 'Supabase client not configured' }, { status: 500 })
+    }
+    
+    const usersApi = createUsersAPI(supabase)
     const result = await usersApi.resetPassword(id, email, performedBy)
     
     return NextResponse.json(result)

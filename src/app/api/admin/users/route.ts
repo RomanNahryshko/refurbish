@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { usersApi } from '@/lib/api/users'
+import { createUsersAPI } from '@/lib/api/users'
 import { checkPermission } from '@/lib/services/permissions'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       Object.entries(filters).filter(([_, value]) => value !== undefined)
     )
 
+    const usersApi = createUsersAPI(supabase)
     const users = await usersApi.getAll(Object.keys(cleanFilters).length > 0 ? cleanFilters : undefined)
     
     return NextResponse.json(users)
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const usersApi = createUsersAPI(supabase)
     const result = await usersApi.create(userData, performedBy)
     
     return NextResponse.json(result)
