@@ -9,10 +9,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { login } from '@/lib/actions/auth'
 import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions'
 import { UserRole } from '@/lib/types/business-types'
+import { useRouter } from 'next/navigation'
 
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const {push} = useRouter()
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -43,27 +45,27 @@ export function LoginForm() {
             
             // If user must change password, redirect to change-password page
             if (statusData.mustChangePassword) {
-              window.location.href = '/change-password'
+              push('/change-password')
             } else {
               // Check if user has dashboard access
               const userRole = statusData.role || 'technician'
               
               if (hasDashboardAccess(userRole as UserRole)) {
                 // User has dashboard access, redirect to dashboard
-                window.location.href = '/dashboard'
+                push('/dashboard')
               } else {
                 // User doesn't have dashboard access, redirect to first available module
                 const firstModule = getFirstAvailableModule(userRole as UserRole)
-                window.location.href = firstModule
+                push(firstModule)
               }
             }
           } else {
             // Fallback to dashboard if status check fails
-            window.location.href = '/dashboard'
+            push('/dashboard')
           }
         } catch {
           // Fallback to dashboard if status check fails
-          window.location.href = '/dashboard'
+          push('/dashboard')
         }
       }
     } catch {

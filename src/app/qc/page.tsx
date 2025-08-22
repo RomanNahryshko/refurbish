@@ -36,18 +36,6 @@ export default function QCPage() {
   // Fetch all devices for metrics calculation
   const { data: allDevices } = useDevices()
   
-  // Log errors for debugging
-  if (devicesError) {
-    console.error('❌ Devices for QC error:', devicesError)
-  }
-  if (batchesError) {
-    console.error('❌ Batches error:', batchesError)
-  }
-  
-
-  
-
-  
   // Refetch data every time the component mounts (page visit)
   useEffect(() => { 
     // Force refetch when component mounts to get fresh data
