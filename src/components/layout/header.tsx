@@ -5,7 +5,6 @@ import Image from 'next/image'
 import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { useUser } from '@/lib/hooks/use-user'
-import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions'
 import { type UserRole } from '@/lib/types/business-types'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -26,15 +25,9 @@ export function Header() {
   const { data: profile, isLoading: profileLoading } = useProfile(!!user)
   const supabase = useSupabaseClient()
 
-  // Get the appropriate logo link based on user permissions
+  // Logo always links to homepage (central navigation hub)
   const getLogoLink = () => {
-    if (!profile?.role) return '/dashboard' // Default fallback
-    
-    if (hasDashboardAccess(profile.role as UserRole)) {
-      return '/dashboard'
-    } else {
-      return getFirstAvailableModule(profile.role as UserRole)
-    }
+    return '/homepage'
   }
 
   const handleLogout = async () => {
@@ -156,9 +149,13 @@ export function Header() {
                       Change Password
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
-                    Settings
-                  </DropdownMenuItem>
+                  {(userRole === 'admin' || userRole === 'general_manager') && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" className="cursor-pointer">
+                        Admin Settings
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
                     Log out

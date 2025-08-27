@@ -114,19 +114,9 @@ export function hasDashboardAccess(userRole: UserRole): boolean {
  * Get the first available module for a user based on their role
  */
 export function getFirstAvailableModule(userRole: UserRole): string {
-  switch (userRole) {
-    case 'admin':
-    case 'general_manager':
-      return '/dashboard'
-    case 'ops_manager':
-      return '/batch-intake'
-    case 'qc_controller':
-      return '/qc'
-    case 'technician':
-      return '/repair-jobs'
-    default:
-      return '/batch-intake' // fallback
-  }
+  // All authenticated users should land on homepage first
+  // Homepage provides access to all allowed modules for their role
+  return '/homepage'
 }
 
 /**

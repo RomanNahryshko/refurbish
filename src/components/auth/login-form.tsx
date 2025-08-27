@@ -1,154 +1,141 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
-
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createSupabaseClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent } from '@/components/ui/card'
-import { login } from '@/lib/actions/auth'
-import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions'
-import { UserRole } from '@/lib/types/business-types'
-import { useRouter } from 'next/navigation'
-import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export function LoginForm() {
-  const [isLoading, setIsLoading] = useState(false)
+  const { push } = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const {push} = useRouter()
-  const supabase = useSupabaseClient()
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsLoading(true)
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
     setError(null)
-
-    const formData = new FormData(event.currentTarget)
+    setIsLoading(true)
 
     try {
-      // Run login and minimum delay in parallel
-      const [result] = await Promise.all([
-        login({
-          email: formData.get('email') as string,
-          password: formData.get('password') as string,
-        }),
-        new Promise(resolve => setTimeout(resolve, 800)) // Minimum 800ms loading time
-      ])
-
-      if (result?.error) {
-        setError(result.error)
+      const supabase = createSupabaseClient()
+      
+      if (!supabase) {
+        setError('Configuration error. Please contact your administrator.')
         setIsLoading(false)
-      } else {
-        // Check password status using Supabase client instead of API
-        try {
-          if (supabase) {
-            // Get current user after successful login
-            const { data: { user }, error: userError } = await supabase.auth.getUser()
-            
-            if (userError || !user) {
-              console.error('Error getting current user:', userError)
-              // Fallback to dashboard if user fetch fails
-              push('/dashboard')
-              return
-            }
-
-            const { data: profile, error: profileError } = await supabase
-              .from('user_profiles')
-              .select('must_change_password, role')
-              .eq('id', user.id)
-              .single()
-
-            if (profileError) {
-              console.error('Error fetching user profile:', profileError)
-              // Fallback to dashboard if profile fetch fails
-              push('/dashboard')
-              return
-            }
-
-            // If user must change password, redirect to change-password page
-            if (profile?.must_change_password === true) {
-              push('/change-password')
-            } else {
-              // Check if user has dashboard access
-              const userRole = profile?.role || 'technician'
-              
-              if (hasDashboardAccess(userRole as UserRole)) {
-                // User has dashboard access, redirect to dashboard
-                push('/dashboard')
-              } else {
-                // User doesn't have dashboard access, redirect to first available module
-                const firstModule = getFirstAvailableModule(userRole as UserRole)
-                push(firstModule)
-              }
-            }
-          } else {
-            // Fallback to dashboard if no supabase client
-            push('/dashboard')
-          }
-        } catch {
-          // Fallback to dashboard if status check fails
-          push('/dashboard')
-        }
+        return
       }
-    } catch {
-      setError('An unexpected error occurred.')
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        setError(signInError.message)
+        setIsLoading(false)
+        return
+      }
+
+      // Check login status and redirect
+      checkLoginStatus()
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.')
       setIsLoading(false)
     }
   }
 
+  const checkLoginStatus = async () => {
+    const supabase = createSupabaseClient()
+    
+    if (supabase) {
+      // Get current user after successful login
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        console.error('Error getting current user:', userError)
+        // Fallback to homepage if user fetch fails
+        push('/homepage')
+        return
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('must_change_password, role')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError)
+        // Fallback to homepage if profile fetch fails
+        push('/homepage')
+        return
+      }
+
+      // Check if user must change password
+      if (profile?.must_change_password) {
+        push('/change-password')
+      } else {
+        // Check if user has access to specific modules based on role
+        const userRole = profile?.role || 'technician'
+        
+        // Always redirect to homepage after successful login
+        push('/homepage')
+      }
+    } else {
+      // Fallback to homepage if no supabase client
+      push('/homepage')
+    }
+  }
+
   return (
-    <Card className="w-full max-w-md">
-      <form onSubmit={handleFormSubmit}>
-        <CardContent className="pb-6">
-          <div className="text-center pt-3 mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Sign In</h2>
-          </div>
-          <div className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="name@example.com"
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="pt-2">
-              <Button
-                type="submit"
-                className="w-full cursor-pointer hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isLoading}
-              >
-              {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                  Signing in...
-                </div>
-              ) : (
-                'Sign In'
-              )}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
+    <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+      <div className="flex flex-col space-y-2 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+        <p className="text-sm text-muted-foreground">
+          Enter your email and password to sign in
+        </p>
+      </div>
+      
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="name@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={isLoading}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={isLoading}
+          />
+        </div>
+        
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? 'Signing in...' : 'Sign in'}
+        </Button>
       </form>
-    </Card>
+    </div>
   )
-} 
+}
