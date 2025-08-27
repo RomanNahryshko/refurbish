@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { useSupabaseClearUser } from '@/lib/providers/supabase-provider'
 
 interface PasswordStatus {
   user: {
@@ -21,6 +22,7 @@ export function usePasswordStatus() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = useSupabaseClient()
+  const clearUserState = useSupabaseClearUser()
 
   const checkPasswordStatus = async (): Promise<PasswordStatus | null> => {
     setLoading(true)
@@ -34,7 +36,7 @@ export function usePasswordStatus() {
 
       // Get current user with retry logic
       let user = null
-      let retries = 3
+      let retries = 5 // Increased retries for better reliability
       
       while (retries > 0 && !user) {
         const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser()
@@ -43,7 +45,7 @@ export function usePasswordStatus() {
           console.error('Error getting current user:', userError)
           retries--
           if (retries > 0) {
-            await new Promise(resolve => setTimeout(resolve, 300)) // Wait 300ms before retry
+            await new Promise(resolve => setTimeout(resolve, 200)) // Reduced wait time
             continue
           }
           setError('Failed to get current user')
@@ -57,7 +59,7 @@ export function usePasswordStatus() {
         
         retries--
         if (retries > 0) {
-          await new Promise(resolve => setTimeout(resolve, 300)) // Wait 300ms before retry
+          await new Promise(resolve => setTimeout(resolve, 200)) // Reduced wait time
         }
       }
       
@@ -95,8 +97,14 @@ export function usePasswordStatus() {
     }
   }
 
+  // Function to force clear user state (useful for logout scenarios)
+  const forceClearState = () => {
+    clearUserState()
+  }
+
   return {
     checkPasswordStatus,
+    forceClearState,
     loading,
     error
   }

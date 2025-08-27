@@ -12,15 +12,23 @@ let browserClient: ReturnType<typeof createBrowserClient> | null = null
  * This prevents unnecessary client creation and reduces load on Supabase
  */
 export function createSupabaseClient() {
+  console.log('🔧 createSupabaseClient: Starting client creation...')
+  
   if (!hasValidSupabaseConfig) {
+    console.error('❌ createSupabaseClient: Invalid Supabase configuration')
     // Return a mock client that won't crash the app
     return null
   }
   
+  console.log('✅ createSupabaseClient: Configuration valid')
+  
   // Return existing client if already created
   if (browserClient) {
+    console.log('🔄 createSupabaseClient: Returning existing client')
     return browserClient
   }
+  
+  console.log('🆕 createSupabaseClient: Creating new client...')
   
   // Create new client only once
   browserClient = createBrowserClient(
@@ -28,6 +36,7 @@ export function createSupabaseClient() {
     supabaseAnonKey
   )
   
+  console.log('✅ createSupabaseClient: New client created successfully')
   return browserClient
 }
 
@@ -45,4 +54,18 @@ export function getSupabaseClient(): SupabaseClient | null {
  */
 export function resetSupabaseClient(): void {
   browserClient = null
+}
+
+/**
+ * Global reset function for Supabase client
+ * This can be called from anywhere to force client recreation
+ */
+export function globalResetSupabaseClient(): void {
+  resetSupabaseClient()
+}
+
+// Make reset function available globally for logout scenarios
+if (typeof window !== 'undefined') {
+  // @ts-ignore
+  window.__SUPABASE_CLIENT_RESET__ = globalResetSupabaseClient
 } 

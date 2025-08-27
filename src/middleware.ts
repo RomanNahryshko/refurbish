@@ -4,12 +4,15 @@ import { createServerClient } from '@supabase/ssr'
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   
+  console.log('🔒 Middleware: Processing path:', pathname)
+  
   // Skip middleware for home page and specific paths to prevent loops
   if (pathname === '/' || 
       pathname.startsWith('/_next') || 
       pathname.startsWith('/api/') ||
       pathname.startsWith('/favicon') ||
       pathname.includes('.')) {
+    console.log('🔒 Middleware: Skipping path:', pathname)
     return NextResponse.next()
   }
 
@@ -19,13 +22,32 @@ export async function middleware(request: NextRequest) {
   const isLoginPage = pathname.startsWith('/login')
   const isChangePasswordPage = pathname.startsWith('/change-password')
   
-  if ((isProtectedPath || isChangePasswordPage) && !isLoginPage) {
+  console.log('🔒 Middleware: Path analysis:', {
+    pathname,
+    isProtectedPath,
+    isLoginPage,
+    isChangePasswordPage
+  })
+  
+  // Skip middleware for login and change-password pages to prevent redirect loops
+  if (isLoginPage || isChangePasswordPage) {
+    console.log('🔒 Middleware: Allowing access to auth pages:', pathname)
+    return NextResponse.next()
+  }
+  
+  if (isProtectedPath) {
+    console.log('🔒 Middleware: Checking auth for protected path:', pathname)
+    
     try {
       // Simple Supabase auth check
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       
       let supabaseResponse = NextResponse.next()
+      
+      // Log all cookies for debugging
+      const allCookies = request.cookies.getAll()
+      console.log('🔒 Middleware: All cookies:', allCookies.map(c => ({ name: c.name, value: c.value.substring(0, 20) + '...' })))
       
       const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
         cookies: {
@@ -40,38 +62,45 @@ export async function middleware(request: NextRequest) {
         },
       })
 
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      console.log('🔒 Middleware: Auth check result:', {
+        hasUser: !!user,
+        userId: user?.id,
+        error: userError?.message
+      })
+      
+      if (userError) {
+        console.error('🔒 Middleware: Auth error:', userError)
+      }
       
       if (!user) {
+        console.log('🔒 Middleware: No user, redirecting to login')
+        // Clear any existing auth cookies when redirecting to login
         const redirectUrl = new URL('/login', request.url)
         redirectUrl.searchParams.set('redirectTo', pathname)
+        
+        // Clear auth cookies in response
+        supabaseResponse.cookies.delete('sb-access-token')
+        supabaseResponse.cookies.delete('sb-refresh-token')
+        
         return NextResponse.redirect(redirectUrl)
       }
-
-      // Check if user must change password (except when already on change-password page)
-      if (pathname !== '/change-password') {
-        try {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('must_change_password')
-            .eq('id', user.id)
-            .single()
-
-          if (profile?.must_change_password === true) {
-            const changePasswordUrl = new URL('/change-password', request.url)
-            return NextResponse.redirect(changePasswordUrl)
-          }
-        } catch {
-          // Continue without redirecting if there's an error
-        }
-      }
       
+      console.log('🔒 Middleware: User authenticated, allowing access to:', pathname)
+      
+      // Simplified logic - just check if user exists, don't check password status here
+      // Password status will be checked on the client side after redirect
       return supabaseResponse
-    } catch {
+    } catch (error) {
+      console.error('🔒 Middleware: Error during auth check:', error)
+      // If there's any error, allow the request to continue
+      // This prevents middleware from blocking requests due to auth issues
       return NextResponse.next()
     }
   }
   
+  console.log('🔒 Middleware: Allowing access to:', pathname)
   return NextResponse.next()
 }
 

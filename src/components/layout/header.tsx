@@ -11,12 +11,12 @@ import { type UserRole } from '@/lib/types/business-types'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Navigation } from './navigation'
@@ -39,9 +39,17 @@ export function Header() {
 
   const handleLogout = async () => {
     if (supabase) {
-      await supabase.auth.signOut()
-      // Clear caches when logging out
-      window.location.href = '/login'
+      try {
+        // Sign out from Supabase
+        await supabase.auth.signOut()
+        
+        // Simple redirect to login page
+        window.location.href = '/login'
+      } catch (error) {
+        console.error('Logout failed:', error)
+        // Force redirect even if logout fails
+        window.location.href = '/login'
+      }
     }
   }
 

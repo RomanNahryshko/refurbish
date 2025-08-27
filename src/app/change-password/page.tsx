@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { usePasswordStatus, useChangePassword } from '@/lib/hooks/use-change-password'
 import { getRedirectPath } from '@/lib/config/route-permissions'
 import { UserRole } from '@/lib/types/business-types'
+import { PasswordStatusChecker } from '@/components/auth/password-status-checker'
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
@@ -143,17 +144,16 @@ export default function ChangePasswordPage() {
   const isForced = userInfo.mustChangePassword
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <PasswordStatusChecker />
+      
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {isForced ? 'Password Change Required' : 'Change Password'}
-          </h1>
-          <p className="mt-2 text-gray-600">
-            {isForced 
-              ? 'You must change your password before continuing'
-              : 'Update your account password'
-            }
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Change Your Password
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Please enter your current password and choose a new one
           </p>
         </div>
 

@@ -4,32 +4,28 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '../supabase'
 
-// Get service role key from environment
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-// Singleton instance to avoid creating new clients for each request
-let supabaseClientInstance: SupabaseClient | null = null
-
 // Create a Supabase client for use in Server Components
-// Uses service role key for full database access (since we don't have RLS)
+// Uses anon key for auth operations to properly handle user sessions
 export async function createSupabaseServerClient() {
   if (!hasValidSupabaseConfig) {
+    console.error('❌ Server Supabase: Invalid configuration')
     // Return a mock client that won't crash the app
     return null as unknown as SupabaseClient
   }
 
-  // Return existing instance if already created
-  if (supabaseClientInstance) {
-    return supabaseClientInstance
-  }
+  console.log('🔧 Server Supabase: Creating client with anon key for auth operations')
+
+  // Always use anon key for auth operations to properly handle user sessions
+  // Service role key bypasses auth and won't work for user authentication
+  const key = supabaseAnonKey
 
   const cookieStore = await cookies()
+  
+  // Log cookies for debugging
+  const allCookies = cookieStore.getAll()
+  console.log('🍪 Server Supabase: Cookies available:', allCookies.map(c => ({ name: c.name, value: c.value.substring(0, 20) + '...' })))
 
-  // Use service role key if available (for database access without RLS)
-  // Fall back to anon key for auth operations
-  const key = supabaseServiceRoleKey || supabaseAnonKey
-
-  supabaseClientInstance = createServerClient(
+  const client = createServerClient(
     supabaseUrl,
     key,
     {
@@ -42,7 +38,8 @@ export async function createSupabaseServerClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
-          } catch {
+          } catch (error) {
+            console.warn('⚠️ Server Supabase: Cookie setAll error:', error)
             // The `setAll` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
             // user sessions.
@@ -52,10 +49,11 @@ export async function createSupabaseServerClient() {
     }
   )
 
-  return supabaseClientInstance
+  console.log('✅ Server Supabase: Client created successfully')
+  return client
 }
 
 // Alternative function to get the singleton instance directly
 export function getSupabaseServerClient(): SupabaseClient | null {
-  return supabaseClientInstance
+  return null // No longer using singleton pattern
 } 

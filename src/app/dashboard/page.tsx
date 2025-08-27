@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SupabaseWarning } from '@/components/common/supabase-warning';
 import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions';
+import { PasswordStatusChecker } from '@/components/auth/password-status-checker';
 
 const modules = [
   {
@@ -102,13 +103,15 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto px-4 py-8">
       <SupabaseWarning />
+      
+      {/* Client-side password status checker */}
+      <PasswordStatusChecker />
+      
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome to ReMobile Refurbish Management System
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-600 mt-2">Welcome back! Here's what's happening in your system.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
