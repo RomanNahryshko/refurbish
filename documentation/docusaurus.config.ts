@@ -96,6 +96,12 @@ const config: Config = {
           position: 'left',
           label: 'For Developers',
         },
+        {
+          type: 'docSidebar',
+          sidebarId: 'userManualSidebar',
+          position: 'left',
+          label: 'User Manual',
+        },
         // Your GitHub repo
         {
           href: 'https://github.com/vladimirterehoff/remobile-refurbish',
