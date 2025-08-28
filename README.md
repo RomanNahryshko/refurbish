@@ -27,7 +27,7 @@ This system digitizes and streamlines the entire workflow for used phone refurbi
 
 ## User Roles
 
-1. **admin** - System administrators
+1. **admin** - System administrator
 2. **general_manager** - General managers with full business access
 3. **ops_manager** - Operations managers handling intake and workflow
 4. **qc_controller** - Quality control staff
