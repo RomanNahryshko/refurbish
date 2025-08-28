@@ -1,28 +1,26 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Plus, Minus, X, Wrench, AlertTriangle } from 'lucide-react'
-import { RepairJobListTable } from '@/components/repair-jobs/repair-job-list-table'
-import { LoadingSpinner } from '@/components/common/loading-spinner'
-import { ConfirmationDialog } from '@/components/common/confirmation-dialog'
-import { useRepairJobs } from '@/lib/hooks/use-repair-jobs'
-import { useBatches } from '@/lib/hooks/use-batches'
-import { useSpareParts } from '@/lib/hooks/use-spare-parts'
-import { useStartRepairJob, useCompleteRepairJob, useUpdateRepairJob } from '@/lib/hooks/use-repair-jobs'
-import { RepairJob, SparePart } from '@/lib/types/business-types'
-import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
-import { useProfile } from '@/lib/hooks/use-profile-optimized'
-import { canTechnicianPerformRepair, getTechnicianRepairTypes } from '@/lib/config/permissions'
+'use client';
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Plus, Minus, X, Wrench, AlertTriangle } from 'lucide-react';
+import { RepairJobListTable } from '@/components/repair-jobs/repair-job-list-table';
+import { LoadingSpinner } from '@/components/common/loading-spinner';
+import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
+import { useRepairJobs } from '@/lib/hooks/use-repair-jobs';
+import { useBatches } from '@/lib/hooks/use-batches';
+import { useSpareParts } from '@/lib/hooks/use-spare-parts';
+import { useStartRepairJob, useCompleteRepairJob, useUpdateRepairJob } from '@/lib/hooks/use-repair-jobs';
+import { RepairJob, SparePart } from '@/lib/types/business-types';
+import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants';
+import { useProfile } from '@/lib/hooks/use-profile-optimized';
+import { canTechnicianPerformRepair, getTechnicianRepairTypes } from '@/lib/config/permissions';
 
 // Import configs from the table component
-import { repairTypeConfig } from '@/components/repair-jobs/repair-job-list-table'
-import { useUser } from '@/lib/stores'
-
+import { repairTypeConfig } from '@/components/repair-jobs/repair-job-list-table';
+import { useSupabaseContext } from '@/lib/providers/supabase-provider';
 // Extended RepairJob type with joined data from API
 interface RepairJobWithDevice extends RepairJob {
   device: {
@@ -46,7 +44,7 @@ export default function RepairJobsPage() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all') // Default to all jobs
   const [currentPage, setCurrentPage] = useState(1)
-  const user = useUser()
+  const { user } = useSupabaseContext()
   
   // Fetch real data from API
   const { data: repairJobsData, isLoading: repairJobsLoading, error: repairJobsError } = useRepairJobs()

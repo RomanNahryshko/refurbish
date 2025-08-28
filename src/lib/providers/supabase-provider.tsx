@@ -125,6 +125,8 @@ export function useSupabaseUser(): User | null {
   return user
 }
 
+
+
 /**
  * Hook to get the Supabase client (throws if not available)
  */
