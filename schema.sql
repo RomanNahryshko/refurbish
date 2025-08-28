@@ -65,12 +65,12 @@ CREATE TYPE repair_type AS ENUM (
 );
 
 -- Repair job status
+-- NOTE: 'failed' and 'cancelled' statuses were removed as they're not used in the application
+-- When technicians cancel a job, it goes back to 'pending' status
 CREATE TYPE repair_status AS ENUM (
-  'pending',      -- Created but not started
-  'in_progress',  -- Currently being worked on
-  'completed',    -- Successfully completed
-  'failed',       -- Could not complete
-  'cancelled'     -- Cancelled by manager
+  'pending',      -- Created but not started (or returned to queue)
+  'in_progress',  -- Currently being worked on by a technician
+  'completed'     -- Successfully completed and sent to QC
 );
 
 -- QC test status
@@ -724,6 +724,7 @@ VALUES (
 COMMENT ON TABLE devices IS 'Main table for tracking mobile devices through the refurbishment process';
 COMMENT ON TABLE repair_jobs IS 'Tracks individual repair tasks for devices';
 COMMENT ON TABLE spare_parts IS 'Inventory of spare parts used in repairs';
+COMMENT ON TYPE repair_status IS 'Valid repair job statuses: pending (waiting to be claimed), in_progress (being worked on), completed (sent to QC)';
 COMMENT ON TABLE qc_checks IS 'Quality control checks performed on devices';
 COMMENT ON TABLE batches IS 'Batches of devices received from suppliers';
 COMMENT ON TABLE permissions IS 'UI/Management only: Defines possible permissions (enforced at API level)';
