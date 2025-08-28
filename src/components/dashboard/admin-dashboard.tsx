@@ -272,28 +272,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
               <div className="flex items-center justify-center">
                 <div className="relative w-64 h-64">
                   <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                    {devicesStatsWithPercentages.map((item, index) => {
-                      // Calculate cumulative angles for proper donut chart segments
-                      const totalPercentage = devicesStatsWithPercentages.reduce((sum, d) => sum + d.percentage, 0);
-                      const startAngle = devicesStatsWithPercentages.slice(0, index).reduce((sum, d) => sum + (d.percentage / totalPercentage) * 360, 0);
-                      const endAngle = startAngle + (item.percentage / totalPercentage) * 360;
-                      const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
+                    {(() => {
+                      const totalCount = devicesStatsWithPercentages.reduce((sum, d) => sum + d.count, 0);
                       
-                      // Convert angles to radians and calculate SVG path coordinates
-                      const startX = 50 + 35 * Math.cos((startAngle * Math.PI) / 180);
-                      const startY = 50 + 35 * Math.sin((startAngle * Math.PI) / 180);
-                      const endX = 50 + 35 * Math.cos((endAngle * Math.PI) / 180);
-                      const endY = 50 + 35 * Math.sin((endAngle * Math.PI) / 180);
-                      
-                      return (
-                        <path
-                          key={item.status}
-                          d={`M 50 50 L ${startX} ${startY} A 35 35 0 ${largeArcFlag} 1 ${endX} ${endY} Z`}
-                          fill={item.color}
-                          className="hover:opacity-80 transition-opacity"
-                        />
-                      );
-                    })}
+                      return devicesStatsWithPercentages.map((item, index) => {
+                        if (item.count === 0) return null;
+                        
+                        // Calculate cumulative angles for proper donut chart segments
+                        const startAngle = devicesStatsWithPercentages.slice(0, index).reduce((sum, d) => sum + (d.count / totalCount) * 360, 0);
+                        const endAngle = startAngle + (item.count / totalCount) * 360;
+                        const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
+                        
+                        // Convert angles to radians and calculate SVG path coordinates
+                        const startX = 50 + 35 * Math.cos((startAngle * Math.PI) / 180);
+                        const startY = 50 + 35 * Math.sin((startAngle * Math.PI) / 180);
+                        const endX = 50 + 35 * Math.cos((endAngle * Math.PI) / 180);
+                        const endY = 50 + 35 * Math.sin((endAngle * Math.PI) / 180);
+                        
+                        return (
+                          <path
+                            key={item.status}
+                            d={`M 50 50 L ${startX} ${startY} A 35 35 0 ${largeArcFlag} 1 ${endX} ${endY} Z`}
+                            fill={item.color}
+                            className="hover:opacity-80 transition-opacity"
+                          />
+                        );
+                      });
+                    })()}
                     <circle cx="50" cy="50" r="20" fill="white" />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -307,15 +312,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
               
               {/* Legend */}
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                {devicesStatsWithPercentages.map((item) => (
-                  <div key={item.status} className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: item.color }}
-                    ></div>
-                    <span className="truncate">{item.status}</span>
+                {devicesStatsWithPercentages.length === 0 ? (
+                  <div className="col-span-2 text-center text-muted-foreground">
+                    No device data available
                   </div>
-                ))}
+                ) : (
+                  devicesStatsWithPercentages.map((item) => (
+                    <div key={item.status} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: item.color }}
+                      ></div>
+                      <span className="truncate">{item.status}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>

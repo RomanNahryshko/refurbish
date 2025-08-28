@@ -2,12 +2,10 @@
 
 import React, { useState } from 'react';
 import { DateRange } from 'react-day-picker';
-import RoleSelector, { UserRole } from './role-selector';
 import DashboardContainer from './dashboard-container';
 import { DateRangePicker } from './date-range-picker';
 
 const DashboardMain = () => {
-  const [selectedRole, setSelectedRole] = useState<UserRole>('admin');
   
   // Initialize with today's date as both start and end
   const today = new Date();
@@ -28,7 +26,6 @@ const DashboardMain = () => {
               Operational Metrics & Analytics
             </p>
           </div>
-          <RoleSelector selectedRole={selectedRole} onRoleChange={setSelectedRole} />
         </div>
         
         <DateRangePicker 
@@ -39,7 +36,6 @@ const DashboardMain = () => {
 
       {/* Dashboard Content */}
       <DashboardContainer 
-        selectedRole={selectedRole} 
         selectedDateRange={selectedDateRange} 
         onDateRangeChange={setSelectedDateRange} 
       />
