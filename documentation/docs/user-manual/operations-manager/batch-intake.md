@@ -31,14 +31,20 @@ Every time new phones arrive from a supplier.
 4. Upload your Excel/CSV file
 5. Check that all phones imported correctly
 
-## Step 3: Review and modify
+## Step 3: Review and modify (Initial QC)
 
 1. Go through each phone in the batch
 2. Look at what Dr. Phone found
 3. For each phone, decide:
-   - **Needs repairs?** Select which repairs (housing, glass, battery, etc.)
+   - **Needs repairs?** Check the boxes for needed repairs:
+     - Housing Change (back cover damage)
+     - Glass Change (screen damage)
+     - Battery Change (battery problems)
+     - Software Update (system issues)
+     - Other (describe the problem)
    - **Looks good?** Give it a grade (A, B, or C)
-4. Add any notes about problems Dr. Phone missed
+4. Add notes about problems Dr. Phone missed
+5. **Important:** When you save, repair jobs are created automatically for all checked repairs
 
 ## Step 4: Print labels
 
@@ -48,9 +54,10 @@ Every time new phones arrive from a supplier.
 4. Each label shows: Internal ID, IMEI, Model, Serial Number
 
 ## What happens next
-- Phones needing repairs go to the repair queue
-- Phones with grades are ready for sale
-- Technicians can find phones using the printed labels
+- **If you selected repairs:** System creates repair jobs automatically, phones go to repair queue
+- **If you gave a grade:** Phone is ready for sale, no repairs needed
+- Repair jobs appear immediately in technician queue
+- Technicians find phones using the printed labels
 
 ## Pro tips
 - **Double-check IMEI numbers** - wrong numbers cause big problems later

@@ -1,6 +1,6 @@
 ---
 title: QC Checklist
-sidebar_position: 5
+sidebar_position: 4
 ---
 
 # Quality Control Checklist
@@ -63,16 +63,10 @@ Use this checklist for every phone you test. Don't skip any steps!
 
 ## Final Checks
 
-**Overall Assessment:**
 - [ ] All repairs were completed properly
 - [ ] No new damage from repair process
 - [ ] Phone feels solid (no loose parts)
 - [ ] All original problems are fixed
 
-**Documentation:**
-- [ ] Notes written about any remaining issues
-- [ ] Grade assigned (A, B, or C)
-- [ ] Decision recorded in system (Pass or Fail)
-
 ## If anything fails
-Stop the QC process and mark the phone as "Fail". Write clear notes about what's wrong so technicians know what to fix.
+Mark as "Fail", select needed repairs, and write clear notes. The system will automatically create repair jobs.

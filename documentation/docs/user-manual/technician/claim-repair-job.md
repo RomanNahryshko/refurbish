@@ -22,10 +22,10 @@ Every time you finish a job and want to start working on something new.
 
 ## What you'll see in the job list
 
-**Device Info:** Internal ID, IMEI, phone model
-**Repair Type:** What needs to be fixed (housing, glass, battery, etc.)
-**Description:** Notes about the problem
-**Created:** When the job was made
+- **Device Info:** Internal ID, IMEI, phone model
+- **Repair Type:** What needs to be fixed (housing, glass, battery, etc.)
+- **Description:** Notes about the problem (especially for "Other" repairs)
+- **Created:** When the job was made (during initial QC or when device failed final QC)
 
 ## How to pick good jobs
 
@@ -44,9 +44,15 @@ Every time you finish a job and want to start working on something new.
 - The phone's status changes to "In Repair"
 - You can find the phone using its Internal ID label
 
-## If you change your mind
+## If you can't complete a job
 
-Talk to your manager - they can reassign the job to someone else. But try not to do this too often!
+If you've started a repair but can't finish it:
+1. Click the "Cancel" button on the job
+2. The job returns to "Pending" status
+3. Another technician can claim it
+4. Use this only when necessary (missing parts, wrong tools, etc.)
+
+**Note:** Cancelling doesn't mark it as "failed" - it just returns the job to the queue
 
 ## Pro tips
 - **Don't hoard jobs** - only take what you can finish today

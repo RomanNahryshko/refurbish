@@ -53,8 +53,8 @@ Each page should have:
 ### Operations Manager
 - [x] `overview.md` - What ops managers can do ✅ COMPLETED
 - [x] `batch-intake.md` - Complete batch intake process (Create → Import → Review → Print) ✅ COMPLETED
-- [x] `create-repair-jobs.md` - How to assign repairs ✅ COMPLETED
-- [x] `reassign-repairs.md` - Moving jobs between technicians ✅ COMPLETED
+- [x] `repair-job-creation.md` - How repair jobs are created automatically ✅ UPDATED
+- [x] `manage-repair-jobs.md` - Tracking and reassigning repair jobs ✅ UPDATED
 
 ### Quality Control
 - [x] `overview.md` - QC role and responsibilities ✅ COMPLETED

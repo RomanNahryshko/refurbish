@@ -57,7 +57,7 @@ Common terms you'll hear and see in the ReMobile system.
 
 **Batch** - A group of phones that arrived together from a supplier.
 
-**Repair Job** - A specific task to fix one problem on one phone.
+**Repair Job** - A specific task to fix one problem on one phone. Created automatically during Initial QC or when a device fails Final QC.
 
 **Queue** - List of jobs waiting to be done.
 

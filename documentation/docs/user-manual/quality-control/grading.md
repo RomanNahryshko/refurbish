@@ -1,14 +1,11 @@
 ---
-title: Grading
-sidebar_position: 4
+title: Grading Standards
+sidebar_position: 3
 ---
 
-# Grading Devices
+# Grading Standards
 
-This page explains how to assign grades to phones that pass your quality check.
-
-## When you need this
-After a phone passes final QC and you need to give it a grade for selling.
+Assign grades to phones that pass QC.
 
 ## The three grades
 
@@ -33,29 +30,12 @@ After a phone passes final QC and you need to give it a grade for selling.
 - Battery holds charge but may not be perfect
 - Shows clear signs of use but still sellable
 
-## How to assign grades
+## Key rule
 
-1. Check the phone against each grade description
-2. Pick the grade that best matches the phone's condition
-3. **When in doubt, go lower** - it's better to under-promise than disappoint customers
-4. Select the grade in the system
-5. Add notes explaining your decision
+**When in doubt, go lower** - Better to under-promise than disappoint customers.
 
-## What affects the grade
-
-**Screen condition** - This is the most important factor. Customers notice screen problems first.
-
-**Housing condition** - Scratches and dents lower the grade.
-
-**Function problems** - If anything doesn't work, the phone fails QC (no grade).
-
-**Battery health** - Weak batteries can lower the grade.
-
-## Common mistakes to avoid
-- **Don't grade broken phones** - if something doesn't work, fail it instead
-- **Don't be too generous** - customers expect phones to match their grade
-- **Don't ignore small problems** - they add up
-- **Don't grade without testing** - always run through your full checklist first
-
-## What happens next
-Graded phones go to inventory and are ready to sell to customers at prices based on their grade.
+## Remember
+- If anything doesn't work → Fail it (don't grade)
+- Screen condition matters most  
+- Small problems add up
+- Always complete full QC checklist before grading

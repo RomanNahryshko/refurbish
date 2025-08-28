@@ -80,6 +80,12 @@ const config: Config = {
       items: [
         {
           type: 'docSidebar',
+          sidebarId: 'userManualSidebar',
+          position: 'left',
+          label: 'User Manual',
+        },
+        {
+          type: 'docSidebar',
           sidebarId: 'mvpSidebar',
           position: 'left',
           label: 'Tech Docs - MVP',
@@ -95,12 +101,6 @@ const config: Config = {
           sidebarId: 'devSidebar',
           position: 'left',
           label: 'For Developers',
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'userManualSidebar',
-          position: 'left',
-          label: 'User Manual',
         },
         // Your GitHub repo
         {

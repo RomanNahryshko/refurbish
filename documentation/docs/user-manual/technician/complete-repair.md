@@ -52,14 +52,16 @@ After you've fixed the phone and tested that everything works properly.
 
 ## What happens next
 - The phone goes to "Final QC" status
+- Your repair job disappears from the Repair Jobs list (it's completed!)
 - QC staff will test your work
-- If they find problems, the phone comes back to you with notes
+- If they find problems, new repair jobs are created and appear back in the queue
 - If everything looks good, the phone gets graded and goes to inventory
 
 ## Common problems
 - **Forgot to test something?** Better to catch it now than have QC send it back
 - **Used wrong part?** Tell your supervisor - they can help fix the inventory
 - **Something else broke?** Create a note so QC knows it wasn't your fault
+- **Can't finish the repair?** Click "Cancel" to return the job to the queue for someone else
 
 ## Pro tips
 - **Test everything twice** - it's embarrassing when QC finds obvious problems

@@ -11,9 +11,7 @@ As an Operations Manager, you're the person who gets new phones into our system 
 
 **Batch Intake** - Register new batches of phones when they arrive from suppliers. This is your main job.
 
-**Initial Quality Control** - Check each phone and decide if it needs repairs or can get a grade right away.
-
-**Create Repair Jobs** - Tell technicians what repairs each phone needs.
+**Initial Quality Control** - Check each phone during import. Select needed repairs and the system creates repair jobs automatically.
 
 **Manage Repairs** - Move repair jobs between technicians if needed.
 
@@ -24,8 +22,7 @@ As an Operations Manager, you're the person who gets new phones into our system 
 1. **Morning:** Check if new phone batches arrived
 2. **Create batch** in the system with supplier info
 3. **Import Dr. Phone data** for all phones in the batch
-4. **Review each phone** - does it need repairs or can it get graded?
-5. **Create repair jobs** for phones that need work
+4. **Review each phone** - select needed repairs (system creates jobs automatically) or assign grade
 6. **Print labels** for all phones so technicians can find them
 7. **Check progress** throughout the day
 
