@@ -4,15 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { UserRole } from './role-selector';
+import { DashboardMetrics } from '@/lib/services/dashboard-service';
 
 interface TechnicianDashboardProps {
-  mockData: any;
+  realData: DashboardMetrics;
   selectedDateRange?: DateRange;
   onDateRangeChange?: (range: DateRange | undefined) => void;
   technicianLevel: UserRole;
 }
 
-const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ mockData, technicianLevel }) => {
+const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ realData, technicianLevel }) => {
   // Filter repair type based on technician level
   const getRepairType = () => {
     switch (technicianLevel) {
@@ -27,6 +28,22 @@ const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ mockData, tec
     }
   };
 
+  // Get technician level stats
+  const getTechnicianLevelStats = () => {
+    switch (technicianLevel) {
+      case 'technician_l1':
+        return realData.repairStats.technicianUtilization.L1;
+      case 'technician_l2':
+        return realData.repairStats.technicianUtilization.L2;
+      case 'technician_l3':
+        return realData.repairStats.technicianUtilization.L3;
+      default:
+        return realData.repairStats.technicianUtilization.L1;
+    }
+  };
+
+  const levelStats = getTechnicianLevelStats();
+
   return (
     <div className="space-y-6">
       {/* 1. My Work Today Cards */}
@@ -39,7 +56,7 @@ const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ mockData, tec
               <span className="text-2xl">✅</span>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockData.technicianWorkToday.jobsCompleted}</div>
+              <div className="text-2xl font-bold">{levelStats.completedToday}</div>
               <p className="text-xs text-muted-foreground">Today</p>
             </CardContent>
           </Card>
@@ -50,7 +67,7 @@ const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ mockData, tec
               <span className="text-2xl">⚡</span>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockData.technicianWorkToday.currentActiveJob}</div>
+              <div className="text-2xl font-bold">{levelStats.activeJobs}</div>
               <p className="text-xs text-muted-foreground">In progress</p>
             </CardContent>
           </Card>
@@ -61,7 +78,7 @@ const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ mockData, tec
               <span className="text-2xl">⏳</span>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockData.technicianWorkToday.availableInQueue}</div>
+              <div className="text-2xl font-bold">{realData.devicesStats.awaitingRepair}</div>
               <p className="text-xs text-muted-foreground">Ready to pick</p>
             </CardContent>
           </Card>
@@ -87,72 +104,176 @@ const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ mockData, tec
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockData.availableRepairs.map((repair: any) => (
-                  <TableRow key={repair.internalId}>
-                    <TableCell className="font-medium">{repair.internalId}</TableCell>
-                    <TableCell>{repair.model}</TableCell>
-                    <TableCell>{repair.repairType}</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        repair.waitTime.includes('3h')
-                          ? 'bg-red-100 text-red-800' 
-                          : repair.waitTime.includes('2h')
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {repair.waitTime}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="outline" disabled>
-                        Pick Job
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                <TableRow>
+                  <TableCell className="font-medium">Sample Device</TableCell>
+                  <TableCell>iPhone 12</TableCell>
+                  <TableCell>{getRepairType()}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      1h
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Button size="sm">Start Repair</Button>
+                  </TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       </div>
 
-      {/* 3. My Active Job Details */}
+      {/* 3. My Performance Stats */}
       <div className="space-y-4">
-        <h4 className="text-md font-semibold">My Active Job</h4>
+        <h4 className="text-md font-semibold">My Performance Stats</h4>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Today's Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span>Jobs Completed:</span>
+                  <span className="font-semibold">{levelStats.completedToday}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Active Jobs:</span>
+                  <span className="font-semibold">{levelStats.activeJobs}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Average per Tech:</span>
+                  <span className="font-semibold">{levelStats.averagePerTech}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Queue Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span>Devices Awaiting Repair:</span>
+                  <span className="font-semibold">{realData.devicesStats.awaitingRepair}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Devices In Repair:</span>
+                  <span className="font-semibold">{realData.devicesStats.inRepair}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Devices Completed:</span>
+                  <span className="font-semibold">{realData.devicesStats.graded}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* 4. Team Overview */}
+      <div className="space-y-4">
+        <h4 className="text-md font-semibold">Team Overview</h4>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>L1 Technicians (Housing)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Available:</span>
+                  <span className="font-semibold">{realData.repairStats.technicianUtilization.L1.availableTechnicians}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Active Jobs:</span>
+                  <span className="font-semibold">{realData.repairStats.technicianUtilization.L1.activeJobs}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Completed Today:</span>
+                  <span className="font-semibold">{realData.repairStats.technicianUtilization.L1.completedToday}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>L2 Technicians (Glass)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Available:</span>
+                  <span className="font-semibold">{realData.repairStats.technicianUtilization.L2.availableTechnicians}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Active Jobs:</span>
+                  <span className="font-semibold">{realData.repairStats.technicianUtilization.L2.activeJobs}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Completed Today:</span>
+                  <span className="font-semibold">{realData.repairStats.technicianUtilization.L2.completedToday}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>L3 Technicians (Battery/Other)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Available:</span>
+                  <span className="font-semibold">{realData.repairStats.technicianUtilization.L3.availableTechnicians}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Active Jobs:</span>
+                  <span className="font-semibold">{realData.repairStats.technicianUtilization.L3.activeJobs}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Completed Today:</span>
+                  <span className="font-semibold">{realData.repairStats.technicianUtilization.L3.completedToday}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* 5. Recent Activity */}
+      <div className="space-y-4">
+        <h4 className="text-md font-semibold">Recent Activity</h4>
         <Card>
           <CardHeader>
-            <CardTitle>Current Work in Progress</CardTitle>
+            <CardTitle>Today's Completed Repairs</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Internal ID</p>
-                <p className="text-lg font-semibold">{mockData.activeJob.internalId}</p>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Housing Changes:</span>
+                <span className="font-medium">{realData.repairStats.completedRepairs.housing}</span>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">IMEI</p>
-                <p className="text-lg font-semibold">{mockData.activeJob.imei}</p>
+              <div className="flex justify-between text-sm">
+                <span>Glass Changes:</span>
+                <span className="font-medium">{realData.repairStats.completedRepairs.glass}</span>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Model</p>
-                <p className="text-lg font-semibold">{mockData.activeJob.model}</p>
+              <div className="flex justify-between text-sm">
+                <span>Battery Changes:</span>
+                <span className="font-medium">{realData.repairStats.completedRepairs.battery}</span>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Repair Type</p>
-                <p className="text-lg font-semibold">{mockData.activeJob.repairType}</p>
+              <div className="flex justify-between text-sm">
+                <span>Software Updates:</span>
+                <span className="font-medium">{realData.repairStats.completedRepairs.software}</span>
               </div>
-            </div>
-            <div className="pt-2">
-              <p className="text-sm font-medium text-muted-foreground">Started</p>
-              <p className="text-lg font-semibold">{mockData.activeJob.startedAgo}</p>
-            </div>
-            <div className="pt-4">
-              <Button variant="outline" className="mr-2" disabled>
-                Mark Complete
-              </Button>
-              <Button variant="outline" disabled>
-                Report Issue
-              </Button>
+              <div className="flex justify-between text-sm">
+                <span>Other Repairs:</span>
+                <span className="font-medium">{realData.repairStats.completedRepairs.other}</span>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -34,7 +34,7 @@
 **Database Support**: ✅ **PARTIAL**
 - ✅ `batches` table has batch creation data
 - ✅ `batches.device_count` for expected devices
-- ❌ No clear "imported" vs "expected" distinction
+- ❌ No clear "imported" vs "expected" distinction // !CHECK
 
 **Date Range Support**: ✅ **YES**
 - Single date: `WHERE DATE(batches.created_at) = '2024-01-15'`
@@ -82,15 +82,15 @@
 - Graded
 
 **Database Support**: ✅ **MOSTLY**
-- ❌ No "expected" vs "imported" distinction
+- ❌ No "expected" vs "imported" distinction // !CHECK
 - ✅ `devices.status` enum covers all workflow states
 
 **Date Range Support**: ⚠️ **COMPLEX**
 - `devices.created_at` shows when device was added
 - `device_status_history` tracks all status changes with timestamps
 - Single date: Need point-in-time snapshot (complex query)
-- Date range: Can count devices that ENTERED each status during period
-- **Note**: Status is current state, historical requires status_history table
+- Date range: Can count devices that ENTERED each status during period 
+- **Note**: Status is current state, historical requires status_history table //! add "imported" to status_history table
 
 ### 5. Repair Stats
 **Data Required**:
