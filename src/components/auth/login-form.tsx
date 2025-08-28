@@ -43,6 +43,7 @@ export function LoginForm() {
       // Check login status and redirect
       checkLoginStatus()
     } catch (err) {
+      console.error('Login error:', err)
       setError('An unexpected error occurred. Please try again.')
       setIsLoading(false)
     }
@@ -80,7 +81,7 @@ export function LoginForm() {
         push('/change-password')
       } else {
         // Check if user has access to specific modules based on role
-        const userRole = profile?.role || 'technician'
+        // const userRole = profile?.role || 'technician'
         
         // Always redirect to homepage after successful login
         push('/homepage')
@@ -90,34 +91,6 @@ export function LoginForm() {
       push('/homepage')
     }
   }
-
-  // Show loading state if Supabase is not ready
-  if (!isReady) {
-    return (
-      <Card className="w-full max-w-md">
-        <CardContent className="pb-6">
-          <div className="text-center pt-3 mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Initializing...</h2>
-            <div className="mt-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto"></div>
-            </div>
-            <p className="text-sm text-gray-600 mt-2">Please wait while we set up authentication...</p>
-            <Button 
-              onClick={() => {
-                console.log('Manual reset triggered')
-                forceRecreateClient()
-              }}
-              variant="outline" 
-              className="mt-4"
-            >
-              Reset Authentication
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
     <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
       <div className="flex flex-col space-y-2 text-center">
