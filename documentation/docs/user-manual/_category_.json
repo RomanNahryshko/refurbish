@@ -1,0 +1,10 @@
+{
+  "label": "User Manual",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "title": "User Manual",
+    "description": "Practical guides for all system users",
+    "slug": "/user-manual"
+  }
+}

@@ -59,12 +59,11 @@ export const REPAIR_TYPE_MAP = {
 } as const
 
 // Repair job status enum - matches database schema
+// NOTE: 'failed' and 'cancelled' were removed - jobs only go back to 'pending'
 export const REPAIR_STATUS = {
-  'pending': 'pending',       // Created but not started
+  'pending': 'pending',       // Created but not started (or returned to queue)
   'in_progress': 'in_progress', // Currently being worked on
-  'completed': 'completed',     // Successfully completed
-  'failed': 'failed',           // Could not complete
-  'cancelled': 'cancelled'      // Cancelled by manager
+  'completed': 'completed'     // Successfully completed and sent to QC
 } as const
 
 // QC test result enum - matches database schema

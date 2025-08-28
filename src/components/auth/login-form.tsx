@@ -1,145 +1,93 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-
+import { createSupabaseClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent } from '@/components/ui/card'
-import { login } from '@/lib/actions/auth'
-import { useSupabaseForceRecreate, useSupabaseContext } from '@/lib/providers/supabase-provider'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export function LoginForm() {
-  const [isLoading, setIsLoading] = useState(false)
+  const { push } = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const forceRecreateClient = useSupabaseForceRecreate()
-  const { client: supabase, isReady } = useSupabaseContext()
-  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsLoading(true)
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
     setError(null)
-
-    console.log('🚀 Login form submitted')
-    console.log('📊 Form state - Supabase ready:', isReady, 'Client exists:', !!supabase)
-
-    // Check if Supabase client is ready
-    if (!isReady || !supabase) {
-      console.error('❌ Supabase not ready for login')
-      setError('Authentication system is not ready. Please wait a moment and try again.')
-      setIsLoading(false)
-      return
-    }
-
-    const formData = new FormData(event.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-
-    console.log('📧 Login attempt for email:', email)
-    console.log('🔒 Password length:', password.length)
+    setIsLoading(true)
 
     try {
-      // Run login and minimum delay in parallel
-      console.log('📡 Calling login action...')
-      const [result] = await Promise.all([
-        login({
-          email,
-          password,
-        }),
-        new Promise(resolve => setTimeout(resolve, 800)) // Minimum 800ms loading time
-      ])
-
-      console.log('📨 Login action response received:', result)
-      console.log('📋 Response type:', typeof result)
-      console.log('📋 Response keys:', result ? Object.keys(result) : 'null/undefined')
-
-      if (result?.error) {
-        console.error('❌ Login failed with error:', result.error)
-        setError(result.error)
+      const supabase = createSupabaseClient()
+      
+      if (!supabase) {
+        setError('Configuration error. Please contact your administrator.')
         setIsLoading(false)
-      } else if (result?.success) {
-        console.log('✅ Login successful, user data:', result.user)
-        
-        // Use API endpoint to verify authentication and get redirect URL
-        console.log('🔄 Verifying authentication via API...')
-        
-        try {
-          // Clear browser cache and storage before redirect
-          console.log('🧹 Clearing browser cache...')
-          if ('caches' in window) {
-            try {
-              await caches.keys().then(names => {
-                names.forEach(name => caches.delete(name))
-              })
-              console.log('✅ Browser cache cleared')
-            } catch (cacheError) {
-              console.warn('⚠️ Cache clearing warning:', cacheError)
-            }
-          }
-          
-          const redirectResponse = await fetch('/api/auth/redirect', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          })
-          
-          if (redirectResponse.ok) {
-            const redirectData = await redirectResponse.json()
-            console.log('✅ API redirect response:', redirectData)
-            
-            if (redirectData.success && redirectData.redirectUrl) {
-              console.log('🔄 Redirecting to:', redirectData.redirectUrl)
-              
-              // Try multiple redirect methods
-              try {
-                // Method 1: router.push
-                console.log('🔄 Method 1: Using router.push...')
-                router.push(redirectData.redirectUrl)
-                
-                // Method 2: Fallback to window.location
-                setTimeout(() => {
-                  console.log('🔄 Method 2: Fallback to window.location...')
-                  window.location.href = redirectData.redirectUrl
-                }, 1000)
-                
-                // Method 3: Force reload and redirect
-                setTimeout(() => {
-                  console.log('🔄 Method 3: Force reload and redirect...')
-                  window.location.replace(redirectData.redirectUrl)
-                }, 2000)
-                
-              } catch (redirectError) {
-                console.error('❌ Router redirect failed:', redirectError)
-                console.log('🔄 Falling back to window.location...')
-                window.location.href = redirectData.redirectUrl
-              }
-            } else {
-              console.error('❌ Invalid redirect response:', redirectData)
-              setError('Redirect failed. Please try again.')
-              setIsLoading(false)
-            }
-          } else {
-            console.error('❌ Redirect API failed:', redirectResponse.status)
-            setError('Authentication verification failed. Please try again.')
-            setIsLoading(false)
-          }
-        } catch (apiError) {
-          console.error('❌ Redirect API error:', apiError)
-          setError('Authentication verification failed. Please try again.')
-          setIsLoading(false)
-        }
-      } else {
-        console.warn('⚠️ Unexpected login result:', result)
-        setError('Unexpected response from server. Please try again.')
-        setIsLoading(false)
+        return
       }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        setError(signInError.message)
+        setIsLoading(false)
+        return
+      }
+
+      // Check login status and redirect
+      checkLoginStatus()
     } catch (err) {
-      console.error('💥 Login error caught:', err)
       setError('An unexpected error occurred. Please try again.')
       setIsLoading(false)
+    }
+  }
+
+  const checkLoginStatus = async () => {
+    const supabase = createSupabaseClient()
+    
+    if (supabase) {
+      // Get current user after successful login
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError || !user) {
+        console.error('Error getting current user:', userError)
+        // Fallback to homepage if user fetch fails
+        push('/homepage')
+        return
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('must_change_password, role')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError)
+        // Fallback to homepage if profile fetch fails
+        push('/homepage')
+        return
+      }
+
+      // Check if user must change password
+      if (profile?.must_change_password) {
+        push('/change-password')
+      } else {
+        // Check if user has access to specific modules based on role
+        const userRole = profile?.role || 'technician'
+        
+        // Always redirect to homepage after successful login
+        push('/homepage')
+      }
+    } else {
+      // Fallback to homepage if no supabase client
+      push('/homepage')
     }
   }
 
@@ -171,61 +119,50 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <form onSubmit={handleFormSubmit}>
-        <CardContent className="pb-6">
-          <div className="text-center pt-3 mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Sign In</h2>
-            <div className="text-xs text-gray-500 mt-1">
-              Supabase: {isReady ? 'Ready' : 'Not Ready'} | Client: {supabase ? 'Exists' : 'Missing'}
-            </div>
-          </div>
-          <div className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="name@example.com"
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="pt-2">
-              <Button
-                type="submit"
-                className="w-full cursor-pointer hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isLoading}
-              >
-              {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                  Signing in...
-                </div>
-              ) : (
-                'Sign In'
-              )}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
+    <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+      <div className="flex flex-col space-y-2 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+        <p className="text-sm text-muted-foreground">
+          Enter your email and password to sign in
+        </p>
+      </div>
+      
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="name@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            disabled={isLoading}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={isLoading}
+          />
+        </div>
+        
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? 'Signing in...' : 'Sign in'}
+        </Button>
       </form>
-    </Card>
+    </div>
   )
-} 
+}

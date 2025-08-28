@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Basic auth check - only redirect to login if accessing protected pages without auth
-  const protectedPaths = ['/dashboard', '/devices', '/repair-jobs', '/qc', '/admin', '/batch-intake', '/inventory', '/suppliers']
+  const protectedPaths = ['/homepage', '/dashboard', '/devices', '/repair-jobs', '/qc', '/admin', '/batch-intake', '/inventory', '/suppliers']
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path))
   const isLoginPage = pathname.startsWith('/login')
   const isChangePasswordPage = pathname.startsWith('/change-password')
