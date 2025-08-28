@@ -25,6 +25,8 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
     '/devices/*',
     '/repair-jobs',
     '/repair-jobs/*',
+    '/inventory',
+    '/inventory/*',
     '/change-password'
   ],
   
@@ -49,7 +51,6 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
 
 // Routes that are blocked for ops_manager (should redirect to /)
 export const OPS_MANAGER_BLOCKED_ROUTES = [
-  '/inventory',
   '/suppliers',
   '/admin',
   '/mockup-overview',

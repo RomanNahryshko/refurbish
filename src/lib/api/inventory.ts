@@ -211,6 +211,8 @@ export class InventoryAPI {
    * Soft delete spare part
    */
   async deletePart(id: string) {
+    console.log(`InventoryAPI: Attempting to soft delete spare part ${id}`)
+    
     const { data, error } = await this.supabase
       .from('spare_parts')
       .update({ deleted_at: new Date().toISOString() })
@@ -218,7 +220,12 @@ export class InventoryAPI {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error(`InventoryAPI: Error deleting spare part ${id}:`, error)
+      throw error
+    }
+    
+    console.log(`InventoryAPI: Successfully soft deleted spare part ${id}`)
     return data
   }
 
