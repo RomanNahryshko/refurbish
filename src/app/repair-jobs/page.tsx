@@ -16,13 +16,12 @@ import { useSpareParts } from '@/lib/hooks/use-spare-parts'
 import { useStartRepairJob, useCompleteRepairJob, useUpdateRepairJob } from '@/lib/hooks/use-repair-jobs'
 import { RepairJob, SparePart } from '@/lib/types/business-types'
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants'
-import { useUser } from '@/lib/hooks/use-user'
 import { useProfile } from '@/lib/hooks/use-profile-optimized'
 import { canTechnicianPerformRepair, getTechnicianRepairTypes } from '@/lib/config/permissions'
-import { useSupabaseContext } from '@/lib/providers/supabase-provider'
 
 // Import configs from the table component
 import { repairTypeConfig } from '@/components/repair-jobs/repair-job-list-table'
+import { useUser } from '@/lib/stores'
 
 // Extended RepairJob type with joined data from API
 interface RepairJobWithDevice extends RepairJob {
@@ -47,41 +46,14 @@ export default function RepairJobsPage() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all') // Default to all jobs
   const [currentPage, setCurrentPage] = useState(1)
+  const user = useUser()
   
   // Fetch real data from API
   const { data: repairJobsData, isLoading: repairJobsLoading, error: repairJobsError } = useRepairJobs()
   const { data: batchesData, isLoading: batchesLoading } = useBatches()
   const { data: sparePartsData, isLoading: sparePartsLoading } = useSpareParts()
-  
-  // Get current user profile for technician level
-  const { data: user } = useUser()
   const { data: profile } = useProfile(!!user)
 
-  // Get current user ID from Supabase context
-  const { client: supabase, isReady } = useSupabaseContext()
-  
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      console.log('Getting current user', { supabase: !!supabase, isReady })
-      if (supabase && isReady) {
-        try {
-          const { data: { user } } = await supabase.auth.getUser()
-          console.log('User from auth.getUser():', user)
-          if (user) {
-            setCurrentUserId(user.id)
-            console.log('Set currentUserId to:', user.id)
-          }
-        } catch (error) {
-          console.error('Error getting user:', error)
-        }
-      }
-    }
-    getCurrentUser()
-  }, [supabase, isReady])
-  
-  // Get current user ID for repair assignments
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  
   // Update repair job mutation
   const updateRepairJob = useUpdateRepairJob()
   
@@ -256,7 +228,7 @@ export default function RepairJobsPage() {
 
   // Find current user's active repair for banner - this should come from auth context
   const activeRepair = transformedRepairJobs.find(repair => 
-    repair.assigned_to === currentUserId && repair.status === 'in_progress'
+    repair.assigned_to === user?.id && repair.status === 'in_progress'
   )
 
   // Pagination calculations
@@ -267,28 +239,23 @@ export default function RepairJobsPage() {
   const paginatedRepairs = sortedRepairs.slice(startIndex, endIndex)
   
   const handleStartRepair = (repair: RepairJob) => {
-    console.log('handleStartRepair called', { repair, currentUserId })
     
-    if (!currentUserId) {
-      console.log('No currentUserId, returning early')
+    if (!user?.id) {
       return
     }
     
     // Find the transformed repair job data
     const transformedRepair = transformedRepairJobs.find(r => r.id === repair.id)
     if (!transformedRepair) {
-      console.log('No transformedRepair found, returning early')
       return
     }
     
-    console.log('Setting confirm dialog')
     setConfirmDialog({
       open: true,
       title: 'Start Repair',
       description: `Are you sure you want to start the ${repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.label} repair for device ${transformedRepair.device_internal_id}?`,
       action: () => {
         try {
-          console.log('Starting repair job', { repairId: repair.id, assignedTo: currentUserId })
           
           // Set loading state for this specific repair job
           setStartingRepairId(repair.id)
@@ -296,7 +263,7 @@ export default function RepairJobsPage() {
           // Start the repair job using the API (this will update device status to in_repair)
           startRepairJob.mutate({
             repairJobId: repair.id,
-            assignedTo: currentUserId
+            assignedTo: user?.id
           })
         } catch (error) {
           console.error('Error starting repair job:', error)
@@ -545,8 +512,8 @@ export default function RepairJobsPage() {
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}
             renderFilters={renderFilters}
-            currentUser={currentUserId && profile ? {
-              id: currentUserId,
+            currentUser={user?.id && profile ? {
+              id: user?.id,
               full_name: profile.full_name || 'Current User',
               role: profile.role || 'technician',
               technician_level: profile.technician_level || null

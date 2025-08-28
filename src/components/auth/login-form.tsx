@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useSetUser } from '@/lib/stores/user-store'
 
 export function LoginForm() {
   const { push } = useRouter()
@@ -14,6 +15,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const setUser = useSetUser()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,10 +57,10 @@ export function LoginForm() {
     if (supabase) {
       // Get current user after successful login
       const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
+      setUser(user)
+
+
       if (userError || !user) {
-        console.error('Error getting current user:', userError)
-        // Fallback to homepage if user fetch fails
         push('/homepage')
         return
       }
@@ -70,8 +72,6 @@ export function LoginForm() {
         .single()
 
       if (profileError) {
-        console.error('Error fetching user profile:', profileError)
-        // Fallback to homepage if profile fetch fails
         push('/homepage')
         return
       }

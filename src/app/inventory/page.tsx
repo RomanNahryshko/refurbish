@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { PartsList } from '@/modules/inventory/components/parts-list';
 import { PartFormDialog } from '@/modules/inventory/components/part-form-dialog';
 import { StockAdjustmentDialog } from '@/modules/inventory/components/stock-adjustment-dialog';
@@ -8,6 +8,7 @@ import { SparePart } from '@/lib/types/business-types';
 import { useDeletePartMutation } from '@/modules/inventory/hooks/use-inventory';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield } from 'lucide-react';
+import { useUser } from '@/lib/stores';
 
 export default function InventoryPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -15,31 +16,12 @@ export default function InventoryPage() {
   const [isStockDialogOpen, setIsStockDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedPart, setSelectedPart] = useState<SparePart | null>(null)
-  const [userRole, setUserRole] = useState<string | null>(null)
+  const user = useUser()
 
   const deletePartMutation = useDeletePartMutation()
 
-  // Fetch user role from API
-  useEffect(() => {
-    async function fetchUserProfile() {
-      try {
-        const response = await fetch('/api/user/profile')
-        if (response.ok) {
-          const data = await response.json()
-          setUserRole(data.role || 'viewer')
-        } else if (response.status === 404) {
-          // No profile exists, but user is authenticated
-          // They might be a superadmin - let the API handle permissions
-          setUserRole('admin') // Assume admin for UI purposes
-        }
-      } catch {
-      }
-    }
-    fetchUserProfile()
-  }, [])
-
   // Only ops_manager and admin can modify inventory
-  const canModify = userRole === 'ops_manager' || userRole === 'admin'
+  const canModify = user?.role === 'ops_manager' || user?.role === 'admin'
 
   const handleAddPart = () => {
     setSelectedPart(null)

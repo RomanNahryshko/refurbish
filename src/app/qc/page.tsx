@@ -129,10 +129,6 @@ export default function QCPage() {
       totalCompleted = allDevices.filter((device: Device) => device.status === DEVICE_STATUS.graded).length
     }
     
-
-    
-
-    
     return {
       inQueue,
       completedToday,
