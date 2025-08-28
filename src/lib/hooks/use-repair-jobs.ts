@@ -185,22 +185,30 @@ export function useCompleteRepairJob() {
     }) => {
       if (!client) throw new Error('Supabase client not available')
       
-      const repairJobsApi = createRepairJobsAPI(client)
-      const result = await repairJobsApi.completeRepairJob(repairJobId, {
-        completion_notes: completionNotes,
-        parts_used: partsUsed?.map(part => ({
-          id: crypto.randomUUID(),
+      // Use the server API endpoint instead of client API to ensure proper logic
+      const response = await fetch('/api/repair-jobs/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           repair_job_id: repairJobId,
-          spare_part_id: part.spare_part_id,
-          quantity_used: part.quantity_used,
-          notes: part.notes,
-          recorded_by: 'system',
-          recorded_at: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        }))
+          completion_notes: completionNotes,
+          parts_used: partsUsed?.map(part => ({
+            spare_part_id: part.spare_part_id,
+            quantity_used: part.quantity_used,
+            notes: part.notes
+          }))
+        })
       })
-      
-      return result
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to complete repair job')
+      }
+
+      const result = await response.json()
+      return result.data
     },
     onSuccess: (data, { repairJobId, partsUsed }) => {
       

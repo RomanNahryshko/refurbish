@@ -79,9 +79,12 @@ export class DashboardService {
       const productionMetrics = await this.getProductionMetrics(dateRange);
       
       // Get additional data that's not in production_metrics
-      const [batchIntakeStats, technicianUtilization] = await Promise.all([
+      const [batchIntakeStats, technicianUtilization, finalQCCount, inRepairCount, awaitingRepairCount] = await Promise.all([
         this.getBatchIntakeStats(dateRange),
         this.getTechnicianUtilization(),
+        this.getFinalQCCount(),
+        this.getInRepairCount(),
+        this.getAwaitingRepairCount(),
       ]);
 
       return {
@@ -102,7 +105,7 @@ export class DashboardService {
         },
         finalQCStats: {
           generalStats: {
-            awaitingQC: productionMetrics.devices_in_repair,
+            awaitingQC: finalQCCount, // Devices in final_qc status are awaiting QC processing
             failedQCCount: 0, // Not available in production_metrics, would need separate query
           },
           assignedGrades: {
@@ -114,9 +117,9 @@ export class DashboardService {
         devicesStats: {
           expectedDevices: batchIntakeStats.expectedDevicesCount,
           importedDevices: productionMetrics.devices_received,
-          awaitingRepair: productionMetrics.devices_in_repair,
-          inRepair: productionMetrics.devices_in_repair,
-          finalQC: productionMetrics.devices_in_repair, // Approximate
+          awaitingRepair: awaitingRepairCount, // Use the accurate count from database
+          inRepair: inRepairCount, // Use the accurate count from database
+          finalQC: finalQCCount, // Use the correct count from database
           graded: productionMetrics.devices_completed,
         },
         repairStats: {
@@ -307,5 +310,49 @@ export class DashboardService {
       completedToday,
       averagePerTech,
     };
+  }
+
+  private async getFinalQCCount() {
+    // Count devices that are in 'final_qc' status
+    // These are devices where all repair jobs have been completed
+    const { data: finalQCDevices, error: finalError } = await this.supabase
+      .from('devices')
+      .select('id')
+      .eq('status', 'final_qc')
+      .is('deleted_at', null);
+
+    if (finalError) throw finalError;
+
+    return finalQCDevices?.length || 0;
+  }
+
+  private async getInRepairCount() {
+    // Count devices that have pending or in_progress repair jobs
+    // These are devices currently being repaired
+    const { data: inRepairDevices, error: inRepairError } = await this.supabase
+      .from('repair_jobs')
+      .select('device_id')
+      .in('status', ['pending', 'in_progress'])
+      .is('deleted_at', null);
+
+    if (inRepairError) throw inRepairError;
+
+    // Count unique devices (a device might have multiple repair jobs)
+    const uniqueDeviceIds = new Set(inRepairDevices?.map(job => job.device_id) || []);
+    return uniqueDeviceIds.size;
+  }
+
+  private async getAwaitingRepairCount() {
+    // Count devices that are in 'awaiting_repair' status
+    // These are devices that have completed initial QC and are waiting for repair to begin
+    const { data: awaitingRepairDevices, error: awaitingRepairError } = await this.supabase
+      .from('devices')
+      .select('id')
+      .eq('status', 'awaiting_repair')
+      .is('deleted_at', null);
+
+    if (awaitingRepairError) throw awaitingRepairError;
+
+    return awaitingRepairDevices?.length || 0;
   }
 }

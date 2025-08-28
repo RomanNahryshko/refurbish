@@ -503,13 +503,16 @@ export class RepairJobsAPI {
   }
 
   /**
-   * Complete a repair job (send device to QC)
+   * Complete a repair job (mark as completed)
+   * Note: Device status change to final_qc is handled by the server API endpoint
+   * This function only updates the repair job status
    */
   async completeRepairJob(repairJobId: string, completionData: {
     completion_notes?: string
     parts_used?: RepairPartsUsed[]
   }) {
-    // First, update the repair job status
+    // Only update the repair job status to completed
+    // The server API endpoint will handle device status change and QC logic
     const { data: repairJob, error: repairError } = await this.supabase
       .from('repair_jobs')
       .update({
@@ -523,30 +526,6 @@ export class RepairJobsAPI {
       .single()
 
     if (repairError) throw repairError
-
-    // Then, update the device status to 'final_qc'
-    const { error: deviceError } = await this.supabase
-      .from('devices')
-      .update({
-        status: 'final_qc',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', repairJob.device_id)
-
-    if (deviceError) throw deviceError
-
-    // Record the status change in device_status_history
-    const { error: historyError } = await this.supabase
-      .from('device_status_history')
-      .insert({
-        device_id: repairJob.device_id,
-        old_status: 'in_repair',
-        new_status: 'final_qc',
-        changed_by: repairJob.assigned_to,
-        notes: `Repair completed: ${completionData.completion_notes || 'No notes'}`
-      })
-
-    if (historyError) throw historyError
 
     // If parts were used, record them
     if (completionData.parts_used && completionData.parts_used.length > 0) {
