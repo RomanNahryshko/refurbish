@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Device, DeviceStatus, DeviceGrade, DeviceFormData, CreateDeviceData } from '@/lib/types/business-types'
+import { Device, DeviceStatus, DeviceGrade } from '@/lib/types/business-types'
 import { useSupabaseContext } from '@/lib/providers/supabase-provider'
-import { createDevicesAPI } from '@/lib/api/devices'
+import { CreateDeviceData, createDevicesAPI } from '@/lib/api/devices'
 
 export function useDevices() {
   const { client, isReady } = useSupabaseContext()
@@ -97,7 +97,7 @@ export function useQCChecks(deviceIds?: string[], options?: { enabled?: boolean 
     queryFn: async () => {
       if (!client) throw new Error('Supabase client not available')
       const devicesApi = createDevicesAPI(client)
-      return devicesApi.getQCChecks(deviceIds)
+      return devicesApi.getQCChecks(deviceIds || [])
     },
     enabled: shouldEnable,
     staleTime: 5 * 60 * 1000, // 5 minutes - QC checks don't change often
@@ -112,7 +112,7 @@ export function useCreateDevice() {
   const { client } = useSupabaseContext()
   
   return useMutation({
-    mutationFn: async (deviceData: DeviceFormData) => {
+    mutationFn: async (deviceData: CreateDeviceData) => {
       if (!client) throw new Error('Supabase client not available')
       const devicesApi = createDevicesAPI(client)
       return devicesApi.create(deviceData)
@@ -178,7 +178,7 @@ export function useBulkCreateDevices() {
   const { client } = useSupabaseContext()
   
   return useMutation({
-    mutationFn: async (devicesData: DeviceFormData[]) => {
+    mutationFn: async (devicesData: CreateDeviceData[]) => {
       if (!client) throw new Error('Supabase client not available')
       const devicesApi = createDevicesAPI(client)
       return devicesApi.bulkCreate(devicesData)

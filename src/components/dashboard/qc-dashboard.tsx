@@ -74,7 +74,7 @@ const QCDashboard: React.FC<QCDashboardProps> = ({ realData }) => {
 
       {/* 2. Today's Grade Distribution */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Today's Grading Distribution</h3>
+        <h3 className="text-lg font-semibold">Today&apos;s Grading Distribution</h3>
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -86,7 +86,7 @@ const QCDashboard: React.FC<QCDashboardProps> = ({ realData }) => {
                 {realData.initialQCStats.assignedGrades.gradeA + realData.finalQCStats.assignedGrades.gradeA}
               </div>
               <p className="text-xs text-muted-foreground">
-                {totalQCCompleted > 0 ? Math.round(((realData.initialQCStats.assignedGrades.gradeA + realData.finalQCStats.assignedGrades.gradeA) / totalQCCompleted) * 100) : 0}% of today's grades
+                {totalQCCompleted > 0 ? Math.round(((realData.initialQCStats.assignedGrades.gradeA + realData.finalQCStats.assignedGrades.gradeA) / totalQCCompleted) * 100) : 0}% of today&apos;s grades
               </p>
             </CardContent>
           </Card>
@@ -101,7 +101,7 @@ const QCDashboard: React.FC<QCDashboardProps> = ({ realData }) => {
                 {realData.initialQCStats.assignedGrades.gradeB + realData.finalQCStats.assignedGrades.gradeB}
               </div>
               <p className="text-xs text-muted-foreground">
-                {totalQCCompleted > 0 ? Math.round(((realData.initialQCStats.assignedGrades.gradeB + realData.finalQCStats.assignedGrades.gradeB) / totalQCCompleted) * 100) : 0}% of today's grades
+                {totalQCCompleted > 0 ? Math.round(((realData.initialQCStats.assignedGrades.gradeB + realData.finalQCStats.assignedGrades.gradeB) / totalQCCompleted) * 100) : 0}% of today&apos;s grades
               </p>
             </CardContent>
           </Card>
@@ -116,7 +116,7 @@ const QCDashboard: React.FC<QCDashboardProps> = ({ realData }) => {
                 {realData.initialQCStats.assignedGrades.gradeC + realData.finalQCStats.assignedGrades.gradeC}
               </div>
               <p className="text-xs text-muted-foreground">
-                {totalQCCompleted > 0 ? Math.round(((realData.initialQCStats.assignedGrades.gradeC + realData.finalQCStats.assignedGrades.gradeC) / totalQCCompleted) * 100) : 0}% of today's grades
+                {totalQCCompleted > 0 ? Math.round(((realData.initialQCStats.assignedGrades.gradeC + realData.finalQCStats.assignedGrades.gradeC) / totalQCCompleted) * 100) : 0}% of today&apos;s grades
               </p>
             </CardContent>
           </Card>

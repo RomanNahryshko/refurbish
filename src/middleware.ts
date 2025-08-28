@@ -4,8 +4,6 @@ import { createServerClient } from '@supabase/ssr'
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   
-  console.log('🔒 Middleware: Processing path:', pathname)
-  
   // Skip middleware for home page and specific paths to prevent loops
   if (pathname === '/' || 
       pathname.startsWith('/_next') || 
@@ -22,28 +20,19 @@ export async function middleware(request: NextRequest) {
   const isLoginPage = pathname.startsWith('/login')
   const isChangePasswordPage = pathname.startsWith('/change-password')
   
-  console.log('🔒 Middleware: Path analysis:', {
-    pathname,
-    isProtectedPath,
-    isLoginPage,
-    isChangePasswordPage
-  })
-  
   // Skip middleware for login and change-password pages to prevent redirect loops
   if (isLoginPage || isChangePasswordPage) {
-    console.log('🔒 Middleware: Allowing access to auth pages:', pathname)
     return NextResponse.next()
   }
   
   if (isProtectedPath) {
-    console.log('🔒 Middleware: Checking auth for protected path:', pathname)
     
     try {
       // Simple Supabase auth check
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       
-      let supabaseResponse = NextResponse.next()
+      const supabaseResponse = NextResponse.next()
       
       // Log all cookies for debugging
       const allCookies = request.cookies.getAll()

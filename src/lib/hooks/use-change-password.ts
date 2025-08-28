@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
-import { useSupabaseClearUser } from '@/lib/providers/supabase-provider'
 
 interface PasswordStatus {
   user: {
@@ -22,7 +21,6 @@ export function usePasswordStatus() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = useSupabaseClient()
-  const clearUserState = useSupabaseClearUser()
 
   const checkPasswordStatus = async (): Promise<PasswordStatus | null> => {
     setLoading(true)
@@ -97,14 +95,8 @@ export function usePasswordStatus() {
     }
   }
 
-  // Function to force clear user state (useful for logout scenarios)
-  const forceClearState = () => {
-    clearUserState()
-  }
-
   return {
     checkPasswordStatus,
-    forceClearState,
     loading,
     error
   }

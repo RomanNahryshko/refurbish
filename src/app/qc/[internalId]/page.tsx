@@ -174,7 +174,6 @@ export default function FinalQCPage() {
               
               await createRepairJob.mutateAsync({
                 data: repairJobData,
-                createdBy: user.id
               })
             }
             

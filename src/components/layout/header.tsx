@@ -5,7 +5,6 @@ import Image from 'next/image'
 import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { useUser } from '@/lib/hooks/use-user'
-import { type UserRole } from '@/lib/types/business-types'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'

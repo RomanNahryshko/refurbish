@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createQCChecksAPI } from '@/lib/api/qc-checks'
-import { QCCheck, QCCheckFormData, TestResultData } from '@/lib/types/business-types'
+import { DeviceGrade, QCCheck, QCCheckFormData, TestResultData } from '@/lib/types/business-types'
 import { useSupabaseContext } from '@/lib/providers/supabase-provider'
 
 export function useQCChecksByDevice(deviceId: string) {
@@ -119,7 +119,7 @@ export function useQCChecksByGrade(grade: string) {
     queryFn: async () => {
       if (!client) throw new Error('Supabase client not available')
       const qcChecksApi = createQCChecksAPI(client)
-      return qcChecksApi.getByGrade(grade)
+      return qcChecksApi.getByGrade(grade as DeviceGrade) 
     },
     enabled: isReady && !!client,
   })
@@ -138,31 +138,3 @@ export function useQCChecksByDateRange(startDate: string, endDate: string) {
     enabled: isReady && !!client && !!startDate && !!endDate,
   })
 }
-
-export function useQCTestResults(qcCheckId: string) {
-  const supabase = useSupabaseClientRequired()
-  const qcChecksApi = createQCChecksAPI(supabase)
-
-  return useQuery({
-    queryKey: ['qc-test-results', qcCheckId],
-    queryFn: () => qcChecksApi.getTestResults(qcCheckId),
-    enabled: !!qcCheckId,
-  })
-}
-
-export function useAddQCTestResult() {
-  const queryClient = useQueryClient()
-  const supabase = useSupabaseClientRequired()
-  const qcChecksApi = createQCChecksAPI(supabase)
-
-  return useMutation({
-    mutationFn: ({ qc_check_id, test_result }: { qc_check_id: string; test_result: TestResultData }) => 
-      qcChecksApi.addTestResult(qc_check_id, test_result),
-    onSuccess: (_, { qc_check_id }) => {
-      queryClient.invalidateQueries({ queryKey: ['qc-test-results', qc_check_id] })
-      queryClient.invalidateQueries({ queryKey: ['qc-checks'] })
-    },
-  })
-}
-
-

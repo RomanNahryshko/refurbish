@@ -258,7 +258,7 @@ export class DashboardService {
 
   private async getTechnicianLevelStats(
     level: 'L1' | 'L2' | 'L3',
-    technicians: any[]
+    technicians: { id: string; technician_level: string }[]
   ) {
     const levelTechnicians = technicians?.filter(tech => tech.technician_level === level) || [];
     const availableTechnicians = levelTechnicians.length;

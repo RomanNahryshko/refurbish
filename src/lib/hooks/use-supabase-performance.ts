@@ -26,7 +26,7 @@ const performanceMetrics: PerformanceMetrics = {
  */
 export function useSupabasePerformance() {
   const client = useSupabaseClient()
-  const queryStartTime = useRef<number>()
+  const queryStartTime = useRef<number>(0)
 
   useEffect(() => {
     // Only run in development

@@ -129,7 +129,7 @@ const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ realData, tec
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Today's Performance</CardTitle>
+              <CardTitle>Today&apos;s Performance</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -250,7 +250,7 @@ const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({ realData, tec
         <h4 className="text-md font-semibold">Recent Activity</h4>
         <Card>
           <CardHeader>
-            <CardTitle>Today's Completed Repairs</CardTitle>
+            <CardTitle>Today&apos;s Completed Repairs</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">

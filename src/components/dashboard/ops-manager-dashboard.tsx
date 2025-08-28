@@ -14,7 +14,7 @@ const OpsManagerDashboard: React.FC<OpsManagerDashboardProps> = ({ realData }) =
     <div className="space-y-6">
       {/* 1. Today's Operations Cards */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Today's Operations</h3>
+        <h3 className="text-lg font-semibold">Today&apos;s Operations</h3>
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

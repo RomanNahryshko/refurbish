@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { DashboardService, DashboardMetrics } from '@/lib/services/dashboard-service';
-import { createSupabaseClient } from '@/lib/supabase/client';
-import { DateRange } from 'react-day-picker';
+import { useState, useEffect } from 'react'
+import { DashboardService, DashboardMetrics } from '@/lib/services/dashboard-service'
+import { createSupabaseClient } from '@/lib/supabase/client'
+import { DateRange } from 'react-day-picker'
 
 interface UseDashboardMetricsReturn {
   data: DashboardMetrics | null;
@@ -37,13 +37,11 @@ export function useDashboardMetrics(dateRange?: DateRange): UseDashboardMetricsR
       }
       
       const metrics = await dashboardService.getDashboardMetrics(serviceDateRange);
-      console.log('Metrics:', metrics);
       
       setData(metrics);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch dashboard metrics';
       setError(errorMessage);
-      console.error('Dashboard metrics fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -51,7 +49,7 @@ export function useDashboardMetrics(dateRange?: DateRange): UseDashboardMetricsR
 
   useEffect(() => {
     fetchMetrics();
-  }, [dateRange?.from, dateRange?.to]);
+  }, [dateRange?.from, dateRange?.to]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refetch = async () => {
     await fetchMetrics();
