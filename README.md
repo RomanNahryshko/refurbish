@@ -6,7 +6,7 @@ An internal ERP system for managing the complete lifecycle of phone refurbishmen
 
 This system digitizes and streamlines the entire workflow for used phone refurbishment, tracking each phone from receipt through repair, grading, and shipping. It provides operational visibility for managers and clear, role-based interfaces for employees.
 
-## Tech Stack
+## Tech-Stack
 
 - **Frontend**: Next.js 15 with App Router
 - **Language**: TypeScript
