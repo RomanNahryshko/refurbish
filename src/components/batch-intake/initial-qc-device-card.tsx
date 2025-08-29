@@ -7,24 +7,25 @@ import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import {
-  ChevronDown,
-  ChevronUp,
-  Wrench,
-  Award,
-  CheckCircle,
-  Loader2,
-  AlertTriangle
+    ChevronDown,
+    ChevronUp,
+    Wrench,
+    Award,
+    CheckCircle,
+    Loader2,
+    AlertTriangle
 } from 'lucide-react'
 import { RepairTaskSelector } from '@/components/common/repair-task-selector'
 import { useCreateQCCheck } from '@/lib/hooks/use-qc-checks'
 import { toast } from 'sonner'
+import { RepairType } from '@/lib/types/business-types'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog'
 
 // Simple repair label function since we removed the complex import
@@ -107,6 +108,13 @@ export function InitialQCDeviceCard({
   
   // Function to save QC data directly (without confirmation dialog)
   const saveQCData = useCallback(async (deviceIdToUse: string) => {
+    console.log('saveQCData called with:', {
+      deviceIdToUse,
+      qcApproach,
+      selectedRepairs,
+      selectedGrade
+    })
+    
     try {
       setIsSubmitting(true)
       setIsProcessingComplete(false)
@@ -121,8 +129,13 @@ export function InitialQCDeviceCard({
         grade_assigned: qcApproach === 'grade' ? selectedGrade as 'A' | 'B' | 'C' : undefined,
         notes: qcApproach === 'repairs' 
           ? `Initial QC: Repairs required. Selected repairs: ${selectedRepairs.map(getRepairLabel).join(', ')}${otherDescription ? ` Additional notes: ${otherDescription}` : ''}`
-          : `Initial QC: Grade assigned. Grade: ${selectedGrade}`
+          : `Initial QC: Grade assigned. Grade: ${selectedGrade}`,
+        // Add required repairs for API to create repair jobs
+        required_repairs: qcApproach === 'repairs' ? selectedRepairs as RepairType[] : undefined
       }
+
+      // Log QC data for debugging
+      console.log('saveQCData: Sending QC data to API:', qcData)
 
       // Save to database
       await createQCCheck.mutateAsync({
@@ -157,7 +170,15 @@ export function InitialQCDeviceCard({
 
   // Auto-save QC data when device ID becomes available
   useEffect(() => {
+    console.log('useEffect triggered:', {
+      deviceId,
+      qcApproach,
+      qcDataReady,
+      isSubmitting
+    })
+    
     if (deviceId && qcApproach && qcDataReady && !isSubmitting) {
+      console.log('Auto-saving QC data...')
       // Save QC data immediately without going through confirmation dialog
       saveQCData(deviceId)
     }
@@ -165,6 +186,13 @@ export function InitialQCDeviceCard({
 
 
   const handleCompleteQC = () => {
+    console.log('handleCompleteQC called with:', {
+      qcApproach,
+      selectedRepairs,
+      selectedGrade,
+      deviceId
+    })
+    
     if (!qcApproach) {
       toast.error('Please select either "Add Repairs" or "Assign Grade"')
       return
@@ -185,6 +213,14 @@ export function InitialQCDeviceCard({
   }
 
   const handleConfirmQC = useCallback(async () => {
+    console.log('handleConfirmQC called with:', {
+      qcApproach,
+      selectedRepairs,
+      selectedGrade,
+      deviceId,
+      otherDescription
+    })
+    
     setShowConfirmation(false)
     setIsSubmitting(true)
     setIsProcessingComplete(false)
@@ -220,8 +256,15 @@ export function InitialQCDeviceCard({
         grade_assigned: qcApproach === 'grade' ? selectedGrade as 'A' | 'B' | 'C' : undefined,
         notes: qcApproach === 'repairs' 
           ? `Initial QC: Repairs required. Selected repairs: ${selectedRepairs.map(getRepairLabel).join(', ')}${otherDescription ? ` Additional notes: ${otherDescription}` : ''}`
-          : `Initial QC: Grade assigned. Grade: ${selectedGrade}`
+          : `Initial QC: Grade assigned. Grade: ${selectedGrade}`,
+        // Add required repairs for API to create repair jobs
+        required_repairs: qcApproach === 'repairs' ? selectedRepairs as RepairType[] : undefined
       }
+
+      // Log QC data for debugging
+      console.log('Sending QC data to API:', qcData)
+      console.log('Selected repairs:', selectedRepairs)
+      console.log('QC approach:', qcApproach)
 
       // Save to database
       await createQCCheck.mutateAsync({
@@ -288,7 +331,10 @@ export function InitialQCDeviceCard({
         {/* Initial QC Decision */}
         <div className="border-t pt-3">
           <span className="text-sm font-medium text-muted-foreground">Initial QC Decision:</span>
-          <RadioGroup value={qcApproach} onValueChange={(value) => onQcApproachChange?.(value as 'repairs' | 'grade')} className="mt-2">
+          <RadioGroup value={qcApproach} onValueChange={(value) => {
+            console.log('QC approach changed to:', value)
+            onQcApproachChange?.(value as 'repairs' | 'grade')
+          }} className="mt-2">
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <RadioGroupItem value="repairs" id={`repairs-${deviceIndex}`} />

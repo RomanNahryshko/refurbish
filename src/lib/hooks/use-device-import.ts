@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { useSupabaseClient } from '@/lib/stores/supabase-store'
 
 interface DrPhoneData {
   imei: string

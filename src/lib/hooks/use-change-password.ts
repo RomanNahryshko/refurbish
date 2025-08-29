@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/lib/hooks/use-toast'
-import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { useSupabaseClient } from '@/lib/stores/supabase-store'
 
 interface PasswordStatus {
   user: {

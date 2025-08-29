@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { useSupabaseClient } from '@/lib/stores/supabase-store'
 import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions'
 import { UserRole } from '@/lib/types/business-types'
 

@@ -2,19 +2,19 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { useSupabaseClient } from '@/lib/stores/supabase-store'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { useUser } from '@/lib/hooks/use-user'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Navigation } from './navigation'

@@ -1,15 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createQCChecksAPI } from '@/lib/api/qc-checks'
 import { DeviceGrade, QCCheck, QCCheckFormData, TestResultData } from '@/lib/types/business-types'
-import { useSupabaseContext } from '@/lib/providers/supabase-provider'
+import { useSupabaseClient, useSupabaseIsReady } from '@/lib/stores/supabase-store'
 
 export function useQCChecksByDevice(deviceId: string) {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['qc-checks', 'device', deviceId],
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
+      if (!client || !isReady) throw new Error('Supabase client not available')
       const qcChecksApi = createQCChecksAPI(client)
       return qcChecksApi.getByDeviceId(deviceId)
     },
@@ -18,12 +19,13 @@ export function useQCChecksByDevice(deviceId: string) {
 }
 
 export function useQCCheck(id: string) {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['qc-checks', id],
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
+      if (!client || !isReady) throw new Error('Supabase client not available')
       const qcChecksApi = createQCChecksAPI(client)
       return qcChecksApi.getById(id)
     },
@@ -33,7 +35,7 @@ export function useQCCheck(id: string) {
 
 export function useCreateQCCheck() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
   
   return useMutation({
     mutationFn: async ({ qcData, testResults }: { qcData: QCCheckFormData; testResults?: TestResultData[] }) => {
@@ -51,7 +53,7 @@ export function useCreateQCCheck() {
 
 export function useUpdateQCCheck() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
   
   return useMutation({
     mutationFn: async ({ id, qcData }: { id: string; qcData: Partial<QCCheck> }) => {
@@ -68,7 +70,7 @@ export function useUpdateQCCheck() {
 
 export function useDeleteQCCheck() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
   
   return useMutation({
     mutationFn: async (id: string) => {
@@ -84,12 +86,13 @@ export function useDeleteQCCheck() {
 }
 
 export function useQCChecksByType(checkType: 'initial' | 'final') {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['qc-checks', 'type', checkType],
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
+      if (!client || !isReady) throw new Error('Supabase client not available')
       const qcChecksApi = createQCChecksAPI(client)
       return qcChecksApi.getByType(checkType)
     },
@@ -98,12 +101,13 @@ export function useQCChecksByType(checkType: 'initial' | 'final') {
 }
 
 export function useQCChecksByResult(result: 'not_tested' | 'pass' | 'fail') {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['qc-checks', 'result', result],
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
+      if (!client || !isReady) throw new Error('Supabase client not available')
       const qcChecksApi = createQCChecksAPI(client)
       return qcChecksApi.getByResult(result)
     },
@@ -112,12 +116,13 @@ export function useQCChecksByResult(result: 'not_tested' | 'pass' | 'fail') {
 }
 
 export function useQCChecksByGrade(grade: string) {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['qc-checks', 'grade', grade],
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
+      if (!client || !isReady) throw new Error('Supabase client not available')
       const qcChecksApi = createQCChecksAPI(client)
       return qcChecksApi.getByGrade(grade as DeviceGrade) 
     },
@@ -126,12 +131,13 @@ export function useQCChecksByGrade(grade: string) {
 }
 
 export function useQCChecksByDateRange(startDate: string, endDate: string) {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['qc-checks', 'date-range', startDate, endDate],
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
+      if (!client || !isReady) throw new Error('Supabase client not available')
       const qcChecksApi = createQCChecksAPI(client)
       return qcChecksApi.getByDateRange(startDate, endDate)
     },

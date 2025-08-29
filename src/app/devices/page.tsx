@@ -41,10 +41,10 @@ function DevicesPageContent() {
   const { data: batchDevices, isLoading: devicesLoading, error: devicesError, refetch: refetchBatchDevices, isFetching: devicesFetching } = useDevicesByBatch(batchFromUrl || '');
   
   // Fetch all devices if no batch parameter is present
-  const { data: allDevicesData, isLoading: allDevicesLoading, error: allDevicesError, refetch: refetchAllDevices, isFetching: allDevicesFetching } = useDevices();
+  const { devices: allDevicesData, loading: allDevicesLoading, error: allDevicesError, fetchDevices: refetchAllDevices } = useDevices();
   
   // Fetch all batches for filter options
-  const { data: batches } = useBatches();
+  const { batches} = useBatches();
   
   // Update batch filter when URL changes
   useEffect(() => {
@@ -122,7 +122,7 @@ function DevicesPageContent() {
   const hasError = batchFromUrl ? (batchError || devicesError) : allDevicesError;
   
   // Check if any data is being refetched (for showing loading state)
-  const isRefetching = batchFromUrl ? (batchFetching || devicesFetching) : allDevicesFetching;
+  const isRefetching = batchFromUrl ? (batchFetching || devicesFetching) : allDevicesLoading;
 
   // Show loading state (like on batch-intake page)
   if (isLoading || isRefetching) {

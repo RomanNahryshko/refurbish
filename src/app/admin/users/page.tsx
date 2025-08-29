@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { UserList } from '@/modules/admin/components/user-list'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
-import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { useSupabaseClient } from '@/lib/stores/supabase-store'
 
 export default function UsersPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)

@@ -20,7 +20,7 @@ import { canTechnicianPerformRepair, getTechnicianRepairTypes } from '@/lib/conf
 
 // Import configs from the table component
 import { repairTypeConfig } from '@/components/repair-jobs/repair-job-list-table';
-import { useSupabaseContext } from '@/lib/providers/supabase-provider';
+import { useUser } from '@/lib/hooks/use-user';
 // Extended RepairJob type with joined data from API
 interface RepairJobWithDevice extends RepairJob {
   device: {
@@ -44,12 +44,12 @@ export default function RepairJobsPage() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all') // Default to all jobs
   const [currentPage, setCurrentPage] = useState(1)
-  const { user } = useSupabaseContext()
+  const user = useUser()
   
   // Fetch real data from API
-  const { data: repairJobsData, isLoading: repairJobsLoading, error: repairJobsError } = useRepairJobs()
-  const { data: batchesData, isLoading: batchesLoading } = useBatches()
-  const { data: sparePartsData, isLoading: sparePartsLoading } = useSpareParts()
+  const { data: repairJobsData, isPending: repairJobsLoading, error: repairJobsError } = useRepairJobs()
+  const { batches: batchesData, loading: batchesLoading } = useBatches()
+  const { data: sparePartsData, isPending: sparePartsLoading } = useSpareParts()
   const { data: profile } = useProfile(!!user)
 
   // Update repair job mutation
@@ -226,7 +226,7 @@ export default function RepairJobsPage() {
 
   // Find current user's active repair for banner - this should come from auth context
   const activeRepair = transformedRepairJobs.find(repair => 
-    repair.assigned_to === user?.id && repair.status === 'in_progress'
+    repair.assigned_to === user?.user?.id && repair.status === 'in_progress'
   )
 
   // Pagination calculations
@@ -238,7 +238,7 @@ export default function RepairJobsPage() {
   
   const handleStartRepair = (repair: RepairJob) => {
     
-    if (!user?.id) {
+    if (!user?.user?.id) {
       return
     }
     
@@ -261,7 +261,7 @@ export default function RepairJobsPage() {
           // Start the repair job using the API (this will update device status to in_repair)
           startRepairJob.mutate({
             repairJobId: repair.id,
-            assignedTo: user?.id
+            assignedTo: user?.user?.id
           })
         } catch (error) {
           console.error('Error starting repair job:', error)
@@ -510,8 +510,8 @@ export default function RepairJobsPage() {
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}
             renderFilters={renderFilters}
-            currentUser={user?.id && profile ? {
-              id: user?.id,
+            currentUser={user?.user?.id && profile ? {
+              id: user?.user?.id,
               full_name: profile.full_name || 'Current User',
               role: profile.role || 'technician',
               technician_level: profile.technician_level || null

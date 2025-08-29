@@ -62,6 +62,8 @@ export class RepairJobsAPI {
    */
   async getAll(): Promise<RepairJobWithDevice[]> {
     try {
+      console.log('RepairJobsAPI.getAll: Starting query...')
+      
       const { data, error } = await this.supabase
         .from('repair_jobs')
         .select(`
@@ -72,12 +74,14 @@ export class RepairJobsAPI {
         .order('created_at', { ascending: false })
 
       if (error) {
+        console.error('RepairJobsAPI.getAll: Database error:', error)
         throw new Error(`Failed to fetch repair jobs: ${error.message}`)
       }
 
+      console.log('RepairJobsAPI.getAll: Query successful, found', data?.length || 0, 'repair jobs')
       return data as RepairJobWithDevice[]
     } catch (error) {
-      console.error('Error in getAll:', error)
+      console.error('RepairJobsAPI.getAll: Exception:', error)
       throw error
     }
   }

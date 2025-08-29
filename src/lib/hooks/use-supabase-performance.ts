@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useSupabaseClient } from './use-supabase-client'
+import { useSupabaseClient } from '@/lib/stores/supabase-store'
 
 interface PerformanceMetrics {
   clientCreationCount: number

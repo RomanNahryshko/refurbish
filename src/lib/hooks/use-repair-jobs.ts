@@ -1,24 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createRepairJobsAPI } from '@/lib/api/repair-jobs'
 import { RepairJob, RepairJobData, PartsData } from '@/lib/types/business-types'
-import { useSupabaseContext } from '@/lib/providers/supabase-provider'
+import { useSupabaseClient, useSupabaseIsReady } from '@/lib/stores/supabase-store'
 
 export function useRepairJobs() {
-  const { client, isReady } = useSupabaseContext()
-  
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   return useQuery({
     queryKey: ['repair-jobs'],
     queryFn: async () => {
       if (!client) throw new Error('Supabase client not available')
       const repairJobsApi = createRepairJobsAPI(client)
-      return repairJobsApi.getAll()
+      const result = await repairJobsApi.getAll()
+      return result
     },
-    enabled: isReady && !!client,
+    enabled: isReady && !!client
   })
 }
 
 export function useRepairJob(id: string) {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['repair-jobs', id],
@@ -32,7 +34,8 @@ export function useRepairJob(id: string) {
 }
 
 export function useRepairJobsByDevice(deviceId: string) {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['repair-jobs', 'device', deviceId],
@@ -46,7 +49,8 @@ export function useRepairJobsByDevice(deviceId: string) {
 }
 
 export function useRepairJobsByTechnician(technicianId: string) {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['repair-jobs', 'technician', technicianId],
@@ -61,7 +65,7 @@ export function useRepairJobsByTechnician(technicianId: string) {
 
 export function useCreateRepairJob() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
 
   return useMutation({
     mutationFn: async ({ data }: { data: RepairJobData }) => {
@@ -80,7 +84,7 @@ export function useCreateRepairJob() {
 
 export function useUpdateRepairJob() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<RepairJob> }) => {
@@ -100,7 +104,7 @@ export function useUpdateRepairJob() {
 
 export function useDeleteRepairJob() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -118,7 +122,8 @@ export function useDeleteRepairJob() {
 }
 
 export function useRepairJobParts(repairJobId: string) {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['repair-jobs', repairJobId, 'parts'],
@@ -133,7 +138,7 @@ export function useRepairJobParts(repairJobId: string) {
 
 export function useRecordPartsUsage() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
 
   return useMutation({
     mutationFn: async ({ partsData }: { partsData: PartsData[] }) => {
@@ -167,7 +172,7 @@ export function useRecordPartsUsage() {
 
 export function useCompleteRepairJob() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
 
   return useMutation({
     mutationFn: async ({ 
@@ -251,7 +256,7 @@ export function useCompleteRepairJob() {
 
 export function useStartRepairJob() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
 
   return useMutation({
     mutationFn: ({ 
