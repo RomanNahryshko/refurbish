@@ -93,7 +93,7 @@ export class DashboardService {
         this.getAwaitingRepairCount(),
       ]);
 
-      return {
+      const dashboardData = {
         batchIntakeStats: {
           batchesCreated: productionMetrics.batches_created, // Use from production_metrics
           expectedDevicesCount: batchIntakeStats.expectedDevicesCount, // Sum of device_count from batches
@@ -121,7 +121,7 @@ export class DashboardService {
         finalQCStats: {
           generalStats: {
             awaitingQC: finalQCCount, // Devices in final_qc status are awaiting QC processing
-            failedQCCount: 0, // Not available in production_metrics, would need separate query
+            failedQCCount: productionMetrics.fail_qc_count, // From production_metrics table
           },
           assignedGrades: {
             gradeA: productionMetrics.grade_a_count,
@@ -148,6 +148,18 @@ export class DashboardService {
           technicianUtilization,
         },
       };
+
+      console.log('🔍 DashboardService: Final dashboard data:', {
+        productionMetrics: {
+          fail_qc_count: productionMetrics.fail_qc_count,
+          grade_a_count: productionMetrics.grade_a_count,
+          grade_b_count: productionMetrics.grade_b_count,
+          grade_c_count: productionMetrics.grade_c_count,
+        },
+        finalQCStats: dashboardData.finalQCStats,
+      });
+
+      return dashboardData;
     } catch (error) {
       console.error('Error fetching dashboard metrics:', error);
       throw error;
@@ -157,7 +169,28 @@ export class DashboardService {
   private async getProductionMetrics(dateRange?: { from: Date; to: Date }) {
     let query = this.supabase
       .from('production_metrics')
-      .select('*')
+      .select(`
+        id,
+        metric_date,
+        batches_created,
+        devices_received,
+        devices_in_repair,
+        devices_completed,
+        devices_shipped,
+        housing_changes,
+        glass_changes,
+        battery_changes,
+        software_updates,
+        other_repairs,
+        grade_a_count,
+        grade_b_count,
+        grade_c_count,
+        fail_qc_count,
+        initial_grade_a_count,
+        initial_grade_b_count,
+        initial_grade_c_count,
+        created_at
+      `)
       .order('metric_date', { ascending: false });
 
     if (dateRange) {
@@ -176,6 +209,22 @@ export class DashboardService {
       throw error
     }
 
+    console.log('🔍 DashboardService: Production metrics query result:', {
+      metricsCount: metrics?.length || 0,
+      metrics: metrics?.map(m => ({
+        date: m.metric_date,
+        fail_qc_count: m.fail_qc_count,
+        grade_a_count: m.grade_a_count,
+        grade_b_count: m.grade_b_count,
+        grade_c_count: m.grade_c_count,
+        housing_changes: m.housing_changes,
+        glass_changes: m.glass_changes,
+        battery_changes: m.battery_changes,
+        software_updates: m.software_updates,
+        other_repairs: m.other_repairs,
+      }))
+    });
+
     if (!metrics || metrics.length === 0) {
       // Return default values if no metrics found
       return {
@@ -192,6 +241,7 @@ export class DashboardService {
         grade_a_count: 0,
         grade_b_count: 0,
         grade_c_count: 0,
+        fail_qc_count: 0,
         initial_grade_a_count: 0,
         initial_grade_b_count: 0,
         initial_grade_c_count: 0,
@@ -214,6 +264,7 @@ export class DashboardService {
         grade_a_count: sum.grade_a_count + (metric.grade_a_count || 0),
         grade_b_count: sum.grade_b_count + (metric.grade_b_count || 0),
         grade_c_count: sum.grade_c_count + (metric.grade_c_count || 0),
+        fail_qc_count: sum.fail_qc_count + (metric.fail_qc_count || 0),
         initial_grade_a_count: sum.initial_grade_a_count + (metric.initial_grade_a_count || 0),
         initial_grade_b_count: sum.initial_grade_b_count + (metric.initial_grade_b_count || 0),
         initial_grade_c_count: sum.initial_grade_c_count + (metric.initial_grade_c_count || 0),
@@ -231,6 +282,7 @@ export class DashboardService {
         grade_a_count: 0,
         grade_b_count: 0,
         grade_c_count: 0,
+        fail_qc_count: 0,
         initial_grade_a_count: 0,
         initial_grade_b_count: 0,
         initial_grade_c_count: 0,

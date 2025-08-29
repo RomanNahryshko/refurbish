@@ -43,6 +43,7 @@ export class ProductionMetricsService {
       grade_a_count?: number
       grade_b_count?: number
       grade_c_count?: number
+      fail_qc_count?: number
       initial_grade_a_count?: number
       initial_grade_b_count?: number
       initial_grade_c_count?: number
@@ -78,6 +79,7 @@ export class ProductionMetricsService {
         grade_a_count: (existingMetrics?.grade_a_count || 0) + (updates.grade_a_count || 0),
         grade_b_count: (existingMetrics?.grade_b_count || 0) + (updates.grade_b_count || 0),
         grade_c_count: (existingMetrics?.grade_c_count || 0) + (updates.grade_c_count || 0),
+        fail_qc_count: (existingMetrics?.fail_qc_count || 0) + (updates.fail_qc_count || 0),
         initial_grade_a_count: (existingMetrics?.initial_grade_a_count || 0) + (updates.initial_grade_a_count || 0),
         initial_grade_b_count: (existingMetrics?.initial_grade_b_count || 0) + (updates.initial_grade_b_count || 0),
         initial_grade_c_count: (existingMetrics?.initial_grade_c_count || 0) + (updates.initial_grade_c_count || 0),
@@ -270,6 +272,32 @@ export class ProductionMetricsService {
 
     } catch (error) {
       console.error('Error updating initial grade metrics:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update fail QC metrics when a device fails QC
+   * @param date - Date to update metrics for (defaults to today)
+   */
+  async updateFailQCMetrics(date: string = new Date().toISOString().split('T')[0]) {
+    try {
+      console.log('❌ ProductionMetricsService: Updating fail QC metrics for date:', date)
+
+      const failQCUpdates = {
+        fail_qc_count: 1
+      }
+
+      console.log('📊 ProductionMetricsService: Fail QC updates calculated:', failQCUpdates)
+
+      // Update the metrics
+      await this.updateMetrics(date, failQCUpdates)
+
+      console.log('✅ ProductionMetricsService: Successfully updated fail QC metrics')
+      return failQCUpdates
+
+    } catch (error) {
+      console.error('❌ ProductionMetricsService: Error updating fail QC metrics:', error)
       throw error
     }
   }

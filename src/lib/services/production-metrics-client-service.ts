@@ -24,6 +24,7 @@ export class ProductionMetricsClientService {
       grade_a_count?: number
       grade_b_count?: number
       grade_c_count?: number
+      fail_qc_count?: number
       initial_grade_a_count?: number
       initial_grade_b_count?: number
       initial_grade_c_count?: number
@@ -57,6 +58,7 @@ export class ProductionMetricsClientService {
         grade_a_count: (existingMetrics?.grade_a_count || 0) + (updates.grade_a_count || 0),
         grade_b_count: (existingMetrics?.grade_b_count || 0) + (updates.grade_b_count || 0),
         grade_c_count: (existingMetrics?.grade_c_count || 0) + (updates.grade_c_count || 0),
+        fail_qc_count: (existingMetrics?.fail_qc_count || 0) + (updates.fail_qc_count || 0),
         initial_grade_a_count: (existingMetrics?.initial_grade_a_count || 0) + (updates.initial_grade_a_count || 0),
         initial_grade_b_count: (existingMetrics?.initial_grade_b_count || 0) + (updates.initial_grade_b_count || 0),
         initial_grade_c_count: (existingMetrics?.initial_grade_c_count || 0) + (updates.initial_grade_c_count || 0),

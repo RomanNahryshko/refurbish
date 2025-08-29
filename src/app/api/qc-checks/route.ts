@@ -235,6 +235,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Update production metrics for fail QC when final QC fails
+    if (check_type === 'final' && overall_result === 'fail') {
+      try {
+        console.log('❌ Updating production metrics for failed final QC')
+        const productionMetricsService = new ProductionMetricsService()
+        await productionMetricsService.updateFailQCMetrics()
+        console.log('✅ Successfully updated production metrics for failed final QC')
+      } catch (metricsError) {
+        console.error('❌ Error updating production metrics for failed final QC:', metricsError)
+        // Don't fail the entire request if metrics update fails
+      }
+    }
+
     // Record device status history with QC notes for all status changes
     const historyNotes = notes || (check_type === 'final' 
       ? overall_result === 'pass' 

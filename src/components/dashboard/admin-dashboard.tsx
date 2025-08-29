@@ -11,6 +11,18 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
+  // Debug logging to see what data we're receiving
+  console.log('🔍 AdminDashboard: Received realData:', {
+    finalQCStats: realData.finalQCStats,
+    failQCCount: realData.finalQCStats.generalStats.failedQCCount,
+    productionMetricsDebug: {
+      fail_qc_count: realData.finalQCStats.generalStats.failedQCCount,
+      grade_a_count: realData.finalQCStats.assignedGrades.gradeA,
+      grade_b_count: realData.finalQCStats.assignedGrades.gradeB,
+      grade_c_count: realData.finalQCStats.assignedGrades.gradeC,
+    }
+  });
+
   // Calculate percentages for device stats
   const getDevicesStatsWithPercentages = (devicesStats: DashboardMetrics['devicesStats']) => {
     const stats = [
