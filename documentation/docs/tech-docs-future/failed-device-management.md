@@ -1,9 +1,9 @@
 ---
 sidebar_position: 4
-title: Failed Device & Scrap Management
+title: Failed Device Handling Workflow
 ---
 
-# Failed Device & Scrap Management
+# Failed Device Handling Workflow
 
 :::danger[HIGH PRIORITY]
 Critical for handling non-repairable devices
