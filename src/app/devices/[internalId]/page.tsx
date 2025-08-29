@@ -28,7 +28,7 @@ export default function DeviceJobSheetPage() {
   const internalId = params.internalId as string
   
   // Get user and profile for role checking
-  const { data: user } = useUser()
+  const { user } = useUser()
   const { data: profile } = useProfile(!!user)
   
   // Fetch device data by internal ID

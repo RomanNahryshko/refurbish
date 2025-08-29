@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { FinalQCDeviceCard } from '@/components/quality-control/final-qc-device-card';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { useSupabaseClient } from '@/lib/stores/supabase-store';
-import { RepairType, LegacyRepairType } from '@/lib/types/business-types';
+import { RepairType, LegacyRepairType, Batch } from '@/lib/types/business-types';
 import { REPAIR_TYPE_MAP } from '@/lib/constants';
 
 // Type guard function to check if a string is a valid legacy repair type
@@ -39,7 +39,7 @@ export default function FinalQCPage() {
   const { data: device, isLoading: deviceLoading, error: deviceError } = useDeviceByInternalId(internalId)
   
   // Fetch batches for device information
-  const { data: batches, error: batchesError } = useBatches()
+  const { batches, error: batchesError } = useBatches()
   
   // Fetch repair jobs for this device
   const { data: repairJobs, error: repairJobsError } = useRepairJobs()
@@ -106,7 +106,7 @@ export default function FinalQCPage() {
     )
   }
   
-  const batch = batches?.find(b => b.id === device.batch_id)
+  const batch = batches?.find((b: Batch) => b.id === device.batch_id)
   const completedRepairs = repairJobs?.filter(r => 
     r.device_id === device.id && r.status === 'completed'
   ) || []

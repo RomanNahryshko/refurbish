@@ -178,7 +178,7 @@ export class DashboardService {
       };
 
 
-      return dashboardData;
+      return dashboardData as unknown as DashboardMetrics;
     } catch (error) {
       console.error('Error fetching dashboard metrics:', error);
       throw error;

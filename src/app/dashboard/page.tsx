@@ -1,4 +1,4 @@
-import { redirect } from 'next/server';
+import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { SupabaseWarning } from '@/components/common/supabase-warning';
 import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions';
@@ -23,7 +23,7 @@ export default async function DashboardPage() {
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('role')
-    .eq('id', user.id)
+    .eq('id', user!.id)
     .single();
 
   const userRole = profile?.role || 'technician';

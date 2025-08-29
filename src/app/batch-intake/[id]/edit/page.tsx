@@ -76,18 +76,18 @@ export default function EditBatchPage() {
       }
 
       // Call the update batch mutation
-      await updateBatch.mutateAsync({
-        id: batchId,
-        data: {
-          supplier_id: formData.supplier_id,
-          invoice_number: formData.invoice_number || undefined,
-          invoice_date: formData.invoice_date || undefined,
-          invoice_amount: formData.invoice_amount ? parseFloat(formData.invoice_amount) : undefined,
-          device_count: parseInt(formData.device_count),
-          received_date: formData.received_date,
-          notes: formData.notes || undefined
-        }
-      })
+              await updateBatch.mutateAsync({
+          id: batchId,
+          updates: {
+            supplier_id: formData.supplier_id,
+            invoice_number: formData.invoice_number || undefined,
+            invoice_date: formData.invoice_date || undefined,
+            invoice_amount: formData.invoice_amount ? parseFloat(formData.invoice_amount) : undefined,
+            device_count: parseInt(formData.device_count),
+            received_date: formData.received_date,
+            notes: formData.notes || undefined
+          }
+        })
 
       toast.success('Batch updated successfully!')
       router.push('/batch-intake')

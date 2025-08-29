@@ -10,8 +10,45 @@ interface AdminDashboardProps {
   onDateRangeChange?: (range: DateRange | undefined) => void;
 }
 
+/** 
+ * Reusable statistic card with icon, label, value and optional description.
+ */
+const StatCard: React.FC<{
+  icon: string;
+  label: string;
+  value: number | string;
+  description?: string;
+}> = ({ icon, label, value, description }) => (
+  <Card className="p-3">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="text-lg">{icon}</span>
+        <span className="text-sm font-medium">{label}</span>
+      </div>
+      <div className="text-lg font-bold">{value}</div>
+    </div>
+    {description && <p className="text-xs text-muted-foreground">{description}</p>}
+  </Card>
+);
+
+/**
+ * Grid wrapper for rendering multiple StatCards
+ */
+const StatsGrid: React.FC<{
+  items: { icon: string; label: string; value: number | string; description?: string }[];
+  cols?: number;
+}> = ({ items, cols = 3 }) => (
+  <div className={`grid gap-2 md:grid-cols-${cols}`}>
+    {items.map((item, i) => (
+      <StatCard key={i} {...item} />
+    ))}
+  </div>
+);
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
-  // Calculate percentages for device stats
+  /**
+   * Helper function to calculate percentages for devices statistics.
+   */
   const getDevicesStatsWithPercentages = (devicesStats: DashboardMetrics['devicesStats']) => {
     const stats = [
       { status: 'Expected Devices', count: devicesStats.expectedDevices, color: '#3B82F6' },
@@ -22,219 +59,102 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
       { status: 'Graded', count: devicesStats.graded, color: '#06B6D4' },
     ];
 
-    // Calculate total for percentage calculation
     const totalCount = stats.reduce((sum, item) => sum + item.count, 0);
-    
-    // Add percentage to each stat
-    const statsWithPercentages = stats.map(item => ({
+    return stats.map((item) => ({
       ...item,
-      percentage: totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0
+      percentage: totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0,
     }));
-
-    return statsWithPercentages;
   };
 
   const devicesStatsWithPercentages = getDevicesStatsWithPercentages(realData.devicesStats);
-  console.log(realData, 'realData')
 
   return (
     <div className="space-y-6">
       {/* 1. Batch Intake Stats */}
-      <div className="space-y-4">
+      <section className="space-y-4">
         <h2 className="text-xl font-semibold">Batch Intake Stats</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Batches Created</CardTitle>
-              <span className="text-2xl">📦</span>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{realData.batchIntakeStats.batchesCreated}</div>
-              <p className="text-xs text-muted-foreground">Total batches</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Expected Devices</CardTitle>
-              <span className="text-2xl">🎯</span>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{realData.batchIntakeStats.expectedDevicesCount}</div>
-              <p className="text-xs text-muted-foreground">Across all batches</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Imported Devices</CardTitle>
-              <span className="text-2xl">✅</span>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{realData.batchIntakeStats.importedDevicesCount}</div>
-              <p className="text-xs text-muted-foreground">Successfully imported</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+        <StatsGrid
+          cols={3}
+          items={[
+            {
+              icon: '📦',
+              label: 'Batches Created',
+              value: realData.batchIntakeStats.batchesCreated,
+              description: 'Total batches',
+            },
+            {
+              icon: '🎯',
+              label: 'Expected Devices',
+              value: realData.batchIntakeStats.expectedDevicesCount,
+              description: 'Across all batches',
+            },
+            {
+              icon: '✅',
+              label: 'Imported Devices',
+              value: realData.batchIntakeStats.importedDevicesCount,
+              description: 'Successfully imported',
+            },
+          ]}
+        />
+      </section>
 
       {/* 2. Initial QC Stats */}
-      <div className="space-y-4">
+      <section className="space-y-4">
         <h2 className="text-xl font-semibold">Initial QC Stats</h2>
-        
-        {/* Assigned Repairs Row */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">Assigned Repairs</h4>
-          <div className="grid gap-2 md:grid-cols-5">
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🏠</span>
-                  <span className="text-sm font-medium">Housing</span>
-                </div>
-                <div className="text-lg font-bold">{realData.initialQCStats.assignedRepairs.housing}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🪟</span>
-                  <span className="text-sm font-medium">Glass</span>
-                </div>
-                <div className="text-lg font-bold">{realData.initialQCStats.assignedRepairs.glass}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🔋</span>
-                  <span className="text-sm font-medium">Battery</span>
-                </div>
-                <div className="text-lg font-bold">{realData.initialQCStats.assignedRepairs.battery}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">💾</span>
-                  <span className="text-sm font-medium">Software</span>
-                </div>
-                <div className="text-lg font-bold">{realData.initialQCStats.assignedRepairs.software}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🔧</span>
-                  <span className="text-sm font-medium">Other</span>
-                </div>
-                <div className="text-lg font-bold">{realData.initialQCStats.assignedRepairs.other}</div>
-              </div>
-            </Card>
-          </div>
+          <StatsGrid
+            cols={5}
+            items={[
+              { icon: '🏠', label: 'Housing', value: realData.initialQCStats.assignedRepairs.housing },
+              { icon: '🪟', label: 'Glass', value: realData.initialQCStats.assignedRepairs.glass },
+              { icon: '🔋', label: 'Battery', value: realData.initialQCStats.assignedRepairs.battery },
+              { icon: '💾', label: 'Software', value: realData.initialQCStats.assignedRepairs.software },
+              { icon: '🔧', label: 'Other', value: realData.initialQCStats.assignedRepairs.other },
+            ]}
+          />
         </div>
-
-        {/* Assigned Grades Row */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">Assigned Grades</h4>
-          <div className="grid gap-2 md:grid-cols-3">
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🏆</span>
-                  <span className="text-sm font-medium">Grade A</span>
-                </div>
-                <div className="text-lg font-bold">{realData.initialQCStats.initialGrades.gradeA}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🥈</span>
-                  <span className="text-sm font-medium">Grade B</span>
-                </div>
-                <div className="text-lg font-bold">{realData.initialQCStats.initialGrades.gradeB}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🥉</span>
-                  <span className="text-sm font-medium">Grade C</span>
-                </div>
-                <div className="text-lg font-bold">{realData.initialQCStats.initialGrades.gradeC}</div>
-              </div>
-            </Card>
-          </div>
+          <StatsGrid
+            cols={3}
+            items={[
+              { icon: '🏆', label: 'Grade A', value: realData.initialQCStats.initialGrades.gradeA },
+              { icon: '🥈', label: 'Grade B', value: realData.initialQCStats.initialGrades.gradeB },
+              { icon: '🥉', label: 'Grade C', value: realData.initialQCStats.initialGrades.gradeC },
+            ]}
+          />
         </div>
-      </div>
+      </section>
 
       {/* 3. Final QC Stats */}
-      <div className="space-y-4">
+      <section className="space-y-4">
         <h2 className="text-xl font-semibold">Final QC Stats</h2>
-        
-        {/* General Stats Row */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">General Stats</h4>
-          <div className="grid gap-2 md:grid-cols-2">
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">⏳</span>
-                  <span className="text-sm font-medium">Awaiting QC</span>
-                </div>
-                <div className="text-lg font-bold">{realData.finalQCStats.generalStats.awaitingQC}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">❌</span>
-                  <span className="text-sm font-medium">Failed QC Count</span>
-                </div>
-                <div className="text-lg font-bold">{realData.finalQCStats.generalStats.failedQCCount}</div>
-              </div>
-            </Card>
-          </div>
+          <StatsGrid
+            cols={2}
+            items={[
+              { icon: '⏳', label: 'Awaiting QC', value: realData.finalQCStats.generalStats.awaitingQC },
+              { icon: '❌', label: 'Failed QC Count', value: realData.finalQCStats.generalStats.failedQCCount },
+            ]}
+          />
         </div>
-
-        {/* Assigned Grades Row */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">Assigned Grades</h4>
-          <div className="grid gap-2 md:grid-cols-3">
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🏆</span>
-                  <span className="text-sm font-medium">Grade A</span>
-                </div>
-                <div className="text-lg font-bold">{realData.finalQCStats.assignedGrades.gradeA}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🥈</span>
-                  <span className="text-sm font-medium">Grade B</span>
-                </div>
-                <div className="text-lg font-bold">{realData.finalQCStats.assignedGrades.gradeB}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🥉</span>
-                  <span className="text-sm font-medium">Grade C</span>
-                </div>
-                <div className="text-lg font-bold">{realData.finalQCStats.assignedGrades.gradeC}</div>
-              </div>
-            </Card>
-          </div>
+          <StatsGrid
+            cols={3}
+            items={[
+              { icon: '🏆', label: 'Grade A', value: realData.finalQCStats.assignedGrades.gradeA },
+              { icon: '🥈', label: 'Grade B', value: realData.finalQCStats.assignedGrades.gradeB },
+              { icon: '🥉', label: 'Grade C', value: realData.finalQCStats.assignedGrades.gradeC },
+            ]}
+          />
         </div>
-      </div>
+      </section>
 
       {/* 4. Devices Stats */}
-      <div className="space-y-4">
+      <section className="space-y-4">
         <h2 className="text-xl font-semibold">Devices Stats</h2>
         <div className="grid gap-4 md:grid-cols-2">
           {/* Data Table */}
@@ -275,21 +195,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
                   <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                     {(() => {
                       const totalCount = devicesStatsWithPercentages.reduce((sum, d) => sum + d.count, 0);
-                      
                       return devicesStatsWithPercentages.map((item, index) => {
                         if (item.count === 0) return null;
-                        
-                        // Calculate cumulative angles for proper donut chart segments
-                        const startAngle = devicesStatsWithPercentages.slice(0, index).reduce((sum, d) => sum + (d.count / totalCount) * 360, 0);
+
+                        const startAngle = devicesStatsWithPercentages
+                          .slice(0, index)
+                          .reduce((sum, d) => sum + (d.count / totalCount) * 360, 0);
                         const endAngle = startAngle + (item.count / totalCount) * 360;
                         const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
-                        
-                        // Convert angles to radians and calculate SVG path coordinates
+
                         const startX = 50 + 35 * Math.cos((startAngle * Math.PI) / 180);
                         const startY = 50 + 35 * Math.sin((startAngle * Math.PI) / 180);
                         const endX = 50 + 35 * Math.cos((endAngle * Math.PI) / 180);
                         const endY = 50 + 35 * Math.sin((endAngle * Math.PI) / 180);
-                        
+
                         return (
                           <path
                             key={item.status}
@@ -310,7 +229,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Legend */}
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                 {devicesStatsWithPercentages.length === 0 ? (
@@ -320,10 +239,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
                 ) : (
                   devicesStatsWithPercentages.map((item) => (
                     <div key={item.status} className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: item.color }}
-                      ></div>
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
                       <span className="truncate">{item.status}</span>
                     </div>
                   ))
@@ -332,64 +248,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </section>
 
       {/* 5. Repair Stats */}
-      <div className="space-y-4">
+      <section className="space-y-4">
         <h2 className="text-xl font-semibold">Repair Stats</h2>
-        
-        {/* Completed Repairs Row */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">Completed Repairs</h4>
-          <div className="grid gap-2 md:grid-cols-5">
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🏠</span>
-                  <span className="text-sm font-medium">Housing</span>
-                </div>
-                <div className="text-lg font-bold">{realData.repairStats.completedRepairs.housing}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🪟</span>
-                  <span className="text-sm font-medium">Glass</span>
-                </div>
-                <div className="text-lg font-bold">{realData.repairStats.completedRepairs.glass}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🔋</span>
-                  <span className="text-sm font-medium">Battery</span>
-                </div>
-                <div className="text-lg font-bold">{realData.repairStats.completedRepairs.battery}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">💾</span>
-                  <span className="text-sm font-medium">Software</span>
-                </div>
-                <div className="text-lg font-bold">{realData.repairStats.completedRepairs.software}</div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🔧</span>
-                  <span className="text-sm font-medium">Other</span>
-                </div>
-                <div className="text-lg font-bold">{realData.repairStats.completedRepairs.other}</div>
-              </div>
-            </Card>
-          </div>
+          <StatsGrid
+            cols={5}
+            items={[
+              { icon: '🏠', label: 'Housing', value: realData.repairStats.completedRepairs.housing },
+              { icon: '🪟', label: 'Glass', value: realData.repairStats.completedRepairs.glass },
+              { icon: '🔋', label: 'Battery', value: realData.repairStats.completedRepairs.battery },
+              { icon: '💾', label: 'Software', value: realData.repairStats.completedRepairs.software },
+              { icon: '🔧', label: 'Other', value: realData.repairStats.completedRepairs.other },
+            ]}
+          />
         </div>
-   {/* Technician Utilization Row */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">Technician Utilization</h4>
           <div className="grid gap-2 md:grid-cols-3">
@@ -405,7 +281,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Total Jobs Completed</span>
-                    <div className="text-lg font-bold">{realData.repairStats.technicianUtilization.techniciansList?.reduce((sum: number, tech: any) => sum + tech.jobsCompleted, 0)}</div>
+                    <div className="text-lg font-bold">
+                      {realData.repairStats.technicianUtilization.techniciansList?.reduce(
+                        (sum: number, tech: any) => sum + tech.jobsCompleted,
+                        0
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-1 max-h-32 overflow-y-auto border-t pt-2">
@@ -418,52 +299,55 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
                 </div>
               </div>
             </Card>
-            <Card className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">📊</span>
-                  <span className="text-sm font-medium">Avg Jobs/Tech</span>
-                </div>
-                <div className="text-lg font-bold">{realData.repairStats.technicianUtilization.avgJobsPerTech}</div>
-              </div>
-            </Card>
+            <StatCard
+              icon="📊"
+              label="Avg Jobs/Tech"
+              value={realData.repairStats.technicianUtilization.avgJobsPerTech}
+            />
           </div>
         </div>
-      {/* Workload by Technician Level */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">Workload by Technician Level</h4>
           <div className="grid gap-4 md:grid-cols-3">
-            {Object.entries(realData.repairStats.technicianUtilization)?.map(([level, levelData]) => (
-              <Card key={level} className="p-4">
-                <div className="space-y-3">
-                  {/* Level Summary */}
-                  <div className="border-b pb-2 mb-2">
-                    <div className="flex items-center justify-between">
-                      <h5 className="font-semibold text-lg">Level {level}</h5>
-                      <div className="text-xs text-muted-foreground">
-                        Active/Completed: {levelData.activeJobs}/{levelData.completedToday}, Avg/Tech: {levelData.averagePerTech}
+            {Object.entries(realData.repairStats.technicianUtilization)
+              ?.filter(([_, levelData]) => typeof levelData === 'object' && 'activeJobs' in (levelData as any))
+              ?.map(([level, levelData]) => {
+                const typedLevelData = levelData as {
+                  activeJobs: number;
+                  completedToday: number;
+                  averagePerTech: number;
+                  technicians: { name: string; completedToday: number }[];
+                };
+                return (
+                  <Card key={level} className="p-4">
+                    <div className="space-y-3">
+                      <div className="border-b pb-2 mb-2">
+                        <div className="flex items-center justify-between">
+                          <h5 className="font-semibold text-lg">Level {level}</h5>
+                          <div className="text-xs text-muted-foreground">
+                            Active/Completed: {typedLevelData.activeJobs}/{typedLevelData.completedToday}, Avg/Tech:{' '}
+                            {typedLevelData.averagePerTech}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <h6 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Technicians</h6>
+                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                          {typedLevelData.technicians?.map((tech, index) => (
+                            <div key={index} className="flex justify-between items-center text-xs py-1">
+                              <span className="font-medium truncate flex-1">{tech.name}</span>
+                              <span className="text-muted-foreground">{tech.completedToday}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Individual Technicians */}
-                  <div className="space-y-2">
-                    <h6 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Technicians</h6>
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                      {levelData.technicians?.map((tech, index) => (
-                        <div key={index} className="flex justify-between items-center text-xs py-1">
-                          <span className="font-medium truncate flex-1">{tech.name}</span>
-                          <span className="text-muted-foreground">{tech.completedToday}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                  </Card>
+                );
+              })}
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

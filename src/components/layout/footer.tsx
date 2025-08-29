@@ -5,7 +5,7 @@ import { useProfile } from '@/lib/hooks/use-profile'
 import { useUser } from '@/lib/hooks/use-user'
 
 export function Footer() {
-  const { data: user } = useUser()
+  const { user } = useUser()
   const { data: profile } = useProfile(!!user)
 
   const isAdmin = profile?.role === 'admin'

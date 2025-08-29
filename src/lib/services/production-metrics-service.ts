@@ -1,8 +1,9 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { RepairType } from '@/lib/types/business-types'
+import { ProductionMetrics, RepairType } from '@/lib/types/business-types'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 export class ProductionMetricsService {
-  private supabase: any
+  private supabase: SupabaseClient | null = null
 
   constructor() {
     // Initialize supabase client
@@ -202,7 +203,7 @@ export class ProductionMetricsService {
         return {}
       }
 
-      const gradeUpdates: any = {}
+      const gradeUpdates: Partial<ProductionMetrics> = {}
       
       // Add 1 to the appropriate grade count
       switch (grade) {
@@ -248,7 +249,7 @@ export class ProductionMetricsService {
         return {}
       }
 
-      const initialGradeUpdates: any = {}
+      const initialGradeUpdates: Partial<ProductionMetrics> = {}
       
       // Add 1 to the appropriate initial grade count
       switch (grade) {

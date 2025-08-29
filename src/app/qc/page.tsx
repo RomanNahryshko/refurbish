@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { DeviceListTable } from '@/components/common/device-list-table';
 import { DEFAULT_ITEMS_PER_PAGE, DEVICE_STATUS } from '@/lib/constants';
-import { Device } from '@/lib/types/business-types';
+import { Batch, Device } from '@/lib/types/business-types';
 import { useDevicesForFinalQC, useDevices } from '@/lib/hooks/use-devices';
 import { useBatches } from '@/lib/hooks/use-batches';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
@@ -31,10 +31,10 @@ export default function QCPage() {
   const { data: devicesForQC, isLoading: devicesLoading, error: devicesError } = useDevicesForFinalQC()
   
   // Fetch batches for device information
-  const { data: batches, isLoading: batchesLoading, error: batchesError } = useBatches()
+  const { batches, loading: batchesLoading, error: batchesError } = useBatches()
   
   // Fetch all devices for metrics calculation
-  const { data: allDevices } = useDevices()
+  const { devices: allDevices } = useDevices()
   
   // Refetch data every time the component mounts (page visit)
   useEffect(() => { 
@@ -258,7 +258,7 @@ export default function QCPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Batches</SelectItem>
-                      {(batches || []).map((batch: { id: string; batch_number: string }) => (
+                      {(batches || []).map((batch: Batch) => (
                         <SelectItem key={batch.id} value={batch.id}>
                           {batch.batch_number}
                         </SelectItem>
