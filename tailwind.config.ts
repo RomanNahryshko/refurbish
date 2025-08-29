@@ -6,7 +6,6 @@ const config: Config = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -56,22 +55,18 @@ const config: Config = {
         success: {
           light: '#10b981',
           DEFAULT: '#059669',
-          dark: '#047857',
         },
         warning: {
           light: '#f59e0b',
           DEFAULT: '#d97706',
-          dark: '#b45309',
         },
         error: {
           light: '#ef4444',
           DEFAULT: '#dc2626',
-          dark: '#b91c1c',
         },
         info: {
           light: '#3b82f6',
           DEFAULT: '#2563eb',
-          dark: '#1d4ed8',
         },
       },
       fontFamily: {
