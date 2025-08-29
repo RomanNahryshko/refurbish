@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useSetUser } from '@/lib/stores/user-store'
+import { useSupabaseStore } from '@/lib/stores/supabase-store'
 
 export function LoginForm() {
   const { push } = useRouter()
@@ -15,7 +15,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const setUser = useSetUser()
+  const { setUser } = useSupabaseStore()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,13 +57,12 @@ export function LoginForm() {
     if (supabase) {
       // Get current user after successful login
       const { data: { user }, error: userError } = await supabase.auth.getUser()
-      setUser(user)
-
 
       if (userError || !user) {
         push('/homepage')
         return
       }
+      setUser(user)
 
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')

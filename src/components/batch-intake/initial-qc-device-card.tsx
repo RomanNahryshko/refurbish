@@ -7,25 +7,25 @@ import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import {
-    ChevronDown,
-    ChevronUp,
-    Wrench,
-    Award,
-    CheckCircle,
-    Loader2,
-    AlertTriangle
+  ChevronDown,
+  ChevronUp,
+  Wrench,
+  Award,
+  CheckCircle,
+  Loader2,
+  AlertTriangle
 } from 'lucide-react'
 import { RepairTaskSelector } from '@/components/common/repair-task-selector'
 import { useCreateQCCheck } from '@/lib/hooks/use-qc-checks'
 import { toast } from 'sonner'
 import { RepairType } from '@/lib/types/business-types'
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
 
 // Simple repair label function since we removed the complex import
@@ -170,13 +170,6 @@ export function InitialQCDeviceCard({
 
   // Auto-save QC data when device ID becomes available
   useEffect(() => {
-    console.log('useEffect triggered:', {
-      deviceId,
-      qcApproach,
-      qcDataReady,
-      isSubmitting
-    })
-    
     if (deviceId && qcApproach && qcDataReady && !isSubmitting) {
       console.log('Auto-saving QC data...')
       // Save QC data immediately without going through confirmation dialog
@@ -186,13 +179,7 @@ export function InitialQCDeviceCard({
 
 
   const handleCompleteQC = () => {
-    console.log('handleCompleteQC called with:', {
-      qcApproach,
-      selectedRepairs,
-      selectedGrade,
-      deviceId
-    })
-    
+
     if (!qcApproach) {
       toast.error('Please select either "Add Repairs" or "Assign Grade"')
       return
@@ -332,7 +319,6 @@ export function InitialQCDeviceCard({
         <div className="border-t pt-3">
           <span className="text-sm font-medium text-muted-foreground">Initial QC Decision:</span>
           <RadioGroup value={qcApproach} onValueChange={(value) => {
-            console.log('QC approach changed to:', value)
             onQcApproachChange?.(value as 'repairs' | 'grade')
           }} className="mt-2">
             <div className="space-y-3">

@@ -17,9 +17,9 @@ import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
 import { REPAIR_TYPE_MAP } from '@/lib/constants';
 import { LegacyRepairType } from '@/lib/types/business-types';
 import {
-  useFilterDevicesByExisting,
-  useCompletedQCByDevices,
-  useFindExistingDevice
+    useFilterDevicesByExisting,
+    useCompletedQCByDevices,
+    useFindExistingDevice
 } from '@/lib/hooks/use-device-import';
 import { useDeviceImportState } from '@/lib/hooks/use-device-import-state';
 
