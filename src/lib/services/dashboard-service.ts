@@ -54,34 +54,55 @@ export interface DashboardMetrics {
       other: number;
     };
     technicianUtilization: {
+      activeTechnicians: number;
+      avgJobsPerTech: number;
+      techniciansList: Array<{
+        name: string;
+        jobsCompleted: number;
+      }>;
       L1: {
         availableTechnicians: number;
         activeJobs: number;
         completedToday: number;
         averagePerTech: number;
+        technicians: Array<{
+          name: string;
+          completedToday: number;
+        }>;
       };
       L2: {
         availableTechnicians: number;
         activeJobs: number;
         completedToday: number;
         averagePerTech: number;
+        technicians: Array<{
+          name: string;
+          completedToday: number;
+        }>;
       };
       L3: {
         availableTechnicians: number;
         activeJobs: number;
         completedToday: number;
         averagePerTech: number;
+        technicians: Array<{
+          name: string;
+          completedToday: number;
+        }>;
       };
     };
   };
 }
 
-interface RepairCounts {
-  housing: number;
-  glass: number;
-  battery: number;
-  software: number;
-  other: number;
+interface CompletedRepairDetail {
+  id: string;
+  status: string;
+  created_at: string;
+  repair_jobs: Array<{
+    id: string;
+    repair_type: string;
+    completed_at: string;
+  }>;
 }
 
 export class DashboardService {
@@ -156,15 +177,6 @@ export class DashboardService {
         completedRepairDetails,
       };
 
-      console.log('🔍 DashboardService: Final dashboard data:', {
-        productionMetrics: {
-          fail_qc_count: productionMetrics.fail_qc_count,
-          grade_a_count: productionMetrics.grade_a_count,
-          grade_b_count: productionMetrics.grade_b_count,
-          grade_c_count: productionMetrics.grade_c_count,
-        },
-        finalQCStats: dashboardData.finalQCStats,
-      });
 
       return dashboardData;
     } catch (error) {
@@ -215,22 +227,6 @@ export class DashboardService {
       console.error('Error getting production metrics:', error)
       throw error
     }
-
-    console.log('🔍 DashboardService: Production metrics query result:', {
-      metricsCount: metrics?.length || 0,
-      metrics: metrics?.map(m => ({
-        date: m.metric_date,
-        fail_qc_count: m.fail_qc_count,
-        grade_a_count: m.grade_a_count,
-        grade_b_count: m.grade_b_count,
-        grade_c_count: m.grade_c_count,
-        housing_changes: m.housing_changes,
-        glass_changes: m.glass_changes,
-        battery_changes: m.battery_changes,
-        software_updates: m.software_updates,
-        other_repairs: m.other_repairs,
-      }))
-    });
 
     if (!metrics || metrics.length === 0) {
       // Return default values if no metrics found
@@ -428,6 +424,7 @@ export class DashboardService {
         activeJobs: 0,
         completedToday: 0,
         averagePerTech: 0,
+        technicians: [],
       };
     }
 
@@ -461,12 +458,60 @@ export class DashboardService {
     const completedToday = completedJobs?.length || 0;
     const averagePerTech = availableTechnicians > 0 ? Math.round(completedToday / availableTechnicians) : 0;
 
+    const techniciansWithCompletedJobs = await this.getTechniciansWithCompletedJobs(level, technicianIds);
+
     return {
       availableTechnicians,
       activeJobs: activeJobsCount,
       completedToday,
       averagePerTech,
+      technicians: techniciansWithCompletedJobs,
     };
+  }
+
+  private async getTechniciansWithCompletedJobs(
+    level: 'L1' | 'L2' | 'L3',
+    technicianIds: string[]
+  ) {
+    // Get technician names
+    const { data: technicianProfiles, error: profileError } = await this.supabase
+      .from('user_profiles')
+      .select('id, full_name')
+      .in('id', technicianIds);
+
+    if (profileError) throw profileError;
+
+    // Create a map of technician ID to name
+    const technicianNames: { [key: string]: string } = {};
+    technicianProfiles?.forEach(tech => {
+      technicianNames[tech.id] = tech.full_name;
+    });
+
+    // Get completed jobs for today
+    const { data: completedJobs, error: completedError } = await this.supabase
+      .from('repair_jobs')
+      .select('assigned_to, completed_at')
+      .in('assigned_to', technicianIds)
+      .eq('status', 'completed')
+      .gte('completed_at', dayjs().startOf('day').toISOString())
+      .is('deleted_at', null);
+
+    if (completedError) throw completedError;
+
+    // Count completed jobs per technician
+    const technicianCompletedJobs: { [key: string]: number } = {};
+    completedJobs?.forEach(job => {
+      const technicianId = job.assigned_to;
+      technicianCompletedJobs[technicianId] = (technicianCompletedJobs[technicianId] || 0) + 1;
+    });
+
+    // Return technicians with names and completed jobs
+    const technicians = technicianIds.map(id => ({
+      name: technicianNames[id] || 'Unknown',
+      completedToday: technicianCompletedJobs[id] || 0,
+    }));
+
+    return technicians;
   }
 
   private async getFinalQCCount() {
@@ -534,7 +579,6 @@ export class DashboardService {
       return [];
     }
 
-    console.log('🔍 DashboardService: Found completed devices:', completedDevices?.length, 'for date range:', dateRange);
 
     return completedDevices || [];
   }
@@ -550,7 +594,7 @@ export class DashboardService {
 
     // Count repair types from completed devices
     completedRepairDetails.forEach(device => {
-      device.repairJobs.forEach(repair => {
+      device.repair_jobs.forEach((repair: { repair_type: string }) => {
         switch (repair.repair_type) {
           case 'housing_change':
             stats.housing++;

@@ -35,6 +35,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
   };
 
   const devicesStatsWithPercentages = getDevicesStatsWithPercentages(realData.devicesStats);
+  console.log(realData, 'realData')
 
   return (
     <div className="space-y-6">
@@ -388,47 +389,78 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
             </Card>
           </div>
         </div>
-
-        {/* Technician Utilization Row */}
+   {/* Technician Utilization Row */}
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">Technician Utilization</h4>
           <div className="grid gap-2 md:grid-cols-3">
-            <Card className="p-3">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">L1 Technicians</span>
-                  <span className="text-lg font-bold">{realData.repairStats.technicianUtilization.L1.availableTechnicians}</span>
+            <Card className="p-4 md:col-span-2">
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">👥</span>
+                      <span className="text-sm font-medium">Total Active Technicians</span>
+                    </div>
+                    <div className="text-lg font-bold">{realData.repairStats.technicianUtilization.activeTechnicians}</div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Total Jobs Completed</span>
+                    <div className="text-lg font-bold">{realData.repairStats.technicianUtilization.techniciansList?.reduce((sum: number, tech: any) => sum + tech.jobsCompleted, 0)}</div>
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Active: {realData.repairStats.technicianUtilization.L1.activeJobs} | 
-                  Completed: {realData.repairStats.technicianUtilization.L1.completedToday}
-                </div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">L2 Technicians</span>
-                  <span className="text-lg font-bold">{realData.repairStats.technicianUtilization.L2.availableTechnicians}</span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Active: {realData.repairStats.technicianUtilization.L2.activeJobs} | 
-                  Completed: {realData.repairStats.technicianUtilization.L2.completedToday}
-                </div>
-              </div>
-            </Card>
-            <Card className="p-3">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">L3 Technicians</span>
-                  <span className="text-lg font-bold">{realData.repairStats.technicianUtilization.L3.availableTechnicians}</span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Active: {realData.repairStats.technicianUtilization.L3.activeJobs} | 
-                  Completed: {realData.repairStats.technicianUtilization.L3.completedToday}
+                <div className="space-y-1 max-h-32 overflow-y-auto border-t pt-2">
+                  {realData.repairStats.technicianUtilization.techniciansList?.map((tech: any, index: number) => (
+                    <div key={index} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground truncate">{tech.name}</span>
+                      <span className="font-medium">{tech.jobsCompleted}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </Card>
+            <Card className="p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📊</span>
+                  <span className="text-sm font-medium">Avg Jobs/Tech</span>
+                </div>
+                <div className="text-lg font-bold">{realData.repairStats.technicianUtilization.avgJobsPerTech}</div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      {/* Workload by Technician Level */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-muted-foreground">Workload by Technician Level</h4>
+          <div className="grid gap-4 md:grid-cols-3">
+            {Object.entries(realData.repairStats.technicianUtilization)?.map(([level, levelData]) => (
+              <Card key={level} className="p-4">
+                <div className="space-y-3">
+                  {/* Level Summary */}
+                  <div className="border-b pb-2 mb-2">
+                    <div className="flex items-center justify-between">
+                      <h5 className="font-semibold text-lg">Level {level}</h5>
+                      <div className="text-xs text-muted-foreground">
+                        Active/Completed: {levelData.activeJobs}/{levelData.completedToday}, Avg/Tech: {levelData.averagePerTech}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Individual Technicians */}
+                  <div className="space-y-2">
+                    <h6 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Technicians</h6>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {levelData.technicians?.map((tech, index) => (
+                        <div key={index} className="flex justify-between items-center text-xs py-1">
+                          <span className="font-medium truncate flex-1">{tech.name}</span>
+                          <span className="text-muted-foreground">{tech.completedToday}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
       </div>
