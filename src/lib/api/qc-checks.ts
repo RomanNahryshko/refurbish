@@ -8,6 +8,7 @@ export interface CreateQCCheckData {
   overall_result: 'not_tested' | 'pass' | 'fail'
   grade_assigned?: DeviceGrade
   notes?: string
+  required_repairs?: string[] // Add required repairs for production metrics tracking
 }
 
 export interface CreateQCTestResultData {

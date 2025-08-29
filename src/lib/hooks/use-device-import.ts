@@ -119,16 +119,28 @@ export function useFilterDevicesByExisting(devices: DrPhoneData[]) {
   const filteredDevices = React.useMemo(() => {
     if (!existingDevices || devices.length === 0) return devices
 
+    console.log('🔍 useFilterDevicesByExisting: Processing devices:', devices)
+    console.log('🔍 useFilterDevicesByExisting: Existing devices:', existingDevices)
+
     const existingIMEIs = new Set(
       existingDevices.map((d) => d.imei?.toString()?.trim()).filter(Boolean)
     )
 
-    const cleanedDevices = devices.map((device) => ({
-      ...device,
-      imei: device.imei?.toString()?.trim() || '',
-    }))
 
-    return cleanedDevices.filter((device) => !existingIMEIs.has(device.imei))
+    const cleanedDevices = devices.map((device) => {
+      const cleanedIMEI = device.imei?.toString()?.trim() || ''
+      
+      return {
+        ...device,
+        imei: cleanedIMEI,
+      }
+    })
+
+
+    const filtered = cleanedDevices.filter((device) => !existingIMEIs.has(device.imei))
+    
+
+    return filtered
   }, [devices, existingDevices])
 
   const existingCount = devices.length - filteredDevices.length

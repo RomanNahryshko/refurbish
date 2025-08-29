@@ -3,6 +3,7 @@ import { DEVICE_STATUS } from '@/lib/constants'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { requirePermission } from '@/lib/services/auth-helpers'
 import { TestResultData, DeviceStatus } from '@/lib/types/business-types'
+import { ProductionMetricsService } from '@/lib/services/production-metrics-service'
 
 export async function POST(request: NextRequest) {
   // Check permission
@@ -17,18 +18,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log(`QC check creation request from user ${user.id} (${user.email})`)
+    console.log(`🔐 QC API: QC check creation request from user ${user.id} (${user.email})`)
+    
+    // Log raw request body for debugging
+    const rawBody = await request.text()
+    console.log('📋 QC API: Raw request body:', rawBody)
+    
+    // Parse JSON from raw body
+    let requestData
+    try {
+      requestData = JSON.parse(rawBody)
+      console.log('📋 QC API: Parsed request data:', requestData)
+    } catch (parseError) {
+      console.error('❌ QC API: Failed to parse request body:', parseError)
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 })
+    }
 
-    const { device_id, check_type, overall_result, grade_assigned, notes, test_results, required_repairs } = await request.json()
+    const { device_id, check_type, overall_result, grade_assigned, notes, test_results, required_repairs } = requestData
 
     // Log received data for debugging
-    console.log('Received QC check data:', {
+    console.log('📋 QC API: Received QC check data:', {
       device_id,
       check_type,
       overall_result,
       grade_assigned,
       notes,
       required_repairs,
+      required_repairs_type: typeof required_repairs,
+      required_repairs_is_array: Array.isArray(required_repairs),
+      required_repairs_length: required_repairs?.length || 0,
       has_test_results: !!test_results
     })
 
@@ -61,15 +79,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate required_repairs if provided
+    console.log('🔍 QC API: Validating required_repairs:', {
+      required_repairs,
+      isArray: Array.isArray(required_repairs),
+      length: required_repairs?.length || 0,
+      repairTypes: required_repairs?.map((r: any) => ({ value: r, type: typeof r, isString: typeof r === 'string' }))
+    })
+    
     if (required_repairs && Array.isArray(required_repairs)) {
       const validRepairTypes = ['housing_change', 'glass_change', 'battery_change', 'software_update', 'other']
+      console.log('🔍 QC API: Valid repair types:', validRepairTypes)
+      
       for (const repairType of required_repairs) {
+        console.log('🔍 QC API: Validating repair type:', {
+          repairType,
+          type: typeof repairType,
+          isString: typeof repairType === 'string',
+          isValid: validRepairTypes.includes(repairType)
+        })
+        
         if (!validRepairTypes.includes(repairType)) {
+          console.error('❌ QC API: Invalid repair type found:', repairType)
           return NextResponse.json({ 
             error: `Invalid repair type: ${repairType}. Must be one of: ${validRepairTypes.join(', ')}` 
           }, { status: 400 })
         }
+        console.log('✅ QC API: Repair type validated:', repairType)
       }
+      console.log('✅ QC API: All repair types validated successfully')
+    } else {
+      console.log('ℹ️ QC API: No required_repairs provided or not an array')
     }
 
     // Create QC check
@@ -150,8 +189,45 @@ export async function POST(request: NextRequest) {
       // Note: We don't fail the entire request if device update fails
     }
 
+        // Update production metrics for required repairs IMMEDIATELY after QC check creation
+    // This ensures metrics are updated even if repair jobs fail
+    console.log('📊 QC API: Checking if production metrics should be updated:', {
+      check_type,
+      overall_result,
+      required_repairs,
+      isArray: Array.isArray(required_repairs),
+      length: required_repairs?.length || 0,
+      shouldUpdate: check_type === 'initial' && overall_result === 'fail' && required_repairs && Array.isArray(required_repairs) && required_repairs.length > 0
+    })
+    
+    if (check_type === 'initial' && overall_result === 'fail' && required_repairs && Array.isArray(required_repairs) && required_repairs.length > 0) {
+      console.log('📊 QC API: IMMEDIATELY updating production metrics for required repairs:', required_repairs)
+      console.log('📊 QC API: Repair types to process:', required_repairs.map(repair => ({ repair, type: typeof repair })))
+      
+      try {
+        const productionMetricsService = new ProductionMetricsService()
+        console.log('🔧 QC API: ProductionMetricsService instance created')
+        
+        const result = await productionMetricsService.updateRepairMetrics(required_repairs)
+        console.log('✅ QC API: Successfully updated production metrics for required repairs:', result)
+      } catch (metricsError) {
+        console.error('❌ QC API: Error updating production metrics for required repairs:', metricsError)
+        console.error('❌ QC API: Error stack:', metricsError instanceof Error ? metricsError.stack : 'No stack trace')
+        // Don't fail the entire request if metrics update fails
+      }
+    } else {
+      console.log('ℹ️ QC API: Production metrics update skipped:', {
+        reason: !check_type ? 'no check_type' : 
+                !overall_result ? 'no overall_result' : 
+                overall_result !== 'fail' ? 'overall_result is not fail' :
+                !required_repairs ? 'no required_repairs' :
+                !Array.isArray(required_repairs) ? 'required_repairs is not array' :
+                required_repairs.length === 0 ? 'required_repairs is empty' : 'unknown'
+      })
+    }
+
     // Create repair jobs if initial QC failed and repairs are required
-    console.log('Checking if repair jobs should be created:', {
+    console.log('🔧 QC API: Checking if repair jobs should be created:', {
       check_type,
       overall_result,
       required_repairs,
@@ -161,7 +237,7 @@ export async function POST(request: NextRequest) {
     })
     
     if (check_type === 'initial' && overall_result === 'fail' && required_repairs && Array.isArray(required_repairs) && required_repairs.length > 0) {
-      console.log(`Creating repair jobs for device ${device_id}. Required repairs:`, required_repairs)
+      console.log(`🔧 QC API: Creating repair jobs for device ${device_id}. Required repairs:`, required_repairs)
       
       try {
         // Create repair jobs for each required repair type
@@ -196,6 +272,19 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error('Error creating repair jobs:', error)
         // Don't fail the entire request if repair job creation fails
+      }
+    }
+
+    // Update production metrics for grade assignment if initial QC passes with grade
+    if (check_type === 'initial' && overall_result === 'pass' && grade_assigned && grade_assigned !== 'ungraded') {
+      try {
+        console.log('🏆 Updating production metrics for grade assignment:', grade_assigned)
+        const productionMetricsService = new ProductionMetricsService()
+        await productionMetricsService.updateGradeMetrics(grade_assigned as 'A' | 'B' | 'C')
+        console.log('✅ Successfully updated production metrics for grade assignment')
+      } catch (metricsError) {
+        console.error('❌ Error updating production metrics for grade assignment:', metricsError)
+        // Don't fail the entire request if metrics update fails
       }
     }
 

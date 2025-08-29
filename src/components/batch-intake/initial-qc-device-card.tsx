@@ -105,15 +105,10 @@ export function InitialQCDeviceCard({
   // Auto-save QC data when deviceId becomes available (only if we're in QC completion flow)
   const [qcDataReady, setQcDataReady] = useState(false)
   const [isProcessingComplete, setIsProcessingComplete] = useState(false)
-  
+
   // Function to save QC data directly (without confirmation dialog)
   const saveQCData = useCallback(async (deviceIdToUse: string) => {
-    console.log('saveQCData called with:', {
-      deviceIdToUse,
-      qcApproach,
-      selectedRepairs,
-      selectedGrade
-    })
+    console.log(`🔍 Initial QC Device ${deviceIndex}: saveQCData called with deviceId:`, deviceIdToUse)
     
     try {
       setIsSubmitting(true)
@@ -170,12 +165,33 @@ export function InitialQCDeviceCard({
 
   // Auto-save QC data when device ID becomes available
   useEffect(() => {
+    console.log(`🔍 Initial QC Device ${deviceIndex}: useEffect triggered:`, {
+      deviceId,
+      qcApproach,
+      qcDataReady,
+      isSubmitting,
+      shouldAutoSave: deviceId && qcApproach && qcDataReady && !isSubmitting,
+      allConditions: {
+        hasDeviceId: !!deviceId,
+        hasQcApproach: !!qcApproach,
+        isQcDataReady: qcDataReady,
+        isNotSubmitting: !isSubmitting
+      }
+    })
+    
     if (deviceId && qcApproach && qcDataReady && !isSubmitting) {
-      console.log('Auto-saving QC data...')
+      console.log(`🔍 Initial QC Device ${deviceIndex}: Auto-saving QC data...`)
       // Save QC data immediately without going through confirmation dialog
       saveQCData(deviceId)
+    } else {
+      console.log(`🔍 Initial QC Device ${deviceIndex}: Auto-save conditions not met:`, {
+        missingDeviceId: !deviceId,
+        missingQcApproach: !qcApproach,
+        qcDataNotReady: !qcDataReady,
+        isSubmitting
+      })
     }
-  }, [deviceId, qcApproach, qcDataReady, isSubmitting, saveQCData])
+  }, [deviceId, qcApproach, qcDataReady, isSubmitting, saveQCData, deviceIndex])
 
 
   const handleCompleteQC = () => {
@@ -200,14 +216,6 @@ export function InitialQCDeviceCard({
   }
 
   const handleConfirmQC = useCallback(async () => {
-    console.log('handleConfirmQC called with:', {
-      qcApproach,
-      selectedRepairs,
-      selectedGrade,
-      deviceId,
-      otherDescription
-    })
-    
     setShowConfirmation(false)
     setIsSubmitting(true)
     setIsProcessingComplete(false)
@@ -216,10 +224,20 @@ export function InitialQCDeviceCard({
       // If no device ID is provided, try to create device first
       if (!deviceId) {
         if (onCompleteQCWithDevice) {
+          // Validate device data before proceeding
+          if (!device?.imei || device.imei.trim() === '') {
+            toast.error('Device IMEI is missing. Please check the device data.')
+            setIsProcessingComplete(true)
+            setIsSubmitting(false)
+            return
+          }
+          
           // Set flag to indicate QC data is ready to be saved once device is created
           setQcDataReady(true)
+          
           // Call the callback to create device first
           onCompleteQCWithDevice(device, deviceIndex)
+          
           // Note: After device creation, the parent component will update the deviceId prop
           // and this component will re-render, allowing the QC check to be saved
           // Don't stop submitting here - wait for all operations to complete
@@ -248,16 +266,18 @@ export function InitialQCDeviceCard({
         required_repairs: qcApproach === 'repairs' ? selectedRepairs as RepairType[] : undefined
       }
 
-      // Log QC data for debugging
-      console.log('Sending QC data to API:', qcData)
-      console.log('Selected repairs:', selectedRepairs)
-      console.log('QC approach:', qcApproach)
-
       // Save to database
       await createQCCheck.mutateAsync({
         qcData,
         testResults: undefined // We'll handle test results separately if needed
       })
+
+      // If repairs are needed and we have a deviceId, call the parent to handle repair jobs and metrics
+      if (qcApproach === 'repairs' && selectedRepairs.length > 0 && deviceId && onCompleteQCWithDevice) {
+        // Call parent to handle repair jobs creation and metrics update
+        onCompleteQCWithDevice(device, deviceIndex)
+        return
+      }
 
       // Call the callback to update UI
       onCompleteQC?.()

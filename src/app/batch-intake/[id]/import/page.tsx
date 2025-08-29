@@ -15,13 +15,15 @@ import { LoadingSpinner } from '@/components/common/loading-spinner';
 // Removed: Direct Supabase import - using hooks instead
 import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
 import { REPAIR_TYPE_MAP } from '@/lib/constants';
-import { LegacyRepairType } from '@/lib/types/business-types';
+import { LegacyRepairType, RepairType } from '@/lib/types/business-types';
 import {
-    useFilterDevicesByExisting,
-    useCompletedQCByDevices,
-    useFindExistingDevice
+  useFilterDevicesByExisting,
+  useCompletedQCByDevices,
+  useFindExistingDevice
 } from '@/lib/hooks/use-device-import';
 import { useDeviceImportState } from '@/lib/hooks/use-device-import-state';
+import { ProductionMetricsClientService } from '@/lib/services/production-metrics-client-service';
+import { useSupabaseClient } from '@/lib/stores/supabase-store';
 
 
 // Mock Dr. Phone data format
@@ -80,9 +82,13 @@ export default function ImportDrPhonePage() {
   // Store the count of devices that already exist in the system
   const [existingDevicesCount, setExistingDevicesCount] = useState(0)
   
+  // Store device IDs for each device index
+  const [deviceIds, setDeviceIds] = useState<Record<number, string>>({})
+  
   const createDevicesFromImport = useCreateDevicesFromImport()
   const createRepairJob = useCreateRepairJob()
   const findExistingDevice = useFindExistingDevice()
+  const supabase = useSupabaseClient()
 
 
 
@@ -90,13 +96,34 @@ export default function ImportDrPhonePage() {
   const convertedData = React.useMemo(() => {
     if (!parsedData?.rows) return []
     
-    return parsedData.rows.map((row) => ({
-      imei: row['Imei'] || '',
-      brand: row['Brand'] || row['brand'] || row[1] || '',
-      model: row['Model Name'] || '',
-      serialNumber: row['Serial'] || '',
-      faults: row['Fail'] || 'No faults detected'
-    }))
+    const converted = parsedData.rows.map((row, _index) => {
+      const imei = row['Imei'] || row['imei'] || row['IMEI'] || row['Imei Number'] || row['IMEI Number'] || ''
+      const brand = row['Brand'] || row['brand'] || row['Brand Name'] || row['brand_name'] || row[1] || ''
+      const model = row['Model Name'] || row['Model'] || row['model'] || row['Model Name'] || ''
+      const serialNumber = row['Serial'] || row['serial'] || row['Serial Number'] || row['serial_number'] || ''
+      const faults = row['Fail'] || row['fail'] || row['Faults'] || row['faults'] || row['Issues'] || 'No faults detected'
+    
+      
+      return {
+        imei,
+        brand,
+        model,
+        serialNumber,
+        faults
+      }
+    })
+    
+    
+    // Filter out devices with empty IMEIs
+    const validDevices = converted.filter(device => {
+      const hasValidIMEI = device.imei && typeof device.imei === 'string' && device.imei.trim() !== ''
+      if (!hasValidIMEI) {
+        console.warn(`⚠️ Excel Parsing: Device with empty IMEI filtered out:`, device)
+      }
+      return hasValidIMEI
+    })
+    
+    return validDevices
   }, [parsedData])
 
   // Use hooks to filter and check devices
@@ -105,9 +132,14 @@ export default function ImportDrPhonePage() {
 
   
   // Function to create a single device when QC is completed
-  const createSingleDevice = async (deviceData: DrPhoneData, deviceIndex: number, selectedRepairs: string[], otherDescription: string, selectedGrade: string) => {
+  const createSingleDevice = async (deviceData: DrPhoneData, deviceIndex: number, selectedRepairs: string[], otherDescription: string, selectedGrade: string, supabaseClient?: any) => {
     try {
       setIsCreatingDevice(true)
+      
+      // Validate device data before proceeding
+      if (!deviceData?.imei || deviceData.imei.trim() === '') {
+        throw new Error('Device IMEI is missing. Cannot create device.')
+      }
       
       // Remove direct supabase usage - using hooks instead
 
@@ -130,36 +162,50 @@ export default function ImportDrPhonePage() {
       
       const result = await createDevicesFromImport.mutateAsync([deviceToCreate])
 
-              if (result && result.length > 0) {
-          const createdDevice = result[0]
+      if (result && result.length > 0) {
+        const createdDevice = result[0]
           
           // Create repair jobs for selected repairs
           if (selectedRepairs.length > 0) {
             try {
-                             for (const repairType of selectedRepairs) {
-                 // Map old values to new schema values (backward compatibility)
-                 if (!isLegacyRepairType(repairType)) {
-                   continue
-                 }
-                 
-                 const mappedRepairType = REPAIR_TYPE_MAP[repairType]
-                 
-                 if (!mappedRepairType) {
-                   continue
-                 }
-                 
-                 const repairJobData = {
-                   device_id: createdDevice.id,
-                   repair_type: mappedRepairType,
-                   description: mappedRepairType === 'other' ? otherDescription : undefined
-                 }
-         
-                 
-                 await createRepairJob.mutateAsync({
-                   data: repairJobData,
-                 })
-               }
-            } catch {
+              for (const repairType of selectedRepairs) {
+                // Map old values to new schema values (backward compatibility)
+                if (!isLegacyRepairType(repairType)) {
+                  continue
+                }
+                
+                const mappedRepairType = REPAIR_TYPE_MAP[repairType]
+                
+                if (!mappedRepairType) {
+                  continue
+                }
+                
+                const repairJobData = {
+                  device_id: createdDevice.id,
+                  repair_type: mappedRepairType,
+                  description: mappedRepairType === 'other' ? otherDescription : undefined
+                }
+                
+                await createRepairJob.mutateAsync({
+                  data: repairJobData,
+                })
+              }
+              
+              // Update production metrics immediately after creating repair jobs
+              try {
+                if (!supabaseClient) {
+                  throw new Error('Supabase client not available')
+                }
+                
+                const productionMetricsService = new ProductionMetricsClientService(supabaseClient)
+                await productionMetricsService.updateRepairMetrics(selectedRepairs as RepairType[])
+                
+              } catch (metricsError) {
+                console.error('Failed to update production metrics:', metricsError)
+              }
+              
+            } catch (error) {
+              console.error(`❌ handleCompleteDeviceQC: Error creating repair jobs:`, error)
               // Continue even if repair jobs fail
             }
           }
@@ -301,6 +347,13 @@ export default function ImportDrPhonePage() {
       // Store the imported data for processing
       setImportedData(convertedData as DrPhoneData[])
       
+      // Check if any valid devices were found
+      if (convertedData.length === 0) {
+        toast.error('No valid devices found in Excel file. Please check that IMEI numbers are present.')
+      } else if (convertedData.length < parsedData.totalRows) {
+        toast.warning(`Found ${convertedData.length} valid devices out of ${parsedData.totalRows} rows. Some rows may have missing IMEI numbers.`)
+      }
+      
       // Force a re-render by updating a timestamp
       setFileInputKey(prev => prev + 1)
     }
@@ -346,8 +399,7 @@ export default function ImportDrPhonePage() {
     }
   }, [parsedData])
 
-  const handleCompleteDeviceQC = async (deviceIndex: number, deviceData?: DrPhoneData) => {
-    
+    const handleCompleteDeviceQC = async (deviceIndex: number, deviceData?: DrPhoneData) => {
     try {
       // Safety check: ensure device is in the filtered list
       if (!filteredDevices[deviceIndex]) {
@@ -357,17 +409,21 @@ export default function ImportDrPhonePage() {
 
       if (deviceData) {
         // Create device first with status 'received' (according to schema)
-        const deviceId = await createSingleDevice(deviceData, deviceIndex, deviceRepairs[deviceIndex] || [], deviceOtherDescriptions[deviceIndex] || '', deviceGrades[deviceIndex] || '')
-
-        
+        const deviceId = await createSingleDevice(deviceData, deviceIndex, deviceRepairs[deviceIndex] || [], deviceOtherDescriptions[deviceIndex] || '', deviceGrades[deviceIndex] || '', supabase)
         
         if (deviceId) {
+          // Store the device ID for this device index
+          setDeviceIds(prev => ({ ...prev, [deviceIndex]: deviceId }))
+          
           // Now mark as completed
           markDeviceCompleted(deviceIndex)
           toast.success(`Device ${deviceData.imei} created and ready for Initial QC`)
           
           // Note: The QC check will be saved by the InitialQCDeviceCard component
           // after the device is created and it has a valid deviceId
+        } else {
+          toast.error('Device creation failed. Please try again.')
+          return
         }
         
         // The filtered devices will be updated automatically by the hook
@@ -376,7 +432,51 @@ export default function ImportDrPhonePage() {
         resetAllStates()
         
       } else {
-        // Device already exists, just mark as completed
+        // Device already exists, handle repair jobs and metrics if needed
+        const selectedRepairs = deviceRepairs[deviceIndex] || []
+        const qcApproach = deviceQcApproaches[deviceIndex] || ''
+        
+        if (qcApproach === 'repairs' && selectedRepairs.length > 0) {
+          try {
+            // Get existing device ID from deviceIds state
+            const existingDeviceId = deviceIds[deviceIndex]
+            if (!existingDeviceId) {
+              toast.error('Device ID not found. Please refresh and try again.')
+              return
+            }
+            
+            // Create repair jobs for selected repairs
+            for (const repairType of selectedRepairs) {
+              await createRepairJob.mutateAsync({
+                data: {
+                  device_id: existingDeviceId,
+                  repair_type: repairType as RepairType,
+                  status: 'pending',
+                  priority: 'medium',
+                  notes: `Initial QC: ${repairType} required`,
+                  estimated_hours: 2,
+                  actual_hours: null
+                }
+              })
+            }
+            
+            // Update production metrics for repairs
+            try {
+              if (supabase) {
+                const productionMetricsService = new ProductionMetricsClientService(supabase)
+                await productionMetricsService.updateRepairMetrics(selectedRepairs as RepairType[])
+              }
+            } catch (metricsError) {
+              console.error('Failed to update production metrics:', metricsError)
+            }
+            
+          } catch {
+            toast.error('Failed to create repair jobs. Please try again.')
+            return
+          }
+        }
+        
+        // Mark as completed
         markDeviceCompleted(deviceIndex)
         toast.success(`Initial QC completed for device ${filteredDevices[deviceIndex].imei}`)
       }
@@ -586,31 +686,32 @@ export default function ImportDrPhonePage() {
             
             <div className="space-y-4">
               {filteredDevices.length > 0 ? (
-                filteredDevices.map((device, index) => {
+                filteredDevices.map((device, _index) => {
                   
                   // Use working functions for immediate functionality
-                  const selectedRepairsForDevice = deviceRepairs[index] || []
-                  const otherDescriptionForDevice = deviceOtherDescriptions[index] || ''
-                  const selectedGradeForDevice = deviceGrades[index] || ''
+                  const selectedRepairsForDevice = deviceRepairs[_index] || []
+                  const otherDescriptionForDevice = deviceOtherDescriptions[_index] || ''
+                  const selectedGradeForDevice = deviceGrades[_index] || ''
 
                   
                   return (
                     <InitialQCDeviceCard
-                      key={`preview-${index}-${device.imei}`}
+                      key={`preview-${_index}-${device.imei}`}
                       device={device}
-                      deviceIndex={index}
+                      deviceIndex={_index}
+                      deviceId={deviceIds[_index]} // Pass the device ID for this device
                       selectedRepairs={selectedRepairsForDevice}
                       otherDescription={otherDescriptionForDevice}
                       selectedGrade={selectedGradeForDevice}
-                      onRepairToggle={(repairId) => handleDeviceRepairToggle(index, repairId)}
-                      onOtherDescriptionChange={(desc) => handleDeviceOtherDescription(index, desc)}
-                      onGradeChange={(grade) => handleDeviceGradeChange(index, grade)}
+                      onRepairToggle={(repairId) => handleDeviceRepairToggle(_index, repairId)}
+                      onOtherDescriptionChange={(desc) => handleDeviceOtherDescription(_index, desc)}
+                      onGradeChange={(grade) => handleDeviceGradeChange(_index, grade)}
                       onCompleteQCWithDevice={(deviceData, deviceIndex) => handleCompleteDeviceQC(deviceIndex, deviceData)}
-                      isRepairSectionExpanded={expandedRepairSections[index] || false}
-                      onRepairSectionToggle={() => handleRepairSectionToggle(index)}
-                      qcApproach={deviceQcApproaches[index] || ''}
-                      onQcApproachChange={(approach) => handleQcApproachChange(index, approach)}
-                      onQCCompleted={() => handleQCCompleted(index)}
+                      isRepairSectionExpanded={expandedRepairSections[_index] || false}
+                      onRepairSectionToggle={() => handleRepairSectionToggle(_index)}
+                      qcApproach={deviceQcApproaches[_index] || ''}
+                      onQcApproachChange={(approach) => handleQcApproachChange(_index, approach)}
+                      onQCCompleted={() => handleQCCompleted(_index)}
                     />
                   )
                 })
