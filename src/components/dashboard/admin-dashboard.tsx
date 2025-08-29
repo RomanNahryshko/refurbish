@@ -325,12 +325,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
         </div>
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">Workload by Technician Level</h4>
-          {/* Debug info */}
-          <div className="text-xs text-muted-foreground p-2 bg-gray-100 rounded">
-            Debug: L1: {realData.repairStats.technicianUtilization.L1.availableTechnicians} techs, 
-            L2: {realData.repairStats.technicianUtilization.L2.availableTechnicians} techs, 
-            L3: {realData.repairStats.technicianUtilization.L3.availableTechnicians} techs
-          </div>
           <div className="grid gap-4 md:grid-cols-3">
             {(['L1', 'L2', 'L3'] as const).map((level) => {
               const levelData = realData.repairStats.technicianUtilization[level];

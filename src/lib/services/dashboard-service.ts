@@ -343,8 +343,6 @@ export class DashboardService {
       // Добавляем техника ТОЛЬКО в один уровень
       grouped[level].technicians.push({ name: t.full_name || 'Unknown', completedToday: 0 });
       grouped[level].availableTechnicians++;
-      
-      console.log(`Technician ${t.full_name} (DB level: ${t.technician_level}) assigned to level ${level}`);
     }
 
     // индекс техников в массиве для быстрого инкремента
@@ -388,22 +386,6 @@ export class DashboardService {
       g.averagePerTech = g.availableTechnicians > 0 ? Math.round(g.completedToday / g.availableTechnicians) : 0;
     });
 
-    // Проверяем, что каждый уровень имеет уникальные данные
-    console.log('Final grouped data:', {
-      L1: { count: grouped.L1.availableTechnicians, techs: grouped.L1.technicians.map(t => t.name) },
-      L2: { count: grouped.L2.availableTechnicians, techs: grouped.L2.technicians.map(t => t.name) },
-      L3: { count: grouped.L3.availableTechnicians, techs: grouped.L3.technicians.map(t => t.name) }
-    });
-    
-    // Проверяем, что массивы техников не пересекаются
-    const allTechs = [
-      ...grouped.L1.technicians.map(t => t.name),
-      ...grouped.L2.technicians.map(t => t.name),
-      ...grouped.L3.technicians.map(t => t.name)
-    ];
-    const uniqueTechs = new Set(allTechs);
-    console.log('Total unique technicians:', uniqueTechs.size, 'vs total assigned:', allTechs.length);
-    
     return grouped;
   }
 
