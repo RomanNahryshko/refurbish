@@ -277,74 +277,93 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
                       <span className="text-lg">👥</span>
                       <span className="text-sm font-medium">Total Active Technicians</span>
                     </div>
-                    <div className="text-lg font-bold">{realData.repairStats.technicianUtilization.activeTechnicians}</div>
+                    <div className="text-lg font-bold">
+                      {Object.values(realData.repairStats.technicianUtilization).reduce(
+                        (sum, level) => sum + level.availableTechnicians,
+                        0
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Total Jobs Completed</span>
                     <div className="text-lg font-bold">
-                      {realData.repairStats.technicianUtilization.techniciansList?.reduce(
-                        (sum: number, tech: any) => sum + tech.jobsCompleted,
+                      {Object.values(realData.repairStats.technicianUtilization).reduce(
+                        (sum, level) => sum + level.completedToday,
                         0
                       )}
                     </div>
                   </div>
                 </div>
                 <div className="space-y-1 max-h-32 overflow-y-auto border-t pt-2">
-                  {realData.repairStats.technicianUtilization.techniciansList?.map((tech: any, index: number) => (
-                    <div key={index} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground truncate">{tech.name}</span>
-                      <span className="font-medium">{tech.jobsCompleted}</span>
-                    </div>
-                  ))}
+                  {Object.values(realData.repairStats.technicianUtilization)
+                    .flatMap(level => level.technicians)
+                    .map((tech, index) => (
+                      <div key={index} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground truncate">{tech.name}</span>
+                        <span className="font-medium">{tech.completedToday}</span>
+                      </div>
+                    ))}
                 </div>
               </div>
             </Card>
             <StatCard
               icon="📊"
               label="Avg Jobs/Tech"
-              value={realData.repairStats.technicianUtilization.avgJobsPerTech}
+              value={(() => {
+                const totalTechs = Object.values(realData.repairStats.technicianUtilization).reduce(
+                  (sum, level) => sum + level.availableTechnicians,
+                  0
+                );
+                const totalCompleted = Object.values(realData.repairStats.technicianUtilization).reduce(
+                  (sum, level) => sum + level.completedToday,
+                  0
+                );
+                return totalTechs > 0 ? Math.round(totalCompleted / totalTechs) : 0;
+              })()}
             />
           </div>
         </div>
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">Workload by Technician Level</h4>
+          {/* Debug info */}
+          <div className="text-xs text-muted-foreground p-2 bg-gray-100 rounded">
+            Debug: L1: {realData.repairStats.technicianUtilization.L1.availableTechnicians} techs, 
+            L2: {realData.repairStats.technicianUtilization.L2.availableTechnicians} techs, 
+            L3: {realData.repairStats.technicianUtilization.L3.availableTechnicians} techs
+          </div>
           <div className="grid gap-4 md:grid-cols-3">
-            {Object.entries(realData.repairStats.technicianUtilization)
-              ?.filter(([_, levelData]) => typeof levelData === 'object' && 'activeJobs' in (levelData as any))
-              ?.map(([level, levelData]) => {
-                const typedLevelData = levelData as {
-                  activeJobs: number;
-                  completedToday: number;
-                  averagePerTech: number;
-                  technicians: { name: string; completedToday: number }[];
-                };
-                return (
-                  <Card key={level} className="p-4">
-                    <div className="space-y-3">
-                      <div className="border-b pb-2 mb-2">
-                        <div className="flex items-center justify-between">
-                          <h5 className="font-semibold text-lg">Level {level}</h5>
-                          <div className="text-xs text-muted-foreground">
-                            Active/Completed: {typedLevelData.activeJobs}/{typedLevelData.completedToday}, Avg/Tech:{' '}
-                            {typedLevelData.averagePerTech}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <h6 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Technicians</h6>
-                        <div className="space-y-1 max-h-32 overflow-y-auto">
-                          {typedLevelData.technicians?.map((tech, index) => (
-                            <div key={index} className="flex justify-between items-center text-xs py-1">
-                              <span className="font-medium truncate flex-1">{tech.name}</span>
-                              <span className="text-muted-foreground">{tech.completedToday}</span>
-                            </div>
-                          ))}
+            {(['L1', 'L2', 'L3'] as const).map((level) => {
+              const levelData = realData.repairStats.technicianUtilization[level];
+              // Показываем только уровни с техниками
+              if (!levelData || levelData.availableTechnicians === 0) return null;
+              
+              return (
+                <Card key={`${level}-${levelData.availableTechnicians}`} className="p-4">
+                  <div className="space-y-3">
+                    <div className="border-b pb-2 mb-2">
+                      <div className="flex items-center justify-between">
+                        <h5 className="font-semibold text-lg">Level {level}</h5>
+                        <div className="text-xs text-muted-foreground">
+                          Active/Completed: {levelData.activeJobs}/{levelData.completedToday}, Avg/Tech:{' '}
+                          {levelData.averagePerTech}
                         </div>
                       </div>
                     </div>
-                  </Card>
-                );
-              })}
+                    <div className="space-y-2">
+                      <h6 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Technicians</h6>
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {levelData.technicians?.map((tech, index) => (
+                          <div key={`${level}-${tech.name}-${index}`} className="flex justify-between items-center text-xs py-1">
+                            <span className="font-medium truncate flex-1">{tech.name}</span>
+                            <span className="text-muted-foreground">{tech.completedToday}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>

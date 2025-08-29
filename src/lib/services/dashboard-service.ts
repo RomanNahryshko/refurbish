@@ -54,55 +54,51 @@ export interface DashboardMetrics {
       other: number;
     };
     technicianUtilization: {
-      activeTechnicians: number;
-      avgJobsPerTech: number;
-      techniciansList: Array<{
-        name: string;
-        jobsCompleted: number;
-      }>;
-      L1: {
-        availableTechnicians: number;
-        activeJobs: number;
-        completedToday: number;
-        averagePerTech: number;
-        technicians: Array<{
-          name: string;
-          completedToday: number;
-        }>;
-      };
-      L2: {
-        availableTechnicians: number;
-        activeJobs: number;
-        completedToday: number;
-        averagePerTech: number;
-        technicians: Array<{
-          name: string;
-          completedToday: number;
-        }>;
-      };
-      L3: {
-        availableTechnicians: number;
-        activeJobs: number;
-        completedToday: number;
-        averagePerTech: number;
-        technicians: Array<{
-          name: string;
-          completedToday: number;
-        }>;
-      };
+      L1: TechnicianLevelStats;
+      L2: TechnicianLevelStats;
+      L3: TechnicianLevelStats;
     };
   };
 }
 
-interface CompletedRepairDetail {
-  id: string;
-  status: string;
-  created_at: string;
-  repair_jobs: Array<{
-    id: string;
-    repair_type: string;
-    completed_at: string;
-  }>;
+interface TechnicianLevelStats {
+  availableTechnicians: number;
+  activeJobs: number;
+  completedToday: number;
+  averagePerTech: number;
+  technicians: Array<{ name: string; completedToday: number }>;
+}
+
+const DEFAULT_PRODUCTION_METRICS = {
+  batches_created: 0,
+  devices_received: 0,
+  devices_in_repair: 0,
+  devices_completed: 0,
+  devices_shipped: 0,
+  housing_changes: 0,
+  glass_changes: 0,
+  battery_changes: 0,
+  software_updates: 0,
+  other_repairs: 0,
+  grade_a_count: 0,
+  grade_b_count: 0,
+  grade_c_count: 0,
+  fail_qc_count: 0,
+  initial_grade_a_count: 0,
+  initial_grade_b_count: 0,
+  initial_grade_c_count: 0,
+};
+
+function normalizeDateRange(dateRange?: { from: Date; to: Date }) {
+  if (!dateRange) return undefined;
+  return {
+    // for "date" columns like metric_date (YYYY-MM-DD)
+    metricFrom: dayjs(dateRange.from).format('YYYY-MM-DD'),
+    metricTo: dayjs(dateRange.to).format('YYYY-MM-DD'),
+    // for timestamp columns like created_at / completed_at
+    startISO: dayjs(dateRange.from).startOf('day').toISOString(),
+    endISO: dayjs(dateRange.to).endOf('day').toISOString(),
+  };
 }
 
 export class DashboardService {
@@ -110,27 +106,29 @@ export class DashboardService {
 
   async getDashboardMetrics(dateRange?: { from: Date; to: Date }): Promise<DashboardMetrics> {
     try {
-      // Get production metrics from the production_metrics table
-      const productionMetrics = await this.getProductionMetrics(dateRange);
-      
-      // Get additional data that's not in production_metrics
-      const [batchIntakeStats, technicianUtilization, finalQCCount, inRepairCount, awaitingRepairCount, completedRepairDetails] = await Promise.all([
+      const [
+        productionMetrics,
+        batchIntake,
+        technicianUtilization,
+        finalQCCount,
+        inRepairCount,
+        awaitingRepairCount,
+        completedRepairsStats,
+      ] = await Promise.all([
+        this.getProductionMetrics(dateRange),
         this.getBatchIntakeStats(dateRange),
         this.getTechnicianUtilization(),
         this.getFinalQCCount(),
         this.getInRepairCount(),
         this.getAwaitingRepairCount(),
-        this.getCompletedRepairDetails(dateRange),
+        this.getCompletedRepairsStats(dateRange),
       ]);
 
-      // Calculate completed repairs statistics from actual completed devices
-      const completedRepairsStats = this.calculateCompletedRepairsStats(completedRepairDetails);
-
-      const dashboardData = {
+      return {
         batchIntakeStats: {
-          batchesCreated: productionMetrics.batches_created, // Use from production_metrics
-          expectedDevicesCount: batchIntakeStats.expectedDevicesCount, // Sum of device_count from batches
-          importedDevicesCount: batchIntakeStats.importedDevicesCount, // Count of devices from devices table by created_at
+          batchesCreated: productionMetrics.batches_created,
+          expectedDevicesCount: batchIntake.expectedDevicesCount,
+          importedDevicesCount: batchIntake.importedDevicesCount,
         },
         initialQCStats: {
           assignedRepairs: {
@@ -153,8 +151,8 @@ export class DashboardService {
         },
         finalQCStats: {
           generalStats: {
-            awaitingQC: finalQCCount, // Devices in final_qc status are awaiting QC processing
-            failedQCCount: productionMetrics.fail_qc_count, // From production_metrics table
+            awaitingQC: finalQCCount,
+            failedQCCount: productionMetrics.fail_qc_count,
           },
           assignedGrades: {
             gradeA: productionMetrics.grade_a_count,
@@ -163,458 +161,320 @@ export class DashboardService {
           },
         },
         devicesStats: {
-          expectedDevices: batchIntakeStats.expectedDevicesCount,
-          importedDevices: batchIntakeStats.importedDevicesCount, // Count of devices from devices table by created_at
-          awaitingRepair: awaitingRepairCount, // Use the accurate count from database
-          inRepair: inRepairCount, // Use the accurate count from database
-          finalQC: finalQCCount, // Use the correct count from database
+          expectedDevices: batchIntake.expectedDevicesCount,
+          importedDevices: batchIntake.importedDevicesCount,
+          awaitingRepair: awaitingRepairCount,
+          inRepair: inRepairCount,
+          finalQC: finalQCCount,
           graded: productionMetrics.devices_completed,
         },
         repairStats: {
-          completedRepairs: completedRepairsStats, // Use real-time calculated stats
+          completedRepairs: completedRepairsStats,
           technicianUtilization,
         },
-        completedRepairDetails,
       };
-
-
-      return dashboardData as unknown as DashboardMetrics;
-    } catch (error) {
-      console.error('Error fetching dashboard metrics:', error);
-      throw error;
+    } catch (err) {
+      console.error('Error in getDashboardMetrics:', err);
+      throw err;
     }
   }
 
+  /** production_metrics: выбираем поля, при наличии dateRange — суммируем на стороне сервера через выборку и reduce в JS */
   private async getProductionMetrics(dateRange?: { from: Date; to: Date }) {
+    const fields = [
+      'batches_created',
+      'devices_received',
+      'devices_in_repair',
+      'devices_completed',
+      'devices_shipped',
+      'housing_changes',
+      'glass_changes',
+      'battery_changes',
+      'software_updates',
+      'other_repairs',
+      'grade_a_count',
+      'grade_b_count',
+      'grade_c_count',
+      'fail_qc_count',
+      'initial_grade_a_count',
+      'initial_grade_b_count',
+      'initial_grade_c_count',
+    ];
+
+    const range = normalizeDateRange(dateRange);
+
     let query = this.supabase
       .from('production_metrics')
-      .select(`
-        id,
-        metric_date,
-        batches_created,
-        devices_received,
-        devices_in_repair,
-        devices_completed,
-        devices_shipped,
-        housing_changes,
-        glass_changes,
-        battery_changes,
-        software_updates,
-        other_repairs,
-        grade_a_count,
-        grade_b_count,
-        grade_c_count,
-        fail_qc_count,
-        initial_grade_a_count,
-        initial_grade_b_count,
-        initial_grade_c_count,
-        created_at
-      `)
+      .select(fields.join(','))
       .order('metric_date', { ascending: false });
 
-    if (dateRange) {
-      // For production_metrics we can use date comparison since metric_date is DATE type
-      const fromDate = dayjs(dateRange.from).format('YYYY-MM-DD');
-      const toDate = dayjs(dateRange.to).format('YYYY-MM-DD');
-      
-      query = query.gte('metric_date', fromDate)
-                   .lte('metric_date', toDate);
+    if (range) {
+      query = query.gte('metric_date', range.metricFrom).lte('metric_date', range.metricTo);
     }
 
-    const { data: metrics, error } = await query;
-
-    if (error) {
-      console.error('Error getting production metrics:', error)
-      throw error
-    }
-
-    if (!metrics || metrics.length === 0) {
-      // Return default values if no metrics found
-      return {
-        batches_created: 0,
-        devices_received: 0,
-        devices_in_repair: 0,
-        devices_completed: 0,
-        devices_shipped: 0,
-        housing_changes: 0,
-        glass_changes: 0,
-        battery_changes: 0,
-        software_updates: 0,
-        other_repairs: 0,
-        grade_a_count: 0,
-        grade_b_count: 0,
-        grade_c_count: 0,
-        fail_qc_count: 0,
-        initial_grade_a_count: 0,
-        initial_grade_b_count: 0,
-        initial_grade_c_count: 0,
-      };
-    }
-
-    // If date range is specified, sum all metrics in the range
-    if (dateRange) {
-      const summedMetrics = metrics.reduce((sum, metric) => ({
-        batches_created: sum.batches_created + (metric.batches_created || 0),
-        devices_received: sum.devices_received + (metric.devices_received || 0),
-        devices_in_repair: sum.devices_in_repair + (metric.devices_in_repair || 0),
-        devices_completed: sum.devices_completed + (metric.devices_completed || 0),
-        devices_shipped: sum.devices_shipped + (metric.devices_shipped || 0),
-        housing_changes: sum.housing_changes + (metric.housing_changes || 0),
-        glass_changes: sum.glass_changes + (metric.glass_changes || 0),
-        battery_changes: sum.battery_changes + (metric.battery_changes || 0),
-        software_updates: sum.software_updates + (metric.software_updates || 0),
-        other_repairs: sum.other_repairs + (metric.other_repairs || 0),
-        grade_a_count: sum.grade_a_count + (metric.grade_a_count || 0),
-        grade_b_count: sum.grade_b_count + (metric.grade_b_count || 0),
-        grade_c_count: sum.grade_c_count + (metric.grade_c_count || 0),
-        fail_qc_count: sum.fail_qc_count + (metric.fail_qc_count || 0),
-        initial_grade_a_count: sum.initial_grade_a_count + (metric.initial_grade_a_count || 0),
-        initial_grade_b_count: sum.initial_grade_b_count + (metric.initial_grade_b_count || 0),
-        initial_grade_c_count: sum.initial_grade_c_count + (metric.initial_grade_c_count || 0),
-      }), {
-        batches_created: 0,
-        devices_received: 0,
-        devices_in_repair: 0,
-        devices_completed: 0,
-        devices_shipped: 0,
-        housing_changes: 0,
-        glass_changes: 0,
-        battery_changes: 0,
-        software_updates: 0,
-        other_repairs: 0,
-        grade_a_count: 0,
-        grade_b_count: 0,
-        grade_c_count: 0,
-        fail_qc_count: 0,
-        initial_grade_a_count: 0,
-        initial_grade_b_count: 0,
-        initial_grade_c_count: 0,
-      });
-      
-      return summedMetrics
-    }
-
-    // If no date range, return the most recent metrics
-    return metrics[0];
-  }
-
-  private async getBatchIntakeStats(dateRange?: { from: Date; to: Date }) {
-    console.log('🔍 getBatchIntakeStats: Called with date range:', dateRange)
-    
-    let query = this.supabase
-      .from('batches')
-      .select('device_count, created_at')
-      .is('deleted_at', null);
-
-    if (dateRange) {
-      // Use dayjs for reliable date handling
-      const startOfDay = dayjs(dateRange.from).startOf('day').toDate();
-      const endOfDay = dayjs(dateRange.to).endOf('day').toDate();
-      
-      console.log('🔍 getBatchIntakeStats: Date range details:', {
-        from: dateRange.from,
-        fromISO: dateRange.from.toISOString(),
-        to: dateRange.to,
-        toISO: dateRange.to.toISOString(),
-        startOfDay: startOfDay.toISOString(),
-        endOfDay: endOfDay.toISOString()
-      })
-      
-      query = query.gte('created_at', startOfDay.toISOString()).lte('created_at', endOfDay.toISOString());
-    }
-
-    const { data: batches, error } = await query;
-
+    const { data, error } = await query;
     if (error) throw error;
 
-    console.log('🔍 getBatchIntakeStats: Found batches:', batches?.length, 'for date range:', dateRange)
+    if (!data || data.length === 0) {
+      return { ...DEFAULT_PRODUCTION_METRICS };
+    }
 
-    const batchesCreated = batches?.length || 0;
-    const expectedDevicesCount = batches?.reduce((sum, batch) => sum + (batch.device_count || 0), 0) || 0;
+    if (range) {
+      // суммируем поля в JS — избегаем проблем с PostgREST-парсером
+      const summed = { ...DEFAULT_PRODUCTION_METRICS };
+      for (const row of data) {
+        for (const key of Object.keys(summed) as (keyof typeof summed)[]) {
+          summed[key] = Number((summed as any)[key] || 0) + Number((row as any)[key] || 0);
+        }
+      }
+      return summed;
+    }
 
-    // For imported devices, count devices from devices table by created_at in the selected date range
-    let devicesQuery = this.supabase
+    // без range — возвращаем самый свежий
+    const latest = data[0];
+    // Приведём к числам
+    const normalized: any = {};
+    for (const k of fields) {
+      normalized[k] = Number((latest as any)[k] || 0);
+    }
+    return normalized;
+  }
+
+  /** batches + imported devices — безопасные запросы, подсчёт сумм в JS */
+  private async getBatchIntakeStats(dateRange?: { from: Date; to: Date }) {
+    const range = normalizeDateRange(dateRange);
+
+    const batchQuery = this.supabase
+      .from('batches')
+      .select('device_count, created_at')
+      .is('deleted_at', null)
+      .range(0, 999999); // безопасный fetch; при очень больших данных — заменить на агрегацию/VIEW/RPC
+
+    if (range) batchQuery.gte('created_at', range.startISO).lte('created_at', range.endISO);
+
+    const deviceCountQuery = this.supabase
       .from('devices')
-      .select('id, created_at')
+      .select('id', { count: 'exact', head: true })
       .is('deleted_at', null);
 
-    if (dateRange) {
-      const startOfDay = dayjs(dateRange.from).startOf('day').toDate();
-      const endOfDay = dayjs(dateRange.to).endOf('day').toDate();
-      
-      devicesQuery = devicesQuery.gte('created_at', startOfDay.toISOString()).lte('created_at', endOfDay.toISOString());
-    }
+    if (range) deviceCountQuery.gte('created_at', range.startISO).lte('created_at', range.endISO);
 
-    const { data: devices, error: devicesError } = await devicesQuery;
-    
-    if (devicesError) {
-      console.error('❌ Error fetching devices for imported count:', devicesError);
-      // Fallback to expectedDevicesCount if devices query fails
-      const importedDevicesCount = expectedDevicesCount;
-      
-      console.log('📊 getBatchIntakeStats: Calculated stats (fallback):', {
-        batchesCreated,
-        expectedDevicesCount,
-        importedDevicesCount,
-        batches: batches?.map(b => ({ 
-          device_count: b.device_count, 
-          created_at: b.created_at 
-        }))
-      });
+    const [{ data: batches, error: bErr }, { count: importedCount, error: dErr }] = await Promise.all([
+      batchQuery,
+      deviceCountQuery,
+    ]);
 
-      return {
-        batchesCreated,
-        expectedDevicesCount,
-        importedDevicesCount,
-      };
-    }
+    if (bErr) throw bErr;
+    if (dErr) throw dErr;
 
-    const importedDevicesCount = devices?.length || 0;
-    
-    console.log('📊 getBatchIntakeStats: Calculated stats:', {
-      batchesCreated,
-      expectedDevicesCount,
-      importedDevicesCount,
-      batches: batches?.map(b => ({ 
-        device_count: b.device_count, 
-        created_at: b.created_at 
-      })),
-      devices: devices?.map(d => ({ 
-        id: d.id, 
-        created_at: d.created_at 
-      }))
-    });
+    const batchesCreated = batches?.length || 0;
+    const expectedDevicesCount =
+      batches?.reduce((sum: number, b: { device_count?: number }) => sum + Number(b.device_count || 0), 0) || 0;
 
     return {
       batchesCreated,
       expectedDevicesCount,
-      importedDevicesCount,
+      importedDevicesCount: Number(importedCount || 0),
     };
   }
 
-  private async getTechnicianUtilization() {
-    // Get technician utilization by level
-    const { data: technicians, error: techError } = await this.supabase
+  private async getTechnicianUtilization(): Promise<Record<'L1' | 'L2' | 'L3', TechnicianLevelStats>> {
+    const { data: technicians, error: techErr } = await this.supabase
       .from('user_profiles')
       .select('id, full_name, technician_level')
       .eq('role', 'technician')
       .is('deleted_at', null);
 
-    if (techError) throw techError;
+    if (techErr) throw techErr;
 
-    const technicianUtilization = {
-      L1: await this.getTechnicianLevelStats('L1', technicians),
-      L2: await this.getTechnicianLevelStats('L2', technicians),
-      L3: await this.getTechnicianLevelStats('L3', technicians),
-    };
-
-    return technicianUtilization;
-  }
-
-  private async getTechnicianLevelStats(
-    level: 'L1' | 'L2' | 'L3',
-    technicians: { id: string; technician_level: string }[]
-  ) {
-    const levelTechnicians = technicians?.filter(tech => tech.technician_level === level) || [];
-    const availableTechnicians = levelTechnicians.length;
-
-    if (availableTechnicians === 0) {
-      return {
+    const techs = technicians || [];
+    const technicianIds = techs.map((t: any) => t.id).filter(Boolean);
+    
+    // если нет техников — вернуть пустую структуру
+    const grouped: Record<'L1' | 'L2' | 'L3', TechnicianLevelStats> = {
+      L1: {
         availableTechnicians: 0,
         activeJobs: 0,
         completedToday: 0,
         averagePerTech: 0,
         technicians: [],
-      };
+      },
+      L2: {
+        availableTechnicians: 0,
+        activeJobs: 0,
+        completedToday: 0,
+        averagePerTech: 0,
+        technicians: [],
+      },
+      L3: {
+        availableTechnicians: 0,
+        activeJobs: 0,
+        completedToday: 0,
+        averagePerTech: 0,
+        technicians: [],
+      },
+    };
+
+    if (technicianIds.length === 0) return grouped;
+
+    const { data: jobs, error: jobsErr } = await this.supabase
+      .from('repair_jobs')
+      .select('id, status, assigned_to, completed_at')
+      .in('assigned_to', technicianIds)
+      .in('status', ['pending', 'in_progress', 'completed'])
+      .is('deleted_at', null);
+
+    if (jobsErr) throw jobsErr;
+
+    const startOfDayISO = dayjs().startOf('day').toISOString();
+
+    // подготовим быстрый доступ к профилям
+    const profilesById: Record<string, { full_name?: string; technician_level?: string }> = {};
+    for (const t of techs) profilesById[t.id] = { full_name: t.full_name, technician_level: t.technician_level };
+
+    // заполнение статистик по уровням
+    for (const t of techs) {
+      // Убеждаемся, что technician_level существует и валиден
+      let level: 'L1' | 'L2' | 'L3' = 'L1';
+      if (t.technician_level === 'L2' || t.technician_level === 'L3') {
+        level = t.technician_level;
+      }
+      
+      // Добавляем техника ТОЛЬКО в один уровень
+      grouped[level].technicians.push({ name: t.full_name || 'Unknown', completedToday: 0 });
+      grouped[level].availableTechnicians++;
+      
+      console.log(`Technician ${t.full_name} (DB level: ${t.technician_level}) assigned to level ${level}`);
     }
 
-    const technicianIds = levelTechnicians.map(tech => tech.id);
+    // индекс техников в массиве для быстрого инкремента
+    const techIndexByName: Record<string, { level: 'L1' | 'L2' | 'L3'; idx: number }> = {};
+    (['L1', 'L2', 'L3'] as const).forEach(level => {
+      grouped[level].technicians.forEach((tt, idx) => {
+        techIndexByName[tt.name] = { level, idx };
+      });
+    });
 
-    // Get active jobs for this level
-    const { data: activeJobs, error: activeError } = await this.supabase
-      .from('repair_jobs')
-      .select('id, status')
-      .in('assigned_to', technicianIds)
-      .in('status', ['pending', 'in_progress'])
-      .is('deleted_at', null);
+    for (const job of jobs || []) {
+      const techId = job.assigned_to;
+      const profile = profilesById[techId];
+      if (!profile) continue;
+      
+      // Используем ту же логику определения уровня
+      let level: 'L1' | 'L2' | 'L3' = 'L1';
+      if (profile.technician_level === 'L2' || profile.technician_level === 'L3') {
+        level = profile.technician_level;
+      }
+      
+      const group = grouped[level];
 
-    if (activeError) throw activeError;
+      if (['pending', 'in_progress'].includes(job.status)) {
+        group.activeJobs++;
+      } else if (job.status === 'completed') {
+        // completedToday: по completed_at >= startOfDay
+        if (job.completed_at && dayjs(job.completed_at).isAfter(startOfDayISO)) {
+          group.completedToday++;
+          // увеличим у конкретного техника (по имени)
+          const techName = profile.full_name || 'Unknown';
+          const found = group.technicians.find(t => t.name === techName);
+          if (found) found.completedToday++;
+        }
+      }
+    }
 
-    const activeJobsCount = activeJobs?.length || 0;
+    // averagePerTech
+    (['L1', 'L2', 'L3'] as const).forEach(level => {
+      const g = grouped[level];
+      g.averagePerTech = g.availableTechnicians > 0 ? Math.round(g.completedToday / g.availableTechnicians) : 0;
+    });
 
-    // Get completed jobs for this level (today)
-    const today = dayjs().startOf('day').toDate();
+    // Проверяем, что каждый уровень имеет уникальные данные
+    console.log('Final grouped data:', {
+      L1: { count: grouped.L1.availableTechnicians, techs: grouped.L1.technicians.map(t => t.name) },
+      L2: { count: grouped.L2.availableTechnicians, techs: grouped.L2.technicians.map(t => t.name) },
+      L3: { count: grouped.L3.availableTechnicians, techs: grouped.L3.technicians.map(t => t.name) }
+    });
     
-    const { data: completedJobs, error: completedError } = await this.supabase
-      .from('repair_jobs')
-      .select('id, completed_at')
-      .in('assigned_to', technicianIds)
-      .eq('status', 'completed')
-      .gte('completed_at', today.toISOString())
-      .is('deleted_at', null);
-
-    if (completedError) throw completedError;
-
-    const completedToday = completedJobs?.length || 0;
-    const averagePerTech = availableTechnicians > 0 ? Math.round(completedToday / availableTechnicians) : 0;
-
-    const techniciansWithCompletedJobs = await this.getTechniciansWithCompletedJobs(level, technicianIds);
-
-    return {
-      availableTechnicians,
-      activeJobs: activeJobsCount,
-      completedToday,
-      averagePerTech,
-      technicians: techniciansWithCompletedJobs,
-    };
-  }
-
-  private async getTechniciansWithCompletedJobs(
-    level: 'L1' | 'L2' | 'L3',
-    technicianIds: string[]
-  ) {
-    // Get technician names
-    const { data: technicianProfiles, error: profileError } = await this.supabase
-      .from('user_profiles')
-      .select('id, full_name')
-      .in('id', technicianIds);
-
-    if (profileError) throw profileError;
-
-    // Create a map of technician ID to name
-    const technicianNames: { [key: string]: string } = {};
-    technicianProfiles?.forEach(tech => {
-      technicianNames[tech.id] = tech.full_name;
-    });
-
-    // Get completed jobs for today
-    const { data: completedJobs, error: completedError } = await this.supabase
-      .from('repair_jobs')
-      .select('assigned_to, completed_at')
-      .in('assigned_to', technicianIds)
-      .eq('status', 'completed')
-      .gte('completed_at', dayjs().startOf('day').toISOString())
-      .is('deleted_at', null);
-
-    if (completedError) throw completedError;
-
-    // Count completed jobs per technician
-    const technicianCompletedJobs: { [key: string]: number } = {};
-    completedJobs?.forEach(job => {
-      const technicianId = job.assigned_to;
-      technicianCompletedJobs[technicianId] = (technicianCompletedJobs[technicianId] || 0) + 1;
-    });
-
-    // Return technicians with names and completed jobs
-    const technicians = technicianIds.map(id => ({
-      name: technicianNames[id] || 'Unknown',
-      completedToday: technicianCompletedJobs[id] || 0,
-    }));
-
-    return technicians;
+    // Проверяем, что массивы техников не пересекаются
+    const allTechs = [
+      ...grouped.L1.technicians.map(t => t.name),
+      ...grouped.L2.technicians.map(t => t.name),
+      ...grouped.L3.technicians.map(t => t.name)
+    ];
+    const uniqueTechs = new Set(allTechs);
+    console.log('Total unique technicians:', uniqueTechs.size, 'vs total assigned:', allTechs.length);
+    
+    return grouped;
   }
 
   private async getFinalQCCount() {
-    // Count devices that are in 'final_qc' status
-    // These are devices where all repair jobs have been completed
-    const { data: finalQCDevices, error: finalError } = await this.supabase
+    const res = await this.supabase
       .from('devices')
-      .select('id')
+      .select('id', { count: 'exact', head: true })
       .eq('status', 'final_qc')
       .is('deleted_at', null);
-
-    if (finalError) throw finalError;
-
-    return finalQCDevices?.length || 0;
+    if (res.error) throw res.error;
+    return Number(res.count || 0);
   }
 
   private async getInRepairCount() {
-    // Count devices that have pending or in_progress repair jobs
-    // These are devices currently being repaired
-    const { data: inRepairDevices, error: inRepairError } = await this.supabase
+    const { data, error } = await this.supabase
       .from('repair_jobs')
       .select('device_id')
       .in('status', ['pending', 'in_progress'])
       .is('deleted_at', null);
 
-    if (inRepairError) throw inRepairError;
-
-    // Count unique devices (a device might have multiple repair jobs)
-    const uniqueDeviceIds = new Set(inRepairDevices?.map(job => job.device_id) || []);
-    return uniqueDeviceIds.size;
+    if (error) throw error;
+    if (!data) return 0;
+    return new Set(data.map((r: any) => r.device_id)).size;
   }
 
   private async getAwaitingRepairCount() {
-    // Count devices that are in 'awaiting_repair' status
-    // These are devices that have completed initial QC and are waiting for repair to begin
-    const { data: awaitingRepairDevices, error: awaitingRepairError } = await this.supabase
+    const res = await this.supabase
       .from('devices')
-      .select('id')
+      .select('id', { count: 'exact', head: true })
       .eq('status', 'awaiting_repair')
       .is('deleted_at', null);
-
-    if (awaitingRepairError) throw awaitingRepairError;
-
-    return awaitingRepairDevices?.length || 0;
+    if (res.error) throw res.error;
+    return Number(res.count || 0);
   }
 
-  private async getCompletedRepairDetails(dateRange?: { from: Date; to: Date }) {
+  /** Считаем completed repairs по repair_type (фильтр по completed_at для dateRange) */
+  private async getCompletedRepairsStats(dateRange?: { from: Date; to: Date }) {
+    const range = normalizeDateRange(dateRange);
+
     let query = this.supabase
-      .from('devices')
-      .select('id, status, created_at, repair_jobs(id, repair_type, completed_at)')
-      .eq('status', 'final_qc')
+      .from('repair_jobs')
+      .select('repair_type, completed_at')
+      .eq('status', 'completed')
       .is('deleted_at', null);
 
-    if (dateRange) {
-      const startOfDay = dayjs(dateRange.from).startOf('day').toDate();
-      const endOfDay = dayjs(dateRange.to).endOf('day').toDate();
-      
-      query = query.gte('created_at', startOfDay.toISOString()).lte('created_at', endOfDay.toISOString());
-    }
+    if (range) query = query.gte('completed_at', range.startISO).lte('completed_at', range.endISO);
 
-    const { data: completedDevices, error: devicesError } = await query;
+    const { data, error } = await query;
+    if (error) throw error;
 
-    if (devicesError) {
-      console.error('❌ Error fetching completed repair details:', devicesError);
-      return [];
-    }
-
-
-    return completedDevices || [];
-  }
-
-  private calculateCompletedRepairsStats(completedRepairDetails: CompletedRepairDetail[]) {
-    const stats = {
-      housing: 0,
-      glass: 0,
-      battery: 0,
-      software: 0,
-      other: 0,
-    };
-
-    // Count repair types from completed devices
-    completedRepairDetails.forEach(device => {
-      device.repair_jobs.forEach((repair: { repair_type: string }) => {
-        switch (repair.repair_type) {
-          case 'housing_change':
-            stats.housing++;
-            break;
-          case 'glass_change':
-            stats.glass++;
-            break;
-          case 'battery_change':
-            stats.battery++;
-            break;
-          case 'software_update':
-            stats.software++;
-            break;
-          case 'other':
-            stats.other++;
-            break;
-        }
-      });
+    const stats = { housing: 0, glass: 0, battery: 0, software: 0, other: 0 };
+    (data || []).forEach((r: any) => {
+      switch (r.repair_type) {
+        case 'housing_change':
+          stats.housing++;
+          break;
+        case 'glass_change':
+          stats.glass++;
+          break;
+        case 'battery_change':
+          stats.battery++;
+          break;
+        case 'software_update':
+          stats.software++;
+          break;
+        case 'other':
+        default:
+          stats.other++;
+          break;
+      }
     });
-
     return stats;
   }
 }
