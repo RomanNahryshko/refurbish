@@ -76,6 +76,14 @@ export interface DashboardMetrics {
   };
 }
 
+interface RepairCounts {
+  housing: number;
+  glass: number;
+  battery: number;
+  software: number;
+  other: number;
+}
+
 export class DashboardService {
   constructor(private supabase: SupabaseClient) {}
 
@@ -85,13 +93,17 @@ export class DashboardService {
       const productionMetrics = await this.getProductionMetrics(dateRange);
       
       // Get additional data that's not in production_metrics
-      const [batchIntakeStats, technicianUtilization, finalQCCount, inRepairCount, awaitingRepairCount] = await Promise.all([
+      const [batchIntakeStats, technicianUtilization, finalQCCount, inRepairCount, awaitingRepairCount, completedRepairDetails] = await Promise.all([
         this.getBatchIntakeStats(dateRange),
         this.getTechnicianUtilization(),
         this.getFinalQCCount(),
         this.getInRepairCount(),
         this.getAwaitingRepairCount(),
+        this.getCompletedRepairDetails(dateRange),
       ]);
+
+      // Calculate completed repairs statistics from actual completed devices
+      const completedRepairsStats = this.calculateCompletedRepairsStats(completedRepairDetails);
 
       const dashboardData = {
         batchIntakeStats: {
@@ -138,15 +150,10 @@ export class DashboardService {
           graded: productionMetrics.devices_completed,
         },
         repairStats: {
-          completedRepairs: {
-            housing: productionMetrics.housing_changes,
-            glass: productionMetrics.glass_changes,
-            battery: productionMetrics.battery_changes,
-            software: productionMetrics.software_updates,
-            other: productionMetrics.other_repairs,
-          },
+          completedRepairs: completedRepairsStats, // Use real-time calculated stats
           technicianUtilization,
         },
+        completedRepairDetails,
       };
 
       console.log('🔍 DashboardService: Final dashboard data:', {
@@ -504,5 +511,66 @@ export class DashboardService {
     if (awaitingRepairError) throw awaitingRepairError;
 
     return awaitingRepairDevices?.length || 0;
+  }
+
+  private async getCompletedRepairDetails(dateRange?: { from: Date; to: Date }) {
+    let query = this.supabase
+      .from('devices')
+      .select('id, status, created_at, repair_jobs(id, repair_type, completed_at)')
+      .eq('status', 'final_qc')
+      .is('deleted_at', null);
+
+    if (dateRange) {
+      const startOfDay = dayjs(dateRange.from).startOf('day').toDate();
+      const endOfDay = dayjs(dateRange.to).endOf('day').toDate();
+      
+      query = query.gte('created_at', startOfDay.toISOString()).lte('created_at', endOfDay.toISOString());
+    }
+
+    const { data: completedDevices, error: devicesError } = await query;
+
+    if (devicesError) {
+      console.error('❌ Error fetching completed repair details:', devicesError);
+      return [];
+    }
+
+    console.log('🔍 DashboardService: Found completed devices:', completedDevices?.length, 'for date range:', dateRange);
+
+    return completedDevices || [];
+  }
+
+  private calculateCompletedRepairsStats(completedRepairDetails: CompletedRepairDetail[]) {
+    const stats = {
+      housing: 0,
+      glass: 0,
+      battery: 0,
+      software: 0,
+      other: 0,
+    };
+
+    // Count repair types from completed devices
+    completedRepairDetails.forEach(device => {
+      device.repairJobs.forEach(repair => {
+        switch (repair.repair_type) {
+          case 'housing_change':
+            stats.housing++;
+            break;
+          case 'glass_change':
+            stats.glass++;
+            break;
+          case 'battery_change':
+            stats.battery++;
+            break;
+          case 'software_update':
+            stats.software++;
+            break;
+          case 'other':
+            stats.other++;
+            break;
+        }
+      });
+    });
+
+    return stats;
   }
 }
