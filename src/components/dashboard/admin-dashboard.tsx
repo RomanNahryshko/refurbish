@@ -143,7 +143,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
                   <span className="text-lg">🏆</span>
                   <span className="text-sm font-medium">Grade A</span>
                 </div>
-                <div className="text-lg font-bold">{realData.initialQCStats.assignedGrades.gradeA}</div>
+                <div className="text-lg font-bold">{realData.initialQCStats.initialGrades.gradeA}</div>
               </div>
             </Card>
             <Card className="p-3">
@@ -152,7 +152,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
                   <span className="text-lg">🥈</span>
                   <span className="text-sm font-medium">Grade B</span>
                 </div>
-                <div className="text-lg font-bold">{realData.initialQCStats.assignedGrades.gradeB}</div>
+                <div className="text-lg font-bold">{realData.initialQCStats.initialGrades.gradeB}</div>
               </div>
             </Card>
             <Card className="p-3">
@@ -161,7 +161,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
                   <span className="text-lg">🥉</span>
                   <span className="text-sm font-medium">Grade C</span>
                 </div>
-                <div className="text-lg font-bold">{realData.initialQCStats.assignedGrades.gradeC}</div>
+                <div className="text-lg font-bold">{realData.initialQCStats.initialGrades.gradeC}</div>
               </div>
             </Card>
           </div>

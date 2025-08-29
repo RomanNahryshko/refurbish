@@ -108,7 +108,6 @@ export function InitialQCDeviceCard({
 
   // Function to save QC data directly (without confirmation dialog)
   const saveQCData = useCallback(async (deviceIdToUse: string) => {
-    console.log(`🔍 Initial QC Device ${deviceIndex}: saveQCData called with deviceId:`, deviceIdToUse)
     
     try {
       setIsSubmitting(true)
@@ -165,31 +164,11 @@ export function InitialQCDeviceCard({
 
   // Auto-save QC data when device ID becomes available
   useEffect(() => {
-    console.log(`🔍 Initial QC Device ${deviceIndex}: useEffect triggered:`, {
-      deviceId,
-      qcApproach,
-      qcDataReady,
-      isSubmitting,
-      shouldAutoSave: deviceId && qcApproach && qcDataReady && !isSubmitting,
-      allConditions: {
-        hasDeviceId: !!deviceId,
-        hasQcApproach: !!qcApproach,
-        isQcDataReady: qcDataReady,
-        isNotSubmitting: !isSubmitting
-      }
-    })
-    
+ 
     if (deviceId && qcApproach && qcDataReady && !isSubmitting) {
-      console.log(`🔍 Initial QC Device ${deviceIndex}: Auto-saving QC data...`)
       // Save QC data immediately without going through confirmation dialog
       saveQCData(deviceId)
     } else {
-      console.log(`🔍 Initial QC Device ${deviceIndex}: Auto-save conditions not met:`, {
-        missingDeviceId: !deviceId,
-        missingQcApproach: !qcApproach,
-        qcDataNotReady: !qcDataReady,
-        isSubmitting
-      })
     }
   }, [deviceId, qcApproach, qcDataReady, isSubmitting, saveQCData, deviceIndex])
 

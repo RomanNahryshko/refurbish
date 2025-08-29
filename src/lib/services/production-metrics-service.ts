@@ -43,15 +43,14 @@ export class ProductionMetricsService {
       grade_a_count?: number
       grade_b_count?: number
       grade_c_count?: number
+      initial_grade_a_count?: number
+      initial_grade_b_count?: number
+      initial_grade_c_count?: number
       batches_created?: number
     }
   ) {
     try {
-      console.log('🔄 ProductionMetricsService: updateMetrics called with:', { date, updates })
-      
       const supabase = await this.getSupabaseClient()
-      
-      console.log('🔄 ProductionMetricsService: Got Supabase client, updating metrics for date:', date, 'with updates:', updates)
 
       // First, try to get existing metrics for the date
       const { data: existingMetrics, error: selectError } = await supabase
@@ -61,10 +60,8 @@ export class ProductionMetricsService {
         .single()
 
       if (selectError && selectError.code !== 'PGRST116') {
-        console.error('❌ ProductionMetricsService: Error selecting existing metrics:', selectError)
+        console.error('Error selecting existing metrics:', selectError)
       }
-
-      console.log('📊 ProductionMetricsService: Existing metrics:', existingMetrics)
 
       // Calculate new values by adding updates to existing values
       const newMetrics = {
@@ -81,20 +78,13 @@ export class ProductionMetricsService {
         grade_a_count: (existingMetrics?.grade_a_count || 0) + (updates.grade_a_count || 0),
         grade_b_count: (existingMetrics?.grade_b_count || 0) + (updates.grade_b_count || 0),
         grade_c_count: (existingMetrics?.grade_c_count || 0) + (updates.grade_c_count || 0),
+        initial_grade_a_count: (existingMetrics?.initial_grade_a_count || 0) + (updates.initial_grade_a_count || 0),
+        initial_grade_b_count: (existingMetrics?.initial_grade_b_count || 0) + (updates.initial_grade_b_count || 0),
+        initial_grade_c_count: (existingMetrics?.initial_grade_c_count || 0) + (updates.initial_grade_c_count || 0),
         batches_created: (existingMetrics?.batches_created || 0) + (updates.batches_created || 0),
       }
 
-      console.log('🧮 ProductionMetricsService: Calculated new metrics:', newMetrics)
-
       // Upsert production_metrics for the date
-      console.log('🔧 ProductionMetricsService: Executing upsert query with data:', newMetrics)
-      console.log('🔧 ProductionMetricsService: Upsert query details:', {
-        table: 'production_metrics',
-        conflictColumn: 'metric_date',
-        conflictValue: date,
-        dataToUpsert: newMetrics
-      })
-      
       const { error: metricsError } = await supabase
         .from('production_metrics')
         .upsert(newMetrics, {
@@ -103,23 +93,14 @@ export class ProductionMetricsService {
         })
 
       if (metricsError) {
-        console.error('❌ ProductionMetricsService: Failed to update production metrics:', metricsError)
-        console.error('❌ ProductionMetricsService: Error details:', {
-          code: metricsError.code,
-          message: metricsError.message,
-          details: metricsError.details,
-          hint: metricsError.hint
-        })
+        console.error('Failed to update production metrics:', metricsError)
         throw metricsError
       }
-      
-      console.log('✅ ProductionMetricsService: Upsert query executed successfully')
 
-      console.log('✅ ProductionMetricsService: Successfully updated production_metrics for date:', date)
       return newMetrics
 
     } catch (error) {
-      console.error('❌ ProductionMetricsService: Error updating metrics:', error)
+      console.error('Error updating metrics:', error)
       throw error
     }
   }
@@ -249,6 +230,46 @@ export class ProductionMetricsService {
 
     } catch (error) {
       console.error('❌ ProductionMetricsService: Error updating grade metrics:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update initial grade metrics when initial grades are assigned during batch intake
+   * @param grade - Initial grade that was assigned ('A', 'B', or 'C')
+   * @param date - Date to update metrics for (defaults to today)
+   */
+  async updateInitialGradeMetrics(grade: 'A' | 'B' | 'C', date: string = new Date().toISOString().split('T')[0]) {
+    try {
+      if (!grade || !['A', 'B', 'C'].includes(grade)) {
+        console.warn('Invalid grade provided:', grade)
+        return {}
+      }
+
+      const initialGradeUpdates: any = {}
+      
+      // Add 1 to the appropriate initial grade count
+      switch (grade) {
+        case 'A':
+          initialGradeUpdates.initial_grade_a_count = 1
+          break
+        case 'B':
+          initialGradeUpdates.initial_grade_b_count = 1
+          break
+        case 'C':
+          initialGradeUpdates.initial_grade_c_count = 1
+          break
+        default:
+          console.warn(`Unknown grade: ${grade}`)
+      }
+
+      // Update the metrics
+      await this.updateMetrics(date, initialGradeUpdates)
+
+      return initialGradeUpdates
+
+    } catch (error) {
+      console.error('Error updating initial grade metrics:', error)
       throw error
     }
   }

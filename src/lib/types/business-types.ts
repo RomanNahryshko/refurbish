@@ -218,6 +218,9 @@ export interface ProductionMetrics {
   grade_a_count: number
   grade_b_count: number
   grade_c_count: number
+  initial_grade_a_count: number
+  initial_grade_b_count: number
+  initial_grade_c_count: number
   created_at: string
 }
 

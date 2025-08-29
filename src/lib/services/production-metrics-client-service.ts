@@ -24,6 +24,9 @@ export class ProductionMetricsClientService {
       grade_a_count?: number
       grade_b_count?: number
       grade_c_count?: number
+      initial_grade_a_count?: number
+      initial_grade_b_count?: number
+      initial_grade_c_count?: number
       batches_created?: number
     }
   ) {
@@ -54,6 +57,9 @@ export class ProductionMetricsClientService {
         grade_a_count: (existingMetrics?.grade_a_count || 0) + (updates.grade_a_count || 0),
         grade_b_count: (existingMetrics?.grade_b_count || 0) + (updates.grade_b_count || 0),
         grade_c_count: (existingMetrics?.grade_c_count || 0) + (updates.grade_c_count || 0),
+        initial_grade_a_count: (existingMetrics?.initial_grade_a_count || 0) + (updates.initial_grade_a_count || 0),
+        initial_grade_b_count: (existingMetrics?.initial_grade_b_count || 0) + (updates.initial_grade_b_count || 0),
+        initial_grade_c_count: (existingMetrics?.initial_grade_c_count || 0) + (updates.initial_grade_c_count || 0),
         batches_created: (existingMetrics?.batches_created || 0) + (updates.batches_created || 0),
       }
 
@@ -169,6 +175,46 @@ export class ProductionMetricsClientService {
 
     } catch (error) {
       console.error('Error updating grade metrics:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update initial grade metrics when initial grades are assigned during batch intake
+   * @param grade - Initial grade that was assigned ('A', 'B', or 'C')
+   * @param date - Date to update metrics for (defaults to today)
+   */
+  async updateInitialGradeMetrics(grade: 'A' | 'B' | 'C', date: string = new Date().toISOString().split('T')[0]) {
+    try {
+      if (!grade || !['A', 'B', 'C'].includes(grade)) {
+        console.warn('Invalid grade provided:', grade)
+        return {}
+      }
+
+      const initialGradeUpdates: any = {}
+      
+      // Add 1 to the appropriate initial grade count
+      switch (grade) {
+        case 'A':
+          initialGradeUpdates.initial_grade_a_count = 1
+          break
+        case 'B':
+          initialGradeUpdates.initial_grade_b_count = 1
+          break
+        case 'C':
+          initialGradeUpdates.initial_grade_c_count = 1
+          break
+        default:
+          console.warn(`Unknown grade: ${grade}`)
+      }
+
+      // Update the metrics
+      await this.updateMetrics(date, initialGradeUpdates)
+
+      return initialGradeUpdates
+
+    } catch (error) {
+      console.error('Error updating initial grade metrics:', error)
       throw error
     }
   }

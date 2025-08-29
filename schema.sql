@@ -426,6 +426,11 @@ CREATE TABLE production_metrics (
   grade_b_count INTEGER DEFAULT 0,
   grade_c_count INTEGER DEFAULT 0,
   
+  -- Initial grade distribution (from batch intake)
+  initial_grade_a_count INTEGER DEFAULT 0,
+  initial_grade_b_count INTEGER DEFAULT 0,
+  initial_grade_c_count INTEGER DEFAULT 0,
+  
   created_at TIMESTAMPTZ DEFAULT NOW(),
   
   CONSTRAINT unique_metric_date UNIQUE (metric_date)

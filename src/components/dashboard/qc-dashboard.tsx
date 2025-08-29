@@ -17,6 +17,11 @@ const QCDashboard: React.FC<QCDashboardProps> = ({ realData }) => {
                           realData.finalQCStats.assignedGrades.gradeB +
                           realData.finalQCStats.assignedGrades.gradeC;
 
+  // Calculate total initial grades assigned today
+  const totalInitialGrades = realData.initialQCStats.initialGrades.gradeA + 
+                            realData.initialQCStats.initialGrades.gradeB + 
+                            realData.initialQCStats.initialGrades.gradeC;
+
   // Calculate total devices graded
   const totalDevicesGraded = realData.devicesStats.graded;
 
@@ -25,7 +30,7 @@ const QCDashboard: React.FC<QCDashboardProps> = ({ realData }) => {
       {/* 1. QC Workload Cards */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">QC Workload</h3>
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Awaiting Final QC</CardTitle>
@@ -67,6 +72,17 @@ const QCDashboard: React.FC<QCDashboardProps> = ({ realData }) => {
             <CardContent>
               <div className="text-2xl font-bold">{realData.finalQCStats.generalStats.failedQCCount}</div>
               <p className="text-xs text-muted-foreground">Sent back to repair</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Initial Grades</CardTitle>
+              <span className="text-2xl">🎯</span>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalInitialGrades}</div>
+              <p className="text-xs text-muted-foreground">Assigned today</p>
             </CardContent>
           </Card>
         </div>
@@ -162,6 +178,18 @@ const QCDashboard: React.FC<QCDashboardProps> = ({ realData }) => {
                 <div className="flex justify-between">
                   <span>Battery Repairs:</span>
                   <span className="font-semibold">{realData.initialQCStats.assignedRepairs.battery}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Initial Grade A:</span>
+                  <span className="font-semibold">{realData.initialQCStats.initialGrades.gradeA}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Initial Grade B:</span>
+                  <span className="font-semibold">{realData.initialQCStats.initialGrades.gradeB}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Initial Grade C:</span>
+                  <span className="font-semibold">{realData.initialQCStats.initialGrades.gradeC}</span>
                 </div>
               </div>
             </CardContent>

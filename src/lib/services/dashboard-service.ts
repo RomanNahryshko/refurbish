@@ -20,6 +20,11 @@ export interface DashboardMetrics {
       gradeB: number;
       gradeC: number;
     };
+    initialGrades: {
+      gradeA: number;
+      gradeB: number;
+      gradeC: number;
+    };
   };
   finalQCStats: {
     generalStats: {
@@ -107,6 +112,11 @@ export class DashboardService {
             gradeB: productionMetrics.grade_b_count,
             gradeC: productionMetrics.grade_c_count,
           },
+          initialGrades: {
+            gradeA: productionMetrics.initial_grade_a_count,
+            gradeB: productionMetrics.initial_grade_b_count,
+            gradeC: productionMetrics.initial_grade_c_count,
+          },
         },
         finalQCStats: {
           generalStats: {
@@ -145,19 +155,6 @@ export class DashboardService {
   }
 
   private async getProductionMetrics(dateRange?: { from: Date; to: Date }) {
-    console.log('🔍 DashboardService: Getting production metrics for date range:', dateRange)
-    
-    if (dateRange) {
-      console.log('📅 DashboardService: Date range details:', {
-        from: dateRange.from,
-        fromISO: dateRange.from.toISOString(),
-        fromDateOnly: dayjs(dateRange.from).format('YYYY-MM-DD'),
-        to: dateRange.to,
-        toISO: dateRange.to.toISOString(),
-        toDateOnly: dayjs(dateRange.to).format('YYYY-MM-DD')
-      })
-    }
-    
     let query = this.supabase
       .from('production_metrics')
       .select('*')
@@ -168,8 +165,6 @@ export class DashboardService {
       const fromDate = dayjs(dateRange.from).format('YYYY-MM-DD');
       const toDate = dayjs(dateRange.to).format('YYYY-MM-DD');
       
-      console.log('🔍 DashboardService: Filtering production_metrics by date range:', { fromDate, toDate })
-      
       query = query.gte('metric_date', fromDate)
                    .lte('metric_date', toDate);
     }
@@ -177,12 +172,11 @@ export class DashboardService {
     const { data: metrics, error } = await query;
 
     if (error) {
-      console.error('❌ DashboardService: Error getting production metrics:', error)
+      console.error('Error getting production metrics:', error)
       throw error
     }
 
     if (!metrics || metrics.length === 0) {
-      console.log('⚠️ DashboardService: No production metrics found, using default values')
       // Return default values if no metrics found
       return {
         batches_created: 0,
@@ -198,6 +192,9 @@ export class DashboardService {
         grade_a_count: 0,
         grade_b_count: 0,
         grade_c_count: 0,
+        initial_grade_a_count: 0,
+        initial_grade_b_count: 0,
+        initial_grade_c_count: 0,
       };
     }
 
@@ -217,6 +214,9 @@ export class DashboardService {
         grade_a_count: sum.grade_a_count + (metric.grade_a_count || 0),
         grade_b_count: sum.grade_b_count + (metric.grade_b_count || 0),
         grade_c_count: sum.grade_c_count + (metric.grade_c_count || 0),
+        initial_grade_a_count: sum.initial_grade_a_count + (metric.initial_grade_a_count || 0),
+        initial_grade_b_count: sum.initial_grade_b_count + (metric.initial_grade_b_count || 0),
+        initial_grade_c_count: sum.initial_grade_c_count + (metric.initial_grade_c_count || 0),
       }), {
         batches_created: 0,
         devices_received: 0,
@@ -231,14 +231,15 @@ export class DashboardService {
         grade_a_count: 0,
         grade_b_count: 0,
         grade_c_count: 0,
+        initial_grade_a_count: 0,
+        initial_grade_b_count: 0,
+        initial_grade_c_count: 0,
       });
       
-      console.log('📈 DashboardService: Summed metrics for date range:', summedMetrics)
       return summedMetrics
     }
 
     // If no date range, return the most recent metrics
-    console.log('📅 DashboardService: Using most recent metrics:', metrics[0])
     return metrics[0];
   }
 
