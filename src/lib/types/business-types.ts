@@ -205,6 +205,7 @@ export interface StockAdjustment {
 export interface ProductionMetrics {
   id: string
   metric_date: string
+  batches_created: number
   devices_received: number
   devices_in_repair: number
   devices_completed: number

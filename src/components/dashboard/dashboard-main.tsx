@@ -1,15 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
+import dayjs from 'dayjs';
 import DashboardContainer from './dashboard-container';
 import { DateRangePicker } from './date-range-picker';
 
 const DashboardMain = () => {
   
   // Initialize with today's date as both start and end
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Use dayjs for reliable date handling
+  const today = useMemo(() => {
+    return dayjs().startOf('day').toDate();
+  }, []); // Empty dependency array means it will recalculate on every render
+  
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange | undefined>({
     from: today,
     to: today

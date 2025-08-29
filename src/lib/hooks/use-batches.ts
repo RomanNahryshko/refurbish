@@ -136,16 +136,30 @@ export function useBatchesWithDeviceCounts() {
 
 export function useCreateBatch() {
   const queryClient = useQueryClient()
-  const client = useSupabaseClient()
   
   return useMutation({
     mutationFn: async (batchData: BatchCreationData) => {
-      if (!client) throw new Error('Supabase client not available')
-      const batchesApi = createBatchesAPI(client)
-      return batchesApi.create(batchData)
+      // Call our API endpoint instead of direct Supabase access
+      const response = await fetch('/api/batches', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(batchData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create batch')
+      }
+
+      const result = await response.json()
+      return result.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['batches'] })
+      // Also invalidate dashboard metrics
+      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] })
     },
   })
 }

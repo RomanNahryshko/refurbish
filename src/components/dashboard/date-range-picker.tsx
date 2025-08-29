@@ -1,17 +1,17 @@
 'use client';
 
-import * as React from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
+import dayjs from 'dayjs';
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from "@/components/ui/popover";
 
 interface DateRangePickerProps {
@@ -25,62 +25,43 @@ export function DateRangePicker({
   onRangeChange,
   className,
 }: DateRangePickerProps) {
-  const [date, setDate] = React.useState<DateRange | undefined>(selectedRange);
-
-  React.useEffect(() => {
-    setDate(selectedRange);
-  }, [selectedRange]);
-
+  // Use selectedRange directly instead of local state to avoid infinite loops
   const handleSelect = (range: DateRange | undefined) => {
-    setDate(range);
     onRangeChange(range);
   };
 
-  // Quick preset functions
+  // Quick preset functions using dayjs
   const setToday = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = dayjs().startOf('day').toDate();
     handleSelect({ from: today, to: today });
   };
 
   const setYesterday = () => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0);
+    const yesterday = dayjs().subtract(1, 'day').startOf('day').toDate();
     handleSelect({ from: yesterday, to: yesterday });
   };
 
   const setLast7Days = () => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 6);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
+    const end = dayjs().endOf('day').toDate();
+    const start = dayjs().subtract(6, 'day').startOf('day').toDate();
     handleSelect({ from: start, to: end });
   };
 
   const setLast30Days = () => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 29);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
+    const end = dayjs().endOf('day').toDate();
+    const start = dayjs().subtract(29, 'day').startOf('day').toDate();
     handleSelect({ from: start, to: end });
   };
 
   const setThisMonth = () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    end.setHours(23, 59, 59, 999);
+    const start = dayjs().startOf('month').toDate();
+    const end = dayjs().endOf('month').toDate();
     handleSelect({ from: start, to: end });
   };
 
   const setLastMonth = () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const end = new Date(now.getFullYear(), now.getMonth(), 0);
-    end.setHours(23, 59, 59, 999);
+    const start = dayjs().subtract(1, 'month').startOf('month').toDate();
+    const end = dayjs().subtract(1, 'month').endOf('month').toDate();
     handleSelect({ from: start, to: end });
   };
 
@@ -146,18 +127,18 @@ export function DateRangePicker({
             variant={"outline"}
             className={cn(
               "w-[280px] justify-start text-left font-normal h-8",
-              !date && "text-muted-foreground"
+              !selectedRange && "text-muted-foreground"
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to ? (
+            {selectedRange?.from ? (
+              selectedRange.to ? (
                 <>
-                  {format(date.from, "MMM dd, yyyy")} -{" "}
-                  {format(date.to, "MMM dd, yyyy")}
+                  {format(selectedRange.from, "MMM dd, yyyy")} -{" "}
+                  {format(selectedRange.to, "MMM dd, yyyy")}
                 </>
               ) : (
-                format(date.from, "MMM dd, yyyy")
+                format(selectedRange.from, "MMM dd, yyyy")
               )
             ) : (
               <span>Pick a date range</span>
@@ -168,8 +149,8 @@ export function DateRangePicker({
           <Calendar
             initialFocus
             mode="range"
-            defaultMonth={date?.from}
-            selected={date}
+            defaultMonth={selectedRange?.from}
+            selected={selectedRange}
             onSelect={handleSelect}
             numberOfMonths={2}
             disabled={(date) => {

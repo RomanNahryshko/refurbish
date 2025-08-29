@@ -8,6 +8,7 @@
 
 import { type ReactNode } from 'react'
 import { useSupabaseStore } from '@/lib/stores/supabase-store'
+import React from 'react'
 
 interface SupabaseProviderProps {
   children: ReactNode
@@ -15,7 +16,12 @@ interface SupabaseProviderProps {
 
 export function SupabaseProvider({ children }: SupabaseProviderProps) {
   // Initialize the store when the provider mounts
-  useSupabaseStore((state) => state.initialize)
+  const initialize = useSupabaseStore((state) => state.initialize)
+  
+  // Call initialize when component mounts
+  React.useEffect(() => {
+    initialize()
+  }, [initialize])
   
   return <>{children}</>
 }

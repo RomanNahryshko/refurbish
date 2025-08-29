@@ -157,6 +157,61 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Update production_metrics for the current date
+    const today = new Date().toISOString().split('T')[0]
+    console.log('🔄 Updating production_metrics for date:', today)
+    
+    // First, try to get existing metrics for today
+    const { data: existingMetrics, error: selectError } = await supabase
+      .from('production_metrics')
+      .select('devices_received, batches_created')
+      .eq('metric_date', today)
+      .single()
+    
+    if (selectError && selectError.code !== 'PGRST116') {
+      console.error('❌ Error selecting existing metrics:', selectError)
+    }
+    
+    console.log('📊 Existing metrics:', existingMetrics)
+    
+    // Calculate new values
+    const currentDevicesReceived = existingMetrics?.devices_received || 0
+    const newDevicesReceived = currentDevicesReceived + parseInt(device_count)
+    const currentBatchesCreated = existingMetrics?.batches_created || 0
+    const newBatchesCreated = currentBatchesCreated + 1
+    
+    console.log('🧮 Calculated values:', {
+      currentDevicesReceived,
+      newDevicesReceived,
+      currentBatchesCreated,
+      newBatchesCreated,
+      deviceCount: parseInt(device_count)
+    })
+    
+    // Try to upsert production_metrics for today
+    const { error: metricsError } = await supabase
+      .from('production_metrics')
+      .upsert({
+        metric_date: today,
+        devices_received: newDevicesReceived,
+        batches_created: newBatchesCreated,
+      }, {
+        onConflict: 'metric_date',
+        ignoreDuplicates: false
+      })
+
+    if (metricsError) {
+      console.error('❌ Failed to update production metrics:', metricsError)
+      console.error('❌ Error details:', {
+        code: metricsError.code,
+        message: metricsError.message,
+        details: metricsError.details,
+        hint: metricsError.hint
+      })
+    } else {
+      console.log('✅ Successfully updated production_metrics')
+    }
+
     // Transform data to include supplier_name
     const batch = {
       ...data,

@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import dayjs from 'dayjs';
 
 export interface DashboardMetrics {
   batchIntakeStats: {
@@ -88,7 +89,11 @@ export class DashboardService {
       ]);
 
       return {
-        batchIntakeStats,
+        batchIntakeStats: {
+          batchesCreated: productionMetrics.batches_created, // Use from production_metrics
+          expectedDevicesCount: batchIntakeStats.expectedDevicesCount, // Sum of device_count from batches
+          importedDevicesCount: batchIntakeStats.importedDevicesCount, // Count of devices from devices table by created_at
+        },
         initialQCStats: {
           assignedRepairs: {
             housing: productionMetrics.housing_changes,
@@ -116,7 +121,7 @@ export class DashboardService {
         },
         devicesStats: {
           expectedDevices: batchIntakeStats.expectedDevicesCount,
-          importedDevices: productionMetrics.devices_received,
+          importedDevices: batchIntakeStats.importedDevicesCount, // Count of devices from devices table by created_at
           awaitingRepair: awaitingRepairCount, // Use the accurate count from database
           inRepair: inRepairCount, // Use the accurate count from database
           finalQC: finalQCCount, // Use the correct count from database
@@ -140,23 +145,47 @@ export class DashboardService {
   }
 
   private async getProductionMetrics(dateRange?: { from: Date; to: Date }) {
+    console.log('🔍 DashboardService: Getting production metrics for date range:', dateRange)
+    
+    if (dateRange) {
+      console.log('📅 DashboardService: Date range details:', {
+        from: dateRange.from,
+        fromISO: dateRange.from.toISOString(),
+        fromDateOnly: dayjs(dateRange.from).format('YYYY-MM-DD'),
+        to: dateRange.to,
+        toISO: dateRange.to.toISOString(),
+        toDateOnly: dayjs(dateRange.to).format('YYYY-MM-DD')
+      })
+    }
+    
     let query = this.supabase
       .from('production_metrics')
       .select('*')
       .order('metric_date', { ascending: false });
 
     if (dateRange) {
-      query = query.gte('metric_date', dateRange.from.toISOString().split('T')[0])
-                   .lte('metric_date', dateRange.to.toISOString().split('T')[0]);
+      // For production_metrics we can use date comparison since metric_date is DATE type
+      const fromDate = dayjs(dateRange.from).format('YYYY-MM-DD');
+      const toDate = dayjs(dateRange.to).format('YYYY-MM-DD');
+      
+      console.log('🔍 DashboardService: Filtering production_metrics by date range:', { fromDate, toDate })
+      
+      query = query.gte('metric_date', fromDate)
+                   .lte('metric_date', toDate);
     }
 
     const { data: metrics, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ DashboardService: Error getting production metrics:', error)
+      throw error
+    }
 
     if (!metrics || metrics.length === 0) {
+      console.log('⚠️ DashboardService: No production metrics found, using default values')
       // Return default values if no metrics found
       return {
+        batches_created: 0,
         devices_received: 0,
         devices_in_repair: 0,
         devices_completed: 0,
@@ -174,7 +203,8 @@ export class DashboardService {
 
     // If date range is specified, sum all metrics in the range
     if (dateRange) {
-      return metrics.reduce((sum, metric) => ({
+      const summedMetrics = metrics.reduce((sum, metric) => ({
+        batches_created: sum.batches_created + (metric.batches_created || 0),
         devices_received: sum.devices_received + (metric.devices_received || 0),
         devices_in_repair: sum.devices_in_repair + (metric.devices_in_repair || 0),
         devices_completed: sum.devices_completed + (metric.devices_completed || 0),
@@ -188,6 +218,7 @@ export class DashboardService {
         grade_b_count: sum.grade_b_count + (metric.grade_b_count || 0),
         grade_c_count: sum.grade_c_count + (metric.grade_c_count || 0),
       }), {
+        batches_created: 0,
         devices_received: 0,
         devices_in_repair: 0,
         devices_completed: 0,
@@ -201,37 +232,102 @@ export class DashboardService {
         grade_b_count: 0,
         grade_c_count: 0,
       });
+      
+      console.log('📈 DashboardService: Summed metrics for date range:', summedMetrics)
+      return summedMetrics
     }
 
     // If no date range, return the most recent metrics
+    console.log('📅 DashboardService: Using most recent metrics:', metrics[0])
     return metrics[0];
   }
 
   private async getBatchIntakeStats(dateRange?: { from: Date; to: Date }) {
+    console.log('🔍 getBatchIntakeStats: Called with date range:', dateRange)
+    
     let query = this.supabase
       .from('batches')
       .select('device_count, created_at')
       .is('deleted_at', null);
 
     if (dateRange) {
-      query = query.gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString());
+      // Use dayjs for reliable date handling
+      const startOfDay = dayjs(dateRange.from).startOf('day').toDate();
+      const endOfDay = dayjs(dateRange.to).endOf('day').toDate();
+      
+      console.log('🔍 getBatchIntakeStats: Date range details:', {
+        from: dateRange.from,
+        fromISO: dateRange.from.toISOString(),
+        to: dateRange.to,
+        toISO: dateRange.to.toISOString(),
+        startOfDay: startOfDay.toISOString(),
+        endOfDay: endOfDay.toISOString()
+      })
+      
+      query = query.gte('created_at', startOfDay.toISOString()).lte('created_at', endOfDay.toISOString());
     }
 
     const { data: batches, error } = await query;
 
     if (error) throw error;
 
+    console.log('🔍 getBatchIntakeStats: Found batches:', batches?.length, 'for date range:', dateRange)
+
     const batchesCreated = batches?.length || 0;
     const expectedDevicesCount = batches?.reduce((sum, batch) => sum + (batch.device_count || 0), 0) || 0;
 
-    // For imported devices, we'll use the devices_received from production_metrics
-    const { data: productionMetrics } = await this.supabase
-      .from('production_metrics')
-      .select('devices_received')
-      .order('metric_date', { ascending: false })
-      .limit(1);
+    // For imported devices, count devices from devices table by created_at in the selected date range
+    let devicesQuery = this.supabase
+      .from('devices')
+      .select('id, created_at')
+      .is('deleted_at', null);
 
-    const importedDevicesCount = productionMetrics?.[0]?.devices_received || 0;
+    if (dateRange) {
+      const startOfDay = dayjs(dateRange.from).startOf('day').toDate();
+      const endOfDay = dayjs(dateRange.to).endOf('day').toDate();
+      
+      devicesQuery = devicesQuery.gte('created_at', startOfDay.toISOString()).lte('created_at', endOfDay.toISOString());
+    }
+
+    const { data: devices, error: devicesError } = await devicesQuery;
+    
+    if (devicesError) {
+      console.error('❌ Error fetching devices for imported count:', devicesError);
+      // Fallback to expectedDevicesCount if devices query fails
+      const importedDevicesCount = expectedDevicesCount;
+      
+      console.log('📊 getBatchIntakeStats: Calculated stats (fallback):', {
+        batchesCreated,
+        expectedDevicesCount,
+        importedDevicesCount,
+        batches: batches?.map(b => ({ 
+          device_count: b.device_count, 
+          created_at: b.created_at 
+        }))
+      });
+
+      return {
+        batchesCreated,
+        expectedDevicesCount,
+        importedDevicesCount,
+      };
+    }
+
+    const importedDevicesCount = devices?.length || 0;
+    
+    console.log('📊 getBatchIntakeStats: Calculated stats:', {
+      batchesCreated,
+      expectedDevicesCount,
+      importedDevicesCount,
+      batches: batches?.map(b => ({ 
+        device_count: b.device_count, 
+        created_at: b.created_at 
+      })),
+      devices: devices?.map(d => ({ 
+        id: d.id, 
+        created_at: d.created_at 
+      }))
+    });
 
     return {
       batchesCreated,
@@ -290,13 +386,14 @@ export class DashboardService {
     const activeJobsCount = activeJobs?.length || 0;
 
     // Get completed jobs for this level (today)
-    const today = new Date().toISOString().split('T')[0];
+    const today = dayjs().startOf('day').toDate();
+    
     const { data: completedJobs, error: completedError } = await this.supabase
       .from('repair_jobs')
       .select('id, completed_at')
       .in('assigned_to', technicianIds)
       .eq('status', 'completed')
-      .gte('completed_at', today)
+      .gte('completed_at', today.toISOString())
       .is('deleted_at', null);
 
     if (completedError) throw completedError;

@@ -1,10 +1,9 @@
-import { redirect } from 'next/navigation';
+import { redirect } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { SupabaseWarning } from '@/components/common/supabase-warning';
 import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions';
 import DashboardMain from '@/components/dashboard/dashboard-main';
-
-
+import { RouteGuard } from '@/components/auth/route-guard';
 
 export default async function DashboardPage() {
   // Check if user has dashboard access
@@ -36,9 +35,11 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <SupabaseWarning />
-      <DashboardMain />
-    </div>
+    <RouteGuard requireAuth={true}>
+      <div className="container mx-auto px-4 py-8">
+        <SupabaseWarning />
+        <DashboardMain />
+      </div>
+    </RouteGuard>
   )
 } 

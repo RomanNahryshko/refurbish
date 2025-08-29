@@ -405,6 +405,9 @@ CREATE TABLE production_metrics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   metric_date DATE NOT NULL,
   
+  -- Batch metrics
+  batches_created INTEGER DEFAULT 0,
+  
   -- Device metrics
   devices_received INTEGER DEFAULT 0,
   devices_in_repair INTEGER DEFAULT 0,

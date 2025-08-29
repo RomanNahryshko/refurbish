@@ -20,7 +20,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Navigation } from './navigation'
 
 export function Header() {
-  const { data: user } = useUser()
+  const { user } = useUser()
   const { data: profile, isLoading: profileLoading } = useProfile(!!user)
   const supabase = useSupabaseClient()
 
@@ -50,6 +50,7 @@ export function Header() {
   const userRole = profile?.role
   const userInitials = userFullName.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U'
 
+  console.log(user, profile, 'user')
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
