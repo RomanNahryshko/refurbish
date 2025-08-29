@@ -17,7 +17,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { device_id, check_type, overall_result, grade_assigned, notes, test_results } = await request.json()
+    console.log(`QC check creation request from user ${user.id} (${user.email})`)
+
+    const { device_id, check_type, overall_result, grade_assigned, notes, test_results, required_repairs } = await request.json()
+
+    // Log received data for debugging
+    console.log('Received QC check data:', {
+      device_id,
+      check_type,
+      overall_result,
+      grade_assigned,
+      notes,
+      required_repairs,
+      has_test_results: !!test_results
+    })
 
     // Validate required fields
     if (!device_id || !check_type || !overall_result) {
@@ -45,6 +58,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: 'Invalid grade_assigned. Must be "A", "B", "C", or "ungraded"' 
       }, { status: 400 })
+    }
+
+    // Validate required_repairs if provided
+    if (required_repairs && Array.isArray(required_repairs)) {
+      const validRepairTypes = ['housing_change', 'glass_change', 'battery_change', 'software_update', 'other']
+      for (const repairType of required_repairs) {
+        if (!validRepairTypes.includes(repairType)) {
+          return NextResponse.json({ 
+            error: `Invalid repair type: ${repairType}. Must be one of: ${validRepairTypes.join(', ')}` 
+          }, { status: 400 })
+        }
+      }
     }
 
     // Create QC check
@@ -125,6 +150,55 @@ export async function POST(request: NextRequest) {
       // Note: We don't fail the entire request if device update fails
     }
 
+    // Create repair jobs if initial QC failed and repairs are required
+    console.log('Checking if repair jobs should be created:', {
+      check_type,
+      overall_result,
+      required_repairs,
+      isArray: Array.isArray(required_repairs),
+      length: required_repairs?.length || 0,
+      shouldCreate: check_type === 'initial' && overall_result === 'fail' && required_repairs && Array.isArray(required_repairs) && required_repairs.length > 0
+    })
+    
+    if (check_type === 'initial' && overall_result === 'fail' && required_repairs && Array.isArray(required_repairs) && required_repairs.length > 0) {
+      console.log(`Creating repair jobs for device ${device_id}. Required repairs:`, required_repairs)
+      
+      try {
+        // Create repair jobs for each required repair type
+        for (const repairType of required_repairs) {
+          // Prepare description for 'other' repair type
+          let description: string | undefined
+          if (repairType === 'other') {
+            // Extract repair details from notes
+            const repairDetails = notes?.replace('Initial QC: Repairs required. Selected repairs: ', '') || ''
+            description = repairDetails || 'Other repair required'
+          }
+
+          const { error: repairJobError } = await supabase
+            .from('repair_jobs')
+            .insert({
+              device_id,
+              repair_type: repairType,
+              status: 'pending',
+              created_by: user.id,
+              description
+            })
+
+          if (repairJobError) {
+            console.error(`Error creating repair job for ${repairType}:`, repairJobError)
+            // Don't fail the entire request if repair job creation fails
+          } else {
+            console.log(`Successfully created repair job for ${repairType}`)
+          }
+        }
+        
+        console.log(`Successfully created ${required_repairs.length} repair jobs for device ${device_id}`)
+      } catch (error) {
+        console.error('Error creating repair jobs:', error)
+        // Don't fail the entire request if repair job creation fails
+      }
+    }
+
     // Record device status history with QC notes for all status changes
     const historyNotes = notes || (check_type === 'final' 
       ? overall_result === 'pass' 
@@ -148,9 +222,16 @@ export async function POST(request: NextRequest) {
       // Note: We don't fail the entire request if history recording fails
     }
 
+    // Count created repair jobs for response
+    let repairJobsCreated = 0
+    if (check_type === 'initial' && overall_result === 'fail' && required_repairs && Array.isArray(required_repairs)) {
+      repairJobsCreated = required_repairs.length
+    }
+
     return NextResponse.json({ 
       data: qcCheck,
-      message: 'QC check created successfully' 
+      message: 'QC check created successfully',
+      repair_jobs_created: repairJobsCreated
     })
 
   } catch (error) {

@@ -5,14 +5,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 interface TableColumn {
   key: string;
   header: string;
-  render?: (value: any, row: any) => React.ReactNode;
+  render?: (value: unknown, row: Record<string, unknown>) => React.ReactNode;
 }
 
 interface DashboardTableProps {
   title: string;
   description?: string;
   columns: TableColumn[];
-  data: any[];
+  data: Record<string, unknown>[];
   loading?: boolean;
 }
 
@@ -67,8 +67,8 @@ const DashboardTable: React.FC<DashboardTableProps> = ({
                   {columns.map((column) => (
                     <TableCell key={column.key}>
                       {column.render 
-                        ? column.render(row[column.key], row)
-                        : row[column.key]
+                        ? column.render(row[column.key] as unknown as React.ReactNode, row)
+                        : (row[column.key] as React.ReactNode)
                       }
                     </TableCell>
                   ))}

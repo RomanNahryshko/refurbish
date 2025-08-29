@@ -1,28 +1,106 @@
+import { useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Batch, BatchCreationData } from '@/lib/types/business-types'
-import { useSupabaseContext } from '@/lib/providers/supabase-provider'
+import { useSupabaseClient, useSupabaseIsReady } from '@/lib/stores/supabase-store'
 import { createBatchesAPI } from '@/lib/api/batches'
 
 export function useBatches() {
-  const { client, isReady } = useSupabaseContext()
+  const [batches, setBatches] = useState<Batch[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
-  return useQuery({
-    queryKey: ['batches'],
-    queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
-      const batchesApi = createBatchesAPI(client)
-      return batchesApi.getAll()
-    },
-    enabled: isReady && !!client,
-    staleTime: 0, // Always consider data stale - refetch on every mount
-    gcTime: 5 * 60 * 1000, // 5 minutes in cache
-    refetchOnMount: true, // Always refetch when component mounts
-    retry: 2,
-  })
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
+
+  const fetchBatches = useCallback(async () => {
+    if (!client || !isReady) return
+    
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const { data, error: fetchError } = await client
+        .from('batches')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (fetchError) throw fetchError
+      setBatches(data || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch batches')
+    } finally {
+      setLoading(false)
+    }
+  }, [client, isReady])
+
+  const createBatch = useCallback(async (batch: Omit<Batch, 'id' | 'created_at' | 'updated_at'>) => {
+    if (!client || !isReady) return null
+    
+    try {
+      const { data, error: createError } = await client
+        .from('batches')
+        .insert(batch)
+        .select()
+        .single()
+      
+      if (createError) throw createError
+      return data
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create batch')
+      return null
+    }
+  }, [client, isReady])
+
+  const updateBatch = useCallback(async (id: string, updates: Partial<Batch>) => {
+    if (!client) return null
+    
+    try {
+      const { data, error: updateError } = await client
+        .from('batches')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+      
+      if (updateError) throw updateError
+      return data
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update batch')
+      return null
+    }
+  }, [client])
+
+  const deleteBatch = useCallback(async (id: string) => {
+    if (!client) return false
+    
+    try {
+      const { error: deleteError } = await client
+        .from('batches')
+        .delete()
+        .eq('id', id)
+      
+      if (deleteError) throw deleteError
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete batch')
+      return false
+    }
+  }, [client])
+
+  return {
+    batches,
+    loading,
+    error,
+    fetchBatches,
+    createBatch,
+    updateBatch,
+    deleteBatch,
+  }
 }
 
 export function useBatch(id: string) {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['batches', id],
@@ -39,7 +117,8 @@ export function useBatch(id: string) {
 }
 
 export function useBatchesWithDeviceCounts() {
-  const { client, isReady } = useSupabaseContext()
+  const client = useSupabaseClient()
+  const isReady = useSupabaseIsReady()
   
   return useQuery({
     queryKey: ['batches', 'with-device-counts'],
@@ -57,7 +136,7 @@ export function useBatchesWithDeviceCounts() {
 
 export function useCreateBatch() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
   
   return useMutation({
     mutationFn: async (batchData: BatchCreationData) => {
@@ -73,24 +152,23 @@ export function useCreateBatch() {
 
 export function useUpdateBatch() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
   
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<Batch> }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Batch> }) => {
       if (!client) throw new Error('Supabase client not available')
       const batchesApi = createBatchesAPI(client)
-      return batchesApi.update(id, data)
+      return batchesApi.update(id, updates)
     },
-    onSuccess: (_, { id }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['batches'] })
-      queryClient.invalidateQueries({ queryKey: ['batches', id] })
     },
   })
 }
 
 export function useDeleteBatch() {
   const queryClient = useQueryClient()
-  const { client } = useSupabaseContext()
+  const client = useSupabaseClient()
   
   return useMutation({
     mutationFn: async (id: string) => {

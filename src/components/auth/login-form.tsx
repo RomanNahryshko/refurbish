@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useSetUser } from '@/lib/stores/user-store'
 
 export function LoginForm() {
   const { push } = useRouter()
@@ -14,6 +15,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const setUser = useSetUser()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,6 +45,7 @@ export function LoginForm() {
       // Check login status and redirect
       checkLoginStatus()
     } catch (err) {
+      console.error('Login error:', err)
       setError('An unexpected error occurred. Please try again.')
       setIsLoading(false)
     }
@@ -54,10 +57,10 @@ export function LoginForm() {
     if (supabase) {
       // Get current user after successful login
       const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
+      setUser(user)
+
+
       if (userError || !user) {
-        console.error('Error getting current user:', userError)
-        // Fallback to homepage if user fetch fails
         push('/homepage')
         return
       }
@@ -69,8 +72,6 @@ export function LoginForm() {
         .single()
 
       if (profileError) {
-        console.error('Error fetching user profile:', profileError)
-        // Fallback to homepage if profile fetch fails
         push('/homepage')
         return
       }
@@ -80,7 +81,7 @@ export function LoginForm() {
         push('/change-password')
       } else {
         // Check if user has access to specific modules based on role
-        const userRole = profile?.role || 'technician'
+        // const userRole = profile?.role || 'technician'
         
         // Always redirect to homepage after successful login
         push('/homepage')
@@ -90,7 +91,6 @@ export function LoginForm() {
       push('/homepage')
     }
   }
-
   return (
     <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
       <div className="flex flex-col space-y-2 text-center">

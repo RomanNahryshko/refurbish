@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useSupabaseClient } from './use-supabase-client'
+import { useSupabaseClient } from '@/lib/stores/supabase-store'
 
 interface PerformanceMetrics {
   clientCreationCount: number
@@ -26,7 +26,7 @@ const performanceMetrics: PerformanceMetrics = {
  */
 export function useSupabasePerformance() {
   const client = useSupabaseClient()
-  const queryStartTime = useRef<number>()
+  const queryStartTime = useRef<number>(0)
 
   useEffect(() => {
     // Only run in development

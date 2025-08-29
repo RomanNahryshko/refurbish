@@ -10,7 +10,7 @@ interface DateSelectorProps {
 }
 
 const DateSelector: React.FC<DateSelectorProps> = ({ selectedDate, onDateChange }) => {
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [_isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];

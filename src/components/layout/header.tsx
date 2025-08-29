@@ -2,10 +2,9 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { useSupabaseClient } from '@/lib/stores/supabase-store'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { useUser } from '@/lib/hooks/use-user'
-import { type UserRole } from '@/lib/types/business-types'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -32,9 +31,17 @@ export function Header() {
 
   const handleLogout = async () => {
     if (supabase) {
-      await supabase.auth.signOut()
-      // Clear caches when logging out
-      window.location.href = '/login'
+      try {
+        // Sign out from Supabase
+        await supabase.auth.signOut()
+        
+        // Simple redirect to login page
+        window.location.href = '/login'
+      } catch (error) {
+        console.error('Logout failed:', error)
+        // Force redirect even if logout fails
+        window.location.href = '/login'
+      }
     }
   }
 

@@ -42,6 +42,7 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     'devices:update',
     'spare_parts:create',
     'spare_parts:update',
+    'spare_parts:delete',
     'stock_adjustments:create',
     'production_metrics:create',
     'production_metrics:update',
@@ -72,9 +73,15 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     // Initial QC only (not final QC)
     'qc_checks:create', // Can create initial QC checks in batch-intake
     'qc_checks:read',   // Can read QC results
-    'qc_test_results:read'
+    'qc_test_results:read',
     
-    // Note: suppliers, spare_parts, stock_adjustments not available to ops_manager
+    // Inventory management (limited access)
+    'spare_parts:read',
+    'spare_parts:create',
+    'spare_parts:update',
+    'spare_parts:delete',
+    
+    // Note: suppliers, stock_adjustments not available to ops_manager
     // Important: No access to /qc page - only initial QC in batch-intake
   ],
 
@@ -89,7 +96,7 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     'qc_test_results:update',
     
     // Minimal rights to update grade through QC API
-    'devices:update' // Only for writing grade through QC process
+    'devices:update', // Only for writing grade through QC process
     
     // Note: devices:read, device_status_history:read - access only through QC page
     // Note: repair_jobs:read - does not manage repairs
@@ -108,7 +115,7 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     
     // Parts usage tracking
     'repair_parts_used:create',
-    'repair_parts_used:read'
+    'repair_parts_used:read',
     
     // Note: No inventory access - technicians cannot view spare parts or inventory
   ]

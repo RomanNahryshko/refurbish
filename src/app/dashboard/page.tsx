@@ -36,7 +36,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto px-4 py-8">
       <SupabaseWarning />
       <DashboardMain />
     </div>

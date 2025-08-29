@@ -6,7 +6,7 @@ An internal ERP system for managing the complete lifecycle of phone refurbishmen
 
 This system digitizes and streamlines the entire workflow for used phone refurbishment, tracking each phone from receipt through repair, grading, and shipping. It provides operational visibility for managers and clear, role-based interfaces for employees.
 
-## Tech Stack
+## Tech-Stack
 
 - **Frontend**: Next.js 15 with App Router
 - **Language**: TypeScript
@@ -27,7 +27,7 @@ This system digitizes and streamlines the entire workflow for used phone refurbi
 
 ## User Roles
 
-1. **admin** - System administrators
+1. **admin** - System administrator
 2. **general_manager** - General managers with full business access
 3. **ops_manager** - Operations managers handling intake and workflow
 4. **qc_controller** - Quality control staff

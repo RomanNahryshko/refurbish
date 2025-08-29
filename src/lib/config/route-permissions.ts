@@ -25,6 +25,8 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
     '/devices/*',
     '/repair-jobs',
     '/repair-jobs/*',
+    '/inventory',
+    '/inventory/*',
     '/change-password'
   ],
   
@@ -49,7 +51,6 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
 
 // Routes that are blocked for ops_manager (should redirect to /)
 export const OPS_MANAGER_BLOCKED_ROUTES = [
-  '/inventory',
   '/suppliers',
   '/admin',
   '/mockup-overview',
@@ -113,7 +114,7 @@ export function hasDashboardAccess(userRole: UserRole): boolean {
 /**
  * Get the first available module for a user based on their role
  */
-export function getFirstAvailableModule(userRole: UserRole): string {
+export function getFirstAvailableModule(_userRole: UserRole): string {
   // All authenticated users should land on homepage first
   // Homepage provides access to all allowed modules for their role
   return '/homepage'

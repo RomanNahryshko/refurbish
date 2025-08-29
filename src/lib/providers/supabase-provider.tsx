@@ -1,84 +1,33 @@
 'use client'
 
 /**
- * Supabase Client Provider
- * Provides singleton Supabase client through React Context
+ * Supabase Store Provider
+ * Simple wrapper that uses Zustand store instead of React Context
  * This ensures we don't create multiple clients unnecessarily
  */
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { createSupabaseClient } from '@/lib/supabase/client'
-import type { SupabaseClient } from '@supabase/supabase-js'
-
-interface SupabaseContextType {
-  client: SupabaseClient | null
-  isReady: boolean
-}
-
-const SupabaseContext = createContext<SupabaseContextType>({
-  client: null,
-  isReady: false,
-})
-
-// Export the context for direct usage
-export { SupabaseContext }
+import { type ReactNode } from 'react'
+import { useSupabaseStore } from '@/lib/stores/supabase-store'
 
 interface SupabaseProviderProps {
   children: ReactNode
 }
 
 export function SupabaseProvider({ children }: SupabaseProviderProps) {
-  const [client, setClient] = useState<SupabaseClient | null>(null)
-  const [isReady, setIsReady] = useState(false)
-
-  useEffect(() => {
-    // Initialize the singleton client
-    const supabaseClient = createSupabaseClient()
-    setClient(supabaseClient)
-    setIsReady(true)
-  }, [])
-
-  return (
-    <SupabaseContext.Provider value={{ client, isReady }}>
-      {children}
-    </SupabaseContext.Provider>
-  )
+  // Initialize the store when the provider mounts
+  useSupabaseStore((state) => state.initialize)
+  
+  return <>{children}</>
 }
 
-/**
- * Hook to access the Supabase client from context
- */
-export function useSupabaseContext(): SupabaseContextType {
-  const context = useContext(SupabaseContext)
-  
-  if (!context) {
-    throw new Error('useSupabaseContext must be used within a SupabaseProvider')
-  }
-  
-  return context
-}
+// Re-export the store hooks for backward compatibility
+export { 
+  useSupabaseStore,
+  useSupabaseClient,
+  useSupabaseIsReady,
+  useSupabaseClientRequired,
+  useSupabaseForceRecreate
+} from '@/lib/stores/supabase-store'
 
-/**
- * Hook to get the Supabase client with error handling
- */
-export function useSupabaseClient(): SupabaseClient | null {
-  const { client } = useSupabaseContext()
-  return client
-}
-
-/**
- * Hook to get the Supabase client (throws if not available)
- */
-export function useSupabaseClientRequired(): SupabaseClient {
-  const { client, isReady } = useSupabaseContext()
-  
-  if (!isReady) {
-    throw new Error('Supabase client is not ready yet')
-  }
-  
-  if (!client) {
-    throw new Error('Supabase client is not available. Check your configuration.')
-  }
-  
-  return client
-}
+// Legacy context export (deprecated - use store hooks instead)
+export const SupabaseContext = null

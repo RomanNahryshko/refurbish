@@ -350,7 +350,7 @@ export const getDevicesStatsWithPercentages = (devicesData: DevicesStats) => {
 };
 
 // Function to simulate date variations (for future use with date picker)
-export const getMockDataForDate = (date: string) => {
+export const getMockDataForDate = () => {
   // For MVP, we'll return the same data regardless of date
   // In real implementation, this would vary based on the selected date
   return {
@@ -382,7 +382,7 @@ export const getMockDataForDateRange = (dateRange: { from?: Date; to?: Date } | 
   
   if (!dateRange || !dateRange.from) {
     // If no range selected, return today's data
-    return getMockDataForDate(new Date().toISOString());
+    return getMockDataForDate();
   }
   
   // Calculate the number of days in the range
@@ -396,8 +396,8 @@ export const getMockDataForDateRange = (dateRange: { from?: Date; to?: Date } | 
     dailyProductionMetrics: {
       ...mockDailyProductionMetrics,
       devicesReceived: mockDailyProductionMetrics.devicesReceived * daysDiff,
-      devicesRepaired: mockDailyProductionMetrics.devicesRepaired * daysDiff,
-      devicesGraded: mockDailyProductionMetrics.devicesGraded * daysDiff,
+      devicesRepaired: mockDailyProductionMetrics.devicesRepairedToday * daysDiff,
+      devicesGraded: mockDailyProductionMetrics.devicesGradedToday * daysDiff,
     },
     repairMetrics: {
       ...mockRepairMetrics,

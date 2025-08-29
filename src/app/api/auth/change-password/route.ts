@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user role before updating profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('user_profiles')
       .select('role')
       .eq('id', user.id)

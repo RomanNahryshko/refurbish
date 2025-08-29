@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { BatchForm } from '@/modules/batch-intake/components/batch-form'
 import { useCreateBatch } from '@/lib/hooks/use-batches'
-import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { useSupabaseClient } from '@/lib/stores/supabase-store'
 import { BatchFormInputData } from '@/lib/types/business-types'
 
 export default function CreateBatchPage() {

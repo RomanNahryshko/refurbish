@@ -4,8 +4,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
-  ArrowLeft,
-  ClipboardCheck
+    ArrowLeft,
+    ClipboardCheck
 } from 'lucide-react';
 import { useDeviceByInternalId } from '@/lib/hooks/use-devices';
 import { useBatches } from '@/lib/hooks/use-batches';
@@ -15,7 +15,7 @@ import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
 import { toast } from 'sonner';
 import { FinalQCDeviceCard } from '@/components/quality-control/final-qc-device-card';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
-import { useSupabaseClient } from '@/lib/hooks/use-supabase-client';
+import { useSupabaseClient } from '@/lib/stores/supabase-store';
 import { RepairType, LegacyRepairType } from '@/lib/types/business-types';
 import { REPAIR_TYPE_MAP } from '@/lib/constants';
 
@@ -174,7 +174,6 @@ export default function FinalQCPage() {
               
               await createRepairJob.mutateAsync({
                 data: repairJobData,
-                createdBy: user.id
               })
             }
             

@@ -11,11 +11,7 @@ export interface CreateBatchData {
   received_date: string
   notes?: string
   created_by: string
-}
-
-export interface UpdateBatchData extends Partial<CreateBatchData> {
-  // Inherits all properties from CreateBatchData as optional
-}
+}   
 
 export interface BatchWithSupplier extends Batch {
   supplier: {

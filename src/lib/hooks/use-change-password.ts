@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/lib/hooks/use-toast'
-import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { useSupabaseClient } from '@/lib/stores/supabase-store'
 
 interface PasswordStatus {
   user: {
@@ -32,11 +32,38 @@ export function usePasswordStatus() {
         return null
       }
 
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      // Get current user with retry logic
+      let user = null
+      let retries = 5 // Increased retries for better reliability
       
-      if (userError || !user) {
-        return null // User not authenticated
+      while (retries > 0 && !user) {
+        const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser()
+        
+        if (userError) {
+          console.error('Error getting current user:', userError)
+          retries--
+          if (retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, 200)) // Reduced wait time
+            continue
+          }
+          setError('Failed to get current user')
+          return null
+        }
+        
+        if (currentUser) {
+          user = currentUser
+          break
+        }
+        
+        retries--
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 200)) // Reduced wait time
+        }
+      }
+      
+      if (!user) {
+        setError('User not authenticated')
+        return null
       }
 
       // Get user profile

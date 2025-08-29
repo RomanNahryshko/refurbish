@@ -37,11 +37,11 @@ export function useExcelParser(): UseExcelParserReturn {
       workerRef.current = new Worker('/excel-worker.js')
       
       // Test if worker is responsive
-      workerRef.current.addEventListener('error', (error) => {
+      workerRef.current.addEventListener('error', (_error) => {
         // Worker error
       })
       
-      workerRef.current.addEventListener('messageerror', (error) => {
+      workerRef.current.addEventListener('messageerror', (_error) => {
         // Worker message error
       })
       

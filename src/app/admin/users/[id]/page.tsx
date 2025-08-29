@@ -5,7 +5,7 @@ import { useEffect, useState, use } from 'react'
 import { Button } from '@/components/ui/button'
 import { EditUserForm } from '@/modules/admin/components/edit-user-form'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
-import { useSupabaseClient } from '@/lib/hooks/use-supabase-client'
+import { useSupabaseClient } from '@/lib/stores/supabase-store'
 
 interface EditUserPageProps {
   params: Promise<{

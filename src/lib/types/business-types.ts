@@ -1,12 +1,12 @@
 import {
-  USER_ROLES,
-  TECHNICIAN_LEVELS,
-  DEVICE_STATUS,
-  DEVICE_GRADES,
-  REPAIR_TYPES,
-  REPAIR_STATUS,
-  TEST_RESULT,
-  USER_STATUS
+    USER_ROLES,
+    TECHNICIAN_LEVELS,
+    DEVICE_STATUS,
+    DEVICE_GRADES,
+    REPAIR_TYPES,
+    REPAIR_STATUS,
+    TEST_RESULT,
+    USER_STATUS
 } from '../constants'
 
 // Type utilities
@@ -438,6 +438,7 @@ export interface QCCheckFormData {
   grade_assigned?: DeviceGrade
   notes?: string
   test_results?: TestResultData[]
+  required_repairs?: RepairType[] // Array of repair types needed for initial QC failures
 }
 
 export interface SupplierFormData {
