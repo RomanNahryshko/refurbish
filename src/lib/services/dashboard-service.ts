@@ -64,9 +64,9 @@ export interface DashboardMetrics {
 interface TechnicianLevelStats {
   availableTechnicians: number;
   activeJobs: number;
-  completedToday: number;
+  completedToday: number; // This now represents completed jobs in the selected period
   averagePerTech: number;
-  technicians: Array<{ name: string; completedToday: number }>;
+  technicians: Array<{ name: string; completedToday: number }>; // This now represents completed jobs in the selected period
 }
 
 const DEFAULT_PRODUCTION_METRICS = {
@@ -117,7 +117,7 @@ export class DashboardService {
       ] = await Promise.all([
         this.getProductionMetrics(dateRange),
         this.getBatchIntakeStats(dateRange),
-        this.getTechnicianUtilization(),
+        this.getTechnicianUtilization(dateRange),
         this.getFinalQCCount(),
         this.getInRepairCount(),
         this.getAwaitingRepairCount(),
@@ -278,7 +278,7 @@ export class DashboardService {
     };
   }
 
-  private async getTechnicianUtilization(): Promise<Record<'L1' | 'L2' | 'L3', TechnicianLevelStats>> {
+  private async getTechnicianUtilization(dateRange?: { from: Date; to: Date }): Promise<Record<'L1' | 'L2' | 'L3', TechnicianLevelStats>> {
     const { data: technicians, error: techErr } = await this.supabase
       .from('user_profiles')
       .select('id, full_name, technician_level')
@@ -295,21 +295,21 @@ export class DashboardService {
       L1: {
         availableTechnicians: 0,
         activeJobs: 0,
-        completedToday: 0,
+        completedToday: 0, // Completed jobs in selected period (or today if no range)
         averagePerTech: 0,
         technicians: [],
       },
       L2: {
         availableTechnicians: 0,
         activeJobs: 0,
-        completedToday: 0,
+        completedToday: 0, // Completed jobs in selected period (or today if no range)
         averagePerTech: 0,
         technicians: [],
       },
       L3: {
         availableTechnicians: 0,
         activeJobs: 0,
-        completedToday: 0,
+        completedToday: 0, // Completed jobs in selected period (or today if no range)
         averagePerTech: 0,
         technicians: [],
       },
@@ -317,16 +317,24 @@ export class DashboardService {
 
     if (technicianIds.length === 0) return grouped;
 
-    const { data: jobs, error: jobsErr } = await this.supabase
+    let jobsQuery = this.supabase
       .from('repair_jobs')
       .select('id, status, assigned_to, completed_at')
       .in('assigned_to', technicianIds)
       .in('status', ['pending', 'in_progress', 'completed'])
       .is('deleted_at', null);
 
-    if (jobsErr) throw jobsErr;
+    // Apply date range filter if provided
+    if (dateRange) {
+      const range = normalizeDateRange(dateRange);
+      if (range) {
+        jobsQuery = jobsQuery.gte('created_at', range.startISO).lte('created_at', range.endISO);
+      }
+    }
 
-    const startOfDayISO = dayjs().startOf('day').toISOString();
+    const { data: jobs, error: jobsErr } = await jobsQuery;
+
+    if (jobsErr) throw jobsErr;
 
     // prepare quick access to profiles
     const profilesById: Record<string, { full_name?: string; technician_level?: string }> = {};
@@ -341,7 +349,7 @@ export class DashboardService {
       }
       
       // Add technician to ONLY ONE level
-      grouped[level].technicians.push({ name: t.full_name || 'Unknown', completedToday: 0 });
+      grouped[level].technicians.push({ name: t.full_name || 'Unknown', completedToday: 0 }); // completedToday will be updated based on selected period
       grouped[level].availableTechnicians++;
     }
 
@@ -369,23 +377,46 @@ export class DashboardService {
       if (['pending', 'in_progress'].includes(job.status)) {
         group.activeJobs++;
       } else if (job.status === 'completed') {
-        // completedToday: by completed_at >= startOfDay
-        if (job.completed_at && dayjs(job.completed_at).isAfter(startOfDayISO)) {
-          group.completedToday++;
-          // increment for specific technician (by name)
-          const techName = profile.full_name || 'Unknown';
-          const found = group.technicians.find(t => t.name === techName);
-          if (found) found.completedToday++;
+        // Check if job was completed in the selected period
+        if (job.completed_at) {
+          let shouldCount = false;
+          
+          if (dateRange) {
+            // If date range is selected, check if job falls within the range
+            const range = normalizeDateRange(dateRange);
+            if (range) {
+              const jobDate = dayjs(job.completed_at);
+              const startDate = dayjs(range.startISO);
+              const endDate = dayjs(range.endISO);
+              shouldCount = (jobDate.isAfter(startDate, 'day') || jobDate.isSame(startDate, 'day')) && 
+                           (jobDate.isBefore(endDate, 'day') || jobDate.isSame(endDate, 'day'));
+            }
+          } else {
+            // If no date range, count only today's jobs (default behavior)
+            const jobDate = dayjs(job.completed_at);
+            const today = dayjs();
+            shouldCount = jobDate.isSame(today, 'day');
+          }
+          
+                      if (shouldCount) {
+              group.completedToday++;
+              // increment for specific technician (by name) in selected period
+              const techName = profile.full_name || 'Unknown';
+              const found = group.technicians.find(t => t.name === techName);
+              if (found) found.completedToday++;
+            }
         }
       }
     }
 
-    // averagePerTech
+    // Calculate average jobs per technician for the selected period
     (['L1', 'L2', 'L3'] as const).forEach(level => {
       const g = grouped[level];
       g.averagePerTech = g.availableTechnicians > 0 ? Math.round(g.completedToday / g.availableTechnicians) : 0;
     });
 
+    // Final grouped data ready with period-based statistics
+    
     return grouped;
   }
 

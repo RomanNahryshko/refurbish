@@ -45,7 +45,9 @@ const StatsGrid: React.FC<{
   </div>
 );
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData, selectedDateRange }) => {
+  // Dashboard data received
+
   /**
    * Helper function to calculate percentages for devices statistics.
    */
@@ -293,6 +295,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
                       )}
                     </div>
                   </div>
+                  <div className="text-xs text-muted-foreground">
+                    {selectedDateRange ? 'In selected period' : 'Today'}
+                  </div>
                 </div>
                 <div className="space-y-1 max-h-32 overflow-y-auto border-t pt-2">
                   {Object.values(realData.repairStats.technicianUtilization)
@@ -318,7 +323,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
                   (sum, level) => sum + level.completedToday,
                   0
                 );
-                return totalTechs > 0 ? Math.round(totalCompleted / totalTechs) : 0;
+                return totalTechs > 0 ? totalCompleted / totalTechs : 0;
               })()}
             />
           </div>
