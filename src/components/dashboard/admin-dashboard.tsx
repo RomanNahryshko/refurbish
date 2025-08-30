@@ -328,7 +328,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData }) => {
           <div className="grid gap-4 md:grid-cols-3">
             {(['L1', 'L2', 'L3'] as const).map((level) => {
               const levelData = realData.repairStats.technicianUtilization[level];
-              // Показываем только уровни с техниками
+              // Show only levels with technicians
               if (!levelData || levelData.availableTechnicians === 0) return null;
               
               return (

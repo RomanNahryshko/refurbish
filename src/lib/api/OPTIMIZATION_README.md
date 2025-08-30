@@ -1,20 +1,20 @@
 # API Optimization: Singleton Supabase Client Pattern
 
-## Проблема
+## Problem
 
-До оптимизации каждый API route создавал **новый Supabase клиент** для каждого HTTP запроса:
+Before optimization, each API route created a **new Supabase client** for every HTTP request:
 
 ```typescript
-// ❌ ПЛОХО: Создается новый клиент для каждого запроса
+// ❌ BAD: New client created for each request
 const supabase = await createSupabaseServerClient()
 ```
 
-Это происходило в **каждом** API endpoint, что приводило к:
-- Избыточному созданию соединений
-- Нагрузке на Supabase
-- Неэффективному использованию ресурсов
+This happened in **every** API endpoint, which led to:
+- Excessive connection creation
+- Load on Supabase
+- Inefficient resource usage
 
-## Решение
+## Solution
 
 ### 1. Singleton Supabase Client
 
@@ -23,12 +23,12 @@ const supabase = await createSupabaseServerClient()
 let supabaseClientInstance: SupabaseClient | null = null
 
 export async function createSupabaseServerClient() {
-  // Возвращаем существующий экземпляр если уже создан
+  // Return existing instance if already created
   if (supabaseClientInstance) {
     return supabaseClientInstance
   }
   
-  // Создаем новый только один раз
+  // Create new only once
   supabaseClientInstance = createServerClient(/* ... */)
   return supabaseClientInstance
 }
@@ -57,40 +57,40 @@ class APIFactory {
 export const apiFactory = new APIFactory()
 ```
 
-### 3. Dependency Injection в API Routes
+### 3. Dependency Injection in API Routes
 
 ```typescript
-// ❌ ДО: Создание нового клиента
+// ❌ BEFORE: Creating new client
 const supabase = await createSupabaseServerClient()
 const inventoryApi = createInventoryAPI(supabase)
 
-// ✅ ПОСЛЕ: Использование factory
+// ✅ AFTER: Using factory
 const inventoryApi = await apiFactory.getInventoryAPI()
 ```
 
-## Преимущества
+## Benefits
 
-1. **Один клиент на весь сервер** - Supabase клиент создается только один раз
-2. **Переиспользование соединений** - все API calls используют один экземпляр
-3. **Лучшая производительность** - меньше нагрузки на Supabase
-4. **Централизованное управление** - все API через один factory
-5. **Легче тестировать** - можно мокать factory вместо отдельных клиентов
+1. **One client per server** - Supabase client is created only once
+2. **Connection reuse** - all API calls use one instance
+3. **Better performance** - less load on Supabase
+4. **Centralized management** - all APIs through one factory
+5. **Easier to test** - can mock factory instead of individual clients
 
-## Миграция
+## Migration
 
-### Шаг 1: Обновить API Route
+### Step 1: Update API Route
 
 ```typescript
-// Было
+// Was
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 const supabase = await createSupabaseServerClient()
 
-// Стало
+// Became
 import { apiFactory } from '@/lib/api/api-factory'
 const inventoryApi = await apiFactory.getInventoryAPI()
 ```
 
-### Шаг 2: Добавить API в Factory
+### Step 2: Add API to Factory
 
 ```typescript
 // src/lib/api/api-factory.ts
@@ -99,32 +99,3 @@ async getBatchesAPI() {
   return createBatchesAPI(client)
 }
 ```
-
-### Шаг 3: Обновить все Routes
-
-Заменить все вызовы `createSupabaseServerClient()` на использование `apiFactory`.
-
-## Текущий статус
-
-✅ **Завершено:**
-- `inventory/parts` route
-- `inventory/stock-adjustments` route
-- Singleton Supabase client
-- API factory pattern
-
-🔄 **В процессе:**
-- Остальные API routes (batches, repair-jobs, suppliers, etc.)
-
-## Мониторинг
-
-После миграции всех routes:
-- Меньше соединений к Supabase
-- Лучшая производительность API
-- Снижение нагрузки на базу данных
-
-## Best Practices
-
-1. **Всегда используйте `apiFactory`** вместо прямого создания клиентов
-2. **Добавляйте новые API в factory** при создании
-3. **Не создавайте клиенты в компонентах** - только через API routes
-4. **Используйте dependency injection** в API классах

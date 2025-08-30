@@ -179,7 +179,7 @@ export class DashboardService {
     }
   }
 
-  /** production_metrics: выбираем поля, при наличии dateRange — суммируем на стороне сервера через выборку и reduce в JS */
+  /** production_metrics: select fields, if dateRange is present — sum on server side through selection and reduce in JS */
   private async getProductionMetrics(dateRange?: { from: Date; to: Date }) {
     const fields = [
       'batches_created',
@@ -220,7 +220,7 @@ export class DashboardService {
     }
 
     if (range) {
-      // суммируем поля в JS — избегаем проблем с PostgREST-парсером
+      // sum fields in JS — avoid PostgREST parser issues
       const summed = { ...DEFAULT_PRODUCTION_METRICS };
       for (const row of data) {
         for (const key of Object.keys(summed) as (keyof typeof summed)[]) {
@@ -230,9 +230,9 @@ export class DashboardService {
       return summed;
     }
 
-    // без range — возвращаем самый свежий
+    // without range — return the latest
     const latest = data[0];
-    // Приведём к числам
+    // Convert to numbers
     const normalized: any = {};
     for (const k of fields) {
       normalized[k] = Number((latest as any)[k] || 0);
@@ -240,7 +240,7 @@ export class DashboardService {
     return normalized;
   }
 
-  /** batches + imported devices — безопасные запросы, подсчёт сумм в JS */
+  /** batches + imported devices — safe queries, sum counts in JS */
   private async getBatchIntakeStats(dateRange?: { from: Date; to: Date }) {
     const range = normalizeDateRange(dateRange);
 
@@ -248,7 +248,7 @@ export class DashboardService {
       .from('batches')
       .select('device_count, created_at')
       .is('deleted_at', null)
-      .range(0, 999999); // безопасный fetch; при очень больших данных — заменить на агрегацию/VIEW/RPC
+      .range(0, 999999); // safe fetch; for very large data — replace with aggregation/VIEW/RPC
 
     if (range) batchQuery.gte('created_at', range.startISO).lte('created_at', range.endISO);
 
@@ -290,7 +290,7 @@ export class DashboardService {
     const techs = technicians || [];
     const technicianIds = techs.map((t: any) => t.id).filter(Boolean);
     
-    // если нет техников — вернуть пустую структуру
+    // if no technicians — return empty structure
     const grouped: Record<'L1' | 'L2' | 'L3', TechnicianLevelStats> = {
       L1: {
         availableTechnicians: 0,
@@ -328,24 +328,24 @@ export class DashboardService {
 
     const startOfDayISO = dayjs().startOf('day').toISOString();
 
-    // подготовим быстрый доступ к профилям
+    // prepare quick access to profiles
     const profilesById: Record<string, { full_name?: string; technician_level?: string }> = {};
     for (const t of techs) profilesById[t.id] = { full_name: t.full_name, technician_level: t.technician_level };
 
-    // заполнение статистик по уровням
+    // populate statistics by levels
     for (const t of techs) {
-      // Убеждаемся, что technician_level существует и валиден
+      // Ensure technician_level exists and is valid
       let level: 'L1' | 'L2' | 'L3' = 'L1';
       if (t.technician_level === 'L2' || t.technician_level === 'L3') {
         level = t.technician_level;
       }
       
-      // Добавляем техника ТОЛЬКО в один уровень
+      // Add technician to ONLY ONE level
       grouped[level].technicians.push({ name: t.full_name || 'Unknown', completedToday: 0 });
       grouped[level].availableTechnicians++;
     }
 
-    // индекс техников в массиве для быстрого инкремента
+    // technician index in array for quick increment
     const techIndexByName: Record<string, { level: 'L1' | 'L2' | 'L3'; idx: number }> = {};
     (['L1', 'L2', 'L3'] as const).forEach(level => {
       grouped[level].technicians.forEach((tt, idx) => {
@@ -358,7 +358,7 @@ export class DashboardService {
       const profile = profilesById[techId];
       if (!profile) continue;
       
-      // Используем ту же логику определения уровня
+      // Use the same level determination logic
       let level: 'L1' | 'L2' | 'L3' = 'L1';
       if (profile.technician_level === 'L2' || profile.technician_level === 'L3') {
         level = profile.technician_level;
@@ -369,10 +369,10 @@ export class DashboardService {
       if (['pending', 'in_progress'].includes(job.status)) {
         group.activeJobs++;
       } else if (job.status === 'completed') {
-        // completedToday: по completed_at >= startOfDay
+        // completedToday: by completed_at >= startOfDay
         if (job.completed_at && dayjs(job.completed_at).isAfter(startOfDayISO)) {
           group.completedToday++;
-          // увеличим у конкретного техника (по имени)
+          // increment for specific technician (by name)
           const techName = profile.full_name || 'Unknown';
           const found = group.technicians.find(t => t.name === techName);
           if (found) found.completedToday++;
@@ -421,7 +421,7 @@ export class DashboardService {
     return Number(res.count || 0);
   }
 
-  /** Считаем completed repairs по repair_type (фильтр по completed_at для dateRange) */
+  /** Count completed repairs by repair_type (filter by completed_at for dateRange) */
   private async getCompletedRepairsStats(dateRange?: { from: Date; to: Date }) {
     const range = normalizeDateRange(dateRange);
 
