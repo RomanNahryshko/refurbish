@@ -1,11 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState, use } from 'react'
+import { use } from 'react'
 import { Button } from '@/components/ui/button'
 import { EditUserForm } from '@/modules/admin/components/edit-user-form'
-import { LoadingSpinner } from '@/components/common/loading-spinner'
-import { useSupabaseClient } from '@/lib/stores/supabase-store'
+import { useUser } from '@/lib/hooks/use-user'
 
 interface EditUserPageProps {
   params: Promise<{
@@ -15,32 +14,8 @@ interface EditUserPageProps {
 
 export default function EditUserPage({ params }: EditUserPageProps) {
   const { id } = use(params)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const supabase = useSupabaseClient()
-
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      if (supabase) {
-        const { data: { user } } = await supabase.auth.getUser()
-        setCurrentUserId(user?.id || null)
-        setLoading(false)
-      }
-    }
-
-    getCurrentUser()
-  }, [supabase])
-
-  if (loading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center p-8">
-          <LoadingSpinner size="md" />
-          <span className="ml-2">Loading...</span>
-        </div>
-      </div>
-    )
-  }
+  const { user } = useUser()
+  const currentUserId = user?.id || null
 
   return (
     <div className="container mx-auto p-6">

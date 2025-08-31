@@ -1,45 +1,62 @@
-import { redirect } from 'next/navigation';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { SupabaseWarning } from '@/components/common/supabase-warning';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/lib/hooks/use-user';
+import { useProfile } from '@/lib/hooks/use-profile-optimized';
 import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions';
 import DashboardMain from '@/components/dashboard/dashboard-main';
 import { RouteGuard } from '@/components/auth/route-guard';
+import { LoadingSpinner } from '@/components/common/loading-spinner';
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  const router = useRouter();
+  const { user, isLoading: userLoading } = useUser();
+  const { data: profile, isLoading: profileLoading } = useProfile(!!user);
+
   // Check if user has dashboard access
-  const supabase = await createSupabaseServerClient();
-  
-  if (!supabase) {
-    // If Supabase is not configured, redirect to login
-    redirect('/login');
+  useEffect(() => {
+    if (!userLoading && !profileLoading) {
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+
+      const userRole = profile?.role || 'technician';
+      
+      // If user doesn't have dashboard access, redirect to first available module
+      if (!hasDashboardAccess(userRole)) {
+        const firstModule = getFirstAvailableModule(userRole);
+        router.push(firstModule);
+        return;
+      }
+    }
+  }, [user, profile, userLoading, profileLoading, router]);
+
+  // Show loading state while checking authentication and permissions
+  if (userLoading || profileLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
+      </div>
+    );
   }
-  
-  const { data: { user } } = await supabase.auth.getUser();
+
+  // If no user, don't render anything (will redirect)
   if (!user) {
-    redirect('/login');
+    return null;
   }
 
-  // Get user profile to check role
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('role')
-    .eq('id', user!.id)
-    .single();
-
-  const userRole = profile?.role || 'technician';
-  
-  // If user doesn't have dashboard access, redirect to first available module
-  if (!hasDashboardAccess(userRole)) {
-    const firstModule = getFirstAvailableModule(userRole);
-    redirect(firstModule);
+  // If user doesn't have access, don't render anything (will redirect)
+  if (profile && !hasDashboardAccess(profile.role)) {
+    return null;
   }
 
   return (
     <RouteGuard requireAuth={true}>
       <div className="container mx-auto px-4 py-8">
-        <SupabaseWarning />
         <DashboardMain />
       </div>
     </RouteGuard>
-  )
+  );
 } 

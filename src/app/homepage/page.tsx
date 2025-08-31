@@ -1,22 +1,26 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { SupabaseWarning } from '@/components/common/supabase-warning';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useUser } from '@/lib/hooks/use-user';
+import { RouteGuard } from '@/components/auth/route-guard';
+import { LoadingSpinner } from '@/components/common/loading-spinner';
 
 // First row - 5 main modules
 const firstRowModules = [
   {
-    title: 'Dashboard',
-    description: 'View operational metrics',
-    href: '/dashboard',
-    icon: '📊',
-  },
-  {
     title: 'Batch Intake',
-    description: 'Register new batches',
+    description: 'Import new devices',
     href: '/batch-intake',
     icon: '📦',
+  },
+  {
+    title: 'Dashboard',
+    description: 'Overview & metrics',
+    href: '/dashboard',
+    icon: '📈',
   },
   {
     title: 'Devices',
@@ -54,67 +58,81 @@ const secondRowModules = [
   },
 ];
 
-export default async function HomePage() {
-  const supabase = await createSupabaseServerClient();
-  
-  if (!supabase) {
-    redirect('/login');
+export default function HomePage() {
+  const router = useRouter();
+  const { user, isLoading: userLoading } = useUser();
+
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!userLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, userLoading, router]);
+
+  // Show loading state while checking authentication
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
+      </div>
+    );
   }
-  
-  const { data: { user } } = await supabase.auth.getUser();
+
+  // If no user, don't render anything (will redirect)
   if (!user) {
-    redirect('/login');
+    return null;
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <SupabaseWarning />
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Welcome to ReMobile Refurbish</h1>
-        <p className="text-muted-foreground">
-          Select a module to get started
-        </p>
-      </div>
-
-      <div className="space-y-6">
-        {/* First row - 5 main modules */}
-        <div className="grid gap-6 grid-cols-5">
-          {firstRowModules.map((module) => (
-            <Link key={module.href} href={module.href}>
-              <Card className="h-full transition-colors hover:bg-accent/50 cursor-pointer">
-                <CardHeader>
-                  <div className="flex flex-col items-center text-center gap-4">
-                    <span className="text-5xl">{module.icon}</span>
-                    <div>
-                      <CardTitle>{module.title}</CardTitle>
-                      <CardDescription className="mt-2">{module.description}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            </Link>
-          ))}
+    <RouteGuard requireAuth={true}>
+      <div className="container mx-auto p-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">Welcome to ReMobile Refurbish</h1>
+          <p className="text-muted-foreground">
+            Select a module to get started
+          </p>
         </div>
 
-        {/* Second row - 2 additional modules (wider cards) */}
-        <div className="grid gap-6 grid-cols-2 max-w-5xl mx-auto">
-          {secondRowModules.map((module) => (
-            <Link key={module.href} href={module.href}>
-              <Card className="h-full transition-colors hover:bg-accent/50 cursor-pointer">
-                <CardHeader>
-                  <div className="flex flex-col items-center text-center gap-4">
-                    <span className="text-5xl">{module.icon}</span>
-                    <div>
-                      <CardTitle>{module.title}</CardTitle>
-                      <CardDescription className="mt-2">{module.description}</CardDescription>
+        <div className="space-y-6">
+          {/* First row - 5 main modules */}
+          <div className="grid gap-6 grid-cols-5">
+            {firstRowModules.map((module) => (
+              <Link key={module.href} href={module.href}>
+                <Card className="h-full transition-colors hover:bg-accent/50 cursor-pointer">
+                  <CardHeader>
+                    <div className="flex flex-col items-center text-center gap-4">
+                      <span className="text-5xl">{module.icon}</span>
+                      <div>
+                        <CardTitle>{module.title}</CardTitle>
+                        <CardDescription className="mt-2">{module.description}</CardDescription>
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            </Link>
-          ))}
+                  </CardHeader>
+                </Card>
+              </Link>
+            ))}
+          </div>
+
+          {/* Second row - 2 additional modules (wider cards) */}
+          <div className="grid gap-6 grid-cols-2 max-w-5xl mx-auto">
+            {secondRowModules.map((module) => (
+              <Link key={module.href} href={module.href}>
+                <Card className="h-full transition-colors hover:bg-accent/50 cursor-pointer">
+                  <CardHeader>
+                    <div className="flex flex-col items-center text-center gap-4">
+                      <span className="text-5xl">{module.icon}</span>
+                      <div>
+                        <CardTitle>{module.title}</CardTitle>
+                        <CardDescription className="mt-2">{module.description}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </RouteGuard>
   );
 }
