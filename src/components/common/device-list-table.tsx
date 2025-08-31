@@ -4,10 +4,9 @@ import { ReactNode, useState, useEffect } from 'react';
 import { DEVICE_STATUS } from '@/lib/constants';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Smartphone,
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
   Filter,
@@ -79,10 +78,6 @@ export function DeviceListTable({
 }: DeviceListTableProps) {
   
   // Debug logging for repair jobs
-
-  
-  const startIndex = (currentPage - 1) * itemsPerPage + 1
-  const endIndex = Math.min(currentPage * itemsPerPage, totalResults)
 
   // Filter visibility state with persistence
   const [filtersExpanded, setFiltersExpanded] = useState(false)
@@ -298,38 +293,13 @@ export function DeviceListTable({
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600">
-            Showing {startIndex}-{endIndex} of {totalResults} results
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="cursor-pointer"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <span className="text-sm">
-              Page {currentPage} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="cursor-pointer"
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalResults={totalResults}
+        itemsPerPage={itemsPerPage}
+        onPageChange={onPageChange}
+      />
     </div>
   )
 }
