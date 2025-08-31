@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -107,24 +107,24 @@ export function PartsList({
         )}
       </div>
 
-      {/* Filters */}
+      {/* Parts Table with Integrated Filters */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-4">
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-3 mb-6">
             {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search by name or SKU..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="h-9 pl-8"
               />
             </div>
 
             {/* Category Filter */}
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="h-9 w-[160px]">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -139,7 +139,7 @@ export function PartsList({
 
             {/* Stock Status Filter */}
             <Select value={stockFilter} onValueChange={setStockFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="h-9 w-[160px]">
                 <SelectValue placeholder="All Stock Levels" />
               </SelectTrigger>
               <SelectContent>
@@ -151,25 +151,21 @@ export function PartsList({
             </Select>
 
             {/* Clear Filters */}
-            <Button variant="outline" onClick={clearFilters}>
-              Clear Filters
+            <Button variant="outline" size="sm" onClick={clearFilters} className="h-9">
+              Clear
             </Button>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Parts Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Parts ({filteredParts.length})
-          </CardTitle>
-          <CardDescription>
-            Current inventory levels and part details
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          {/* Table Header */}
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Package className="h-5 w-5" />
+              <h3 className="text-lg font-semibold">Parts ({filteredParts.length})</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Current inventory levels and part details
+            </p>
+          </div>
           {filteredParts.length === 0 ? (
             <div className="text-center py-12">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
