@@ -4,15 +4,16 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import dayjs from 'dayjs';
+import "react-day-picker/dist/style.css";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "../ui/calendar";
 
 interface DateRangePickerProps {
   selectedRange: DateRange | undefined;
@@ -66,14 +67,14 @@ export function DateRangePicker({
   };
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+    <div className={cn("flex flex-col space-y-3", className)}>
       {/* Quick preset buttons */}
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           size="sm"
           onClick={setToday}
-          className="h-8 px-3 text-xs"
+          className="h-8 px-3 text-xs font-medium"
         >
           Today
         </Button>
@@ -81,7 +82,7 @@ export function DateRangePicker({
           variant="outline"
           size="sm"
           onClick={setYesterday}
-          className="h-8 px-3 text-xs"
+          className="h-8 px-3 text-xs font-medium"
         >
           Yesterday
         </Button>
@@ -89,7 +90,7 @@ export function DateRangePicker({
           variant="outline"
           size="sm"
           onClick={setLast7Days}
-          className="h-8 px-3 text-xs"
+          className="h-8 px-3 text-xs font-medium"
         >
           Last 7 Days
         </Button>
@@ -97,7 +98,7 @@ export function DateRangePicker({
           variant="outline"
           size="sm"
           onClick={setLast30Days}
-          className="h-8 px-3 text-xs"
+          className="h-8 px-3 text-xs font-medium"
         >
           Last 30 Days
         </Button>
@@ -105,7 +106,7 @@ export function DateRangePicker({
           variant="outline"
           size="sm"
           onClick={setThisMonth}
-          className="h-8 px-3 text-xs"
+          className="h-8 px-3 text-xs font-medium"
         >
           This Month
         </Button>
@@ -113,7 +114,7 @@ export function DateRangePicker({
           variant="outline"
           size="sm"
           onClick={setLastMonth}
-          className="h-8 px-3 text-xs"
+          className="h-8 px-3 text-xs font-medium"
         >
           Last Month
         </Button>
@@ -124,9 +125,9 @@ export function DateRangePicker({
         <PopoverTrigger asChild>
           <Button
             id="date"
-            variant={"outline"}
+            variant="outline"
             className={cn(
-              "w-[280px] justify-start text-left font-normal h-8",
+              "w-[300px] justify-start text-left font-normal h-9",
               !selectedRange && "text-muted-foreground"
             )}
           >
@@ -146,19 +147,22 @@ export function DateRangePicker({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="end">
-          <Calendar
-            initialFocus
-            mode="range"
-            defaultMonth={selectedRange?.from}
-            selected={selectedRange}
-            onSelect={handleSelect}
-            numberOfMonths={2}
-            disabled={(date) => {
-              const today = new Date();
-              today.setHours(23, 59, 59, 999);
-              return date > today || date < new Date("2023-01-01");
-            }}
-          />
+          <div className="p-3">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={selectedRange?.from}
+              selected={selectedRange}
+              onSelect={handleSelect}
+              numberOfMonths={2}
+              pagedNavigation={false}
+              disabled={(date) => {
+                const today = new Date();
+                today.setHours(23, 59, 59, 999);
+                return date > today || date < new Date("2023-01-01");
+              }}
+            />
+          </div>
         </PopoverContent>
       </Popover>
     </div>
