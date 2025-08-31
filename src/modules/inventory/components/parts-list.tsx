@@ -73,7 +73,6 @@ export function PartsList({
     return (
       <div className="flex items-center justify-center p-8">
         <LoadingSpinner size="md" />
-        <span className="ml-2">Loading parts...</span>
       </div>
     )
   }

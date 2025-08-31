@@ -47,11 +47,18 @@ export default function RepairJobsPage() {
   const user = useUser()
   
   // Fetch real data from API
-  const { data: repairJobsData, isPending: repairJobsLoading, error: repairJobsError } = useRepairJobs()
-  const { batches: batchesData, loading: batchesLoading } = useBatches()
-  const { data: sparePartsData, isPending: sparePartsLoading } = useSpareParts()
+  const { data: repairJobsData, isPending: repairJobsLoading, error: repairJobsError, refetch: refetchRepairJobs, isFetching: repairJobsFetching } = useRepairJobs()
+  const { batches: batchesData, loading: batchesLoading, fetchBatches: refetchBatches } = useBatches()
+  const { data: sparePartsData, isPending: sparePartsLoading, refetch: refetchSpareParts, isFetching: sparePartsFetching } = useSpareParts()
   const { data: profile } = useProfile(!!user)
 
+  // Refetch data every time the component mounts (page visit)
+  useEffect(() => {
+    refetchRepairJobs()
+    refetchBatches()
+    refetchSpareParts()
+  }, [refetchRepairJobs, refetchBatches, refetchSpareParts])
+  
   // Update repair job mutation
   const updateRepairJob = useUpdateRepairJob()
   
@@ -128,7 +135,7 @@ export default function RepairJobsPage() {
   })
 
   // Show loading state while data is being fetched
-  if (repairJobsLoading || batchesLoading || sparePartsLoading) {
+  if (repairJobsLoading || batchesLoading || sparePartsLoading || repairJobsFetching || sparePartsFetching) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="flex justify-center items-center py-12">

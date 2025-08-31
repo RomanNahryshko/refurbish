@@ -15,7 +15,6 @@ import { Batch, Device } from '@/lib/types/business-types';
 import { useDevicesForFinalQC, useDevices } from '@/lib/hooks/use-devices';
 import { useBatches } from '@/lib/hooks/use-batches';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
-import { useQueryClient } from '@tanstack/react-query';
 
 export default function QCPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -25,16 +24,15 @@ export default function QCPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   
   const itemsPerPage = DEFAULT_ITEMS_PER_PAGE
-  const queryClient = useQueryClient()
   
   // Fetch devices that are ready for final QC
-  const { data: devicesForQC, isLoading: devicesLoading, error: devicesError } = useDevicesForFinalQC()
+  const { data: devicesForQC, isLoading: devicesLoading, error: devicesError, refetch: refetchDevicesForQC } = useDevicesForFinalQC()
   
   // Fetch batches for device information
-  const { batches, loading: batchesLoading, error: batchesError } = useBatches()
+  const { batches, loading: batchesLoading, error: batchesError, fetchBatches: refetchBatches } = useBatches()
   
   // Fetch all devices for metrics calculation
-  const { devices: allDevices } = useDevices()
+  const { devices: allDevices, fetchDevices: refetchAllDevices } = useDevices()
   
   // Refetch data every time the component mounts (page visit)
   useEffect(() => { 
@@ -44,17 +42,15 @@ export default function QCPage() {
       
       try {
         // Force refetch of devices and batches data
-        await queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
-        await queryClient.refetchQueries({ queryKey: ['batches'] })
-        
-        // Refetch all devices for metrics calculation
-        await queryClient.refetchQueries({ queryKey: ['devices'] })
+        refetchDevicesForQC()
+        refetchBatches()
+        refetchAllDevices()
       } finally {
         setIsRefreshing(false)
       }
     }
     refetchData()
-  }, [queryClient])
+  }, [refetchDevicesForQC, refetchBatches, refetchAllDevices])
   
   // Show loading state while data is being fetched or refreshing
   if ((devicesLoading || batchesLoading) && !devicesError && !batchesError) {
