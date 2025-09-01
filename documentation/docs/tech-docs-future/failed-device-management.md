@@ -1,6 +1,6 @@
 ---
 sidebar_position: 4
-title: Failed Device Handling 
+title: Failed Device Handling Workflow
 ---
 
 # Failed Device Handling Workflow
