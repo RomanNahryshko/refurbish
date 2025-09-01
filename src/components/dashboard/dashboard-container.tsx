@@ -20,7 +20,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({
   // Refetch data every time the component mounts (page visit)
   useEffect(() => {
     refetch();
-  }, [refetch]);
+  }, []);
 
   // Show loading state
   if (loading) {

@@ -317,24 +317,39 @@ export class DashboardService {
 
     if (technicianIds.length === 0) return grouped;
 
-    let jobsQuery = this.supabase
+    const range = normalizeDateRange(dateRange);
+
+    // Active jobs (current snapshot) — no date filter
+    const activeJobsPromise = this.supabase
+      .from('repair_jobs')
+      .select('id, status, assigned_to')
+      .in('assigned_to', technicianIds)
+      .in('status', ['pending', 'in_progress'])
+      .is('deleted_at', null);
+
+    // Completed jobs within selected period (or today by default)
+    let completedJobsQuery = this.supabase
       .from('repair_jobs')
       .select('id, status, assigned_to, completed_at')
       .in('assigned_to', technicianIds)
-      .in('status', ['pending', 'in_progress', 'completed'])
+      .eq('status', 'completed')
       .is('deleted_at', null);
 
-    // Apply date range filter if provided
-    if (dateRange) {
-      const range = normalizeDateRange(dateRange);
-      if (range) {
-        jobsQuery = jobsQuery.gte('created_at', range.startISO).lte('created_at', range.endISO);
-      }
+    if (range) {
+      completedJobsQuery = completedJobsQuery.gte('completed_at', range.startISO).lte('completed_at', range.endISO);
+    } else {
+      const startOfTodayISO = dayjs().startOf('day').toISOString();
+      const endOfTodayISO = dayjs().endOf('day').toISOString();
+      completedJobsQuery = completedJobsQuery.gte('completed_at', startOfTodayISO).lte('completed_at', endOfTodayISO);
     }
 
-    const { data: jobs, error: jobsErr } = await jobsQuery;
+    const [{ data: activeJobs, error: activeErr }, { data: completedJobs, error: completedErr }] = await Promise.all([
+      activeJobsPromise,
+      completedJobsQuery,
+    ]);
 
-    if (jobsErr) throw jobsErr;
+    if (activeErr) throw activeErr;
+    if (completedErr) throw completedErr;
 
     // prepare quick access to profiles
     const profilesById: Record<string, { full_name?: string; technician_level?: string }> = {};
@@ -361,52 +376,32 @@ export class DashboardService {
       });
     });
 
-    for (const job of jobs || []) {
-      const techId = job.assigned_to;
+    // Count active jobs
+    for (const job of activeJobs || []) {
+      const techId = (job as any).assigned_to;
       const profile = profilesById[techId];
       if (!profile) continue;
-      
-      // Use the same level determination logic
-      let level: 'L1' | 'L2' | 'L3' = 'L1';
-      if (profile.technician_level === 'L2' || profile.technician_level === 'L3') {
-        level = profile.technician_level;
-      }
-      
-      const group = grouped[level];
 
-      if (['pending', 'in_progress'].includes(job.status)) {
-        group.activeJobs++;
-      } else if (job.status === 'completed') {
-        // Check if job was completed in the selected period
-        if (job.completed_at) {
-          let shouldCount = false;
-          
-          if (dateRange) {
-            // If date range is selected, check if job falls within the range
-            const range = normalizeDateRange(dateRange);
-            if (range) {
-              const jobDate = dayjs(job.completed_at);
-              const startDate = dayjs(range.startISO);
-              const endDate = dayjs(range.endISO);
-              shouldCount = (jobDate.isAfter(startDate, 'day') || jobDate.isSame(startDate, 'day')) && 
-                           (jobDate.isBefore(endDate, 'day') || jobDate.isSame(endDate, 'day'));
-            }
-          } else {
-            // If no date range, count only today's jobs (default behavior)
-            const jobDate = dayjs(job.completed_at);
-            const today = dayjs();
-            shouldCount = jobDate.isSame(today, 'day');
-          }
-          
-                      if (shouldCount) {
-              group.completedToday++;
-              // increment for specific technician (by name) in selected period
-              const techName = profile.full_name || 'Unknown';
-              const found = group.technicians.find(t => t.name === techName);
-              if (found) found.completedToday++;
-            }
-        }
-      }
+      let level: 'L1' | 'L2' | 'L3' = 'L1';
+      if (profile.technician_level === 'L2' || profile.technician_level === 'L3') level = profile.technician_level;
+      grouped[level].activeJobs++;
+    }
+
+    // Count completed jobs within period
+    for (const job of completedJobs || []) {
+      const techId = (job as any).assigned_to;
+      const profile = profilesById[techId];
+      if (!profile) continue;
+
+      let level: 'L1' | 'L2' | 'L3' = 'L1';
+      if (profile.technician_level === 'L2' || profile.technician_level === 'L3') level = profile.technician_level;
+
+      const group = grouped[level];
+      group.completedToday++;
+
+      const techName = profile.full_name || 'Unknown';
+      const found = group.technicians.find(t => t.name === techName);
+      if (found) found.completedToday++;
     }
 
     // Calculate average jobs per technician for the selected period
@@ -468,7 +463,7 @@ export class DashboardService {
     if (error) throw error;
 
     const stats = { housing: 0, glass: 0, battery: 0, software: 0, other: 0 };
-    (data || []).forEach((r: any) => {
+    (data || []).forEach((r: { repair_type: string }) => {
       switch (r.repair_type) {
         case 'housing_change':
           stats.housing++;

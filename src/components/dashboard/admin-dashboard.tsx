@@ -70,6 +70,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData, selectedDateR
 
   const devicesStatsWithPercentages = getDevicesStatsWithPercentages(realData.devicesStats);
 
+  console.log(realData);
   return (
     <div className="space-y-6">
       {/* 1. Batch Intake Stats */}
