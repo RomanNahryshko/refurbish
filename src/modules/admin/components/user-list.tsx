@@ -95,7 +95,6 @@ export function UserList({ currentUserId }: UserListProps) {
                   <SelectItem value="ops_manager">Operations Manager</SelectItem>
                   <SelectItem value="technician">Technician</SelectItem>
                   <SelectItem value="qc_controller">QC Controller</SelectItem>
-                  <SelectItem value="data_entry">Data Entry</SelectItem>
                 </SelectContent>
               </Select>
             </div>

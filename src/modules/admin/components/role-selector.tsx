@@ -35,7 +35,6 @@ export function RoleSelector({ value, onValueChange }: RoleSelectorProps) {
         <SelectValue placeholder="Select a role" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="data_entry">Data Entry</SelectItem>
         <SelectItem value="qc_controller">QC Controller</SelectItem>
         <SelectItem value="technician">Technician</SelectItem>
         <SelectItem value="ops_manager">Operations Manager</SelectItem>
