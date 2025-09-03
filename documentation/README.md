@@ -2,7 +2,7 @@
 
 This is the documentation website for the ReMobile Refurbish ERP system, built using [Docusaurus](https://docusaurus.io/).
 
-## 📚 Documentation Structure
+## 📚 Documentation Structure.
 
 ```
 documentation/
