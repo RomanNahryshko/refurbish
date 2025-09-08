@@ -12,6 +12,7 @@ import { useExcelParser } from '@/lib/hooks/use-excel-parser';
 import { useBatch } from '@/lib/hooks/use-batches';
 import { useCreateDevicesFromImport } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
+import type { SupabaseClient } from '@supabase/supabase-js';
 // Removed: Direct Supabase import - using hooks instead
 import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
 import { REPAIR_TYPE_MAP } from '@/lib/constants';
@@ -54,7 +55,6 @@ export default function ImportDrPhonePage() {
   const [importedData, setImportedData] = useState<DrPhoneData[]>([])
   const [createdDevices, setCreatedDevices] = useState<Array<{ id: string; imei: string }>>([])
   // Store filtered devices (duplicates removed)
-  const [filteredDevices, setFilteredDevices] = useState<DrPhoneData[]>([])
   
   // Use custom hook for device import state management
   const {
@@ -63,14 +63,14 @@ export default function ImportDrPhonePage() {
     deviceGrades,
     expandedRepairSections,
     deviceQcApproaches,
-    completedDevices: _completedDevices, // Not used in template but needed for hook logic
+    completedDevices: _completedDevices, // Not used anymore - cards handle their own completion state
     handleDeviceRepairToggle,
     handleDeviceOtherDescription,
     handleRepairSectionToggle,
     handleQcApproachChange,
     handleDeviceGradeChange,
-    markDeviceCompleted,
-    resetAllStates,
+    markDeviceCompleted: _markDeviceCompleted,
+    resetAllStates: _resetAllStates,
     updateCompletedDevices,
   } = useDeviceImportState()
   const [isDragOver, setIsDragOver] = useState(false)
@@ -129,10 +129,13 @@ export default function ImportDrPhonePage() {
   // Use hooks to filter and check devices
   const { filteredDevices: hookFilteredDevices, existingCount } = useFilterDevicesByExisting(convertedData as DrPhoneData[])
   const { completedIMEIs } = useCompletedQCByDevices(hookFilteredDevices, createdDevices)
+  
+  // Use all devices - filtering is handled by individual card isCompleted state
+  const filteredDevices = hookFilteredDevices
 
   
   // Function to create a single device when QC is completed
-  const createSingleDevice = async (deviceData: DrPhoneData, deviceIndex: number, selectedRepairs: string[], otherDescription: string, selectedGrade: string, supabaseClient?: any) => {
+  const createSingleDevice = async (deviceData: DrPhoneData, deviceIndex: number, selectedRepairs: string[], otherDescription: string, selectedGrade: string, supabaseClient?: unknown) => {
     try {
       setIsCreatingDevice(true)
       
@@ -193,11 +196,11 @@ export default function ImportDrPhonePage() {
               
               // Update production metrics immediately after creating repair jobs
               try {
-                if (!supabaseClient) {
+                if (!supabaseClient || typeof supabaseClient !== 'object') {
                   throw new Error('Supabase client not available')
                 }
                 
-                const productionMetricsService = new ProductionMetricsClientService(supabaseClient)
+                const productionMetricsService = new ProductionMetricsClientService(supabaseClient as unknown as SupabaseClient)
                 await productionMetricsService.updateRepairMetrics(selectedRepairs as RepairType[])
                 
               } catch (metricsError) {
@@ -362,7 +365,7 @@ export default function ImportDrPhonePage() {
   // Update filtered devices when hook data changes
   React.useEffect(() => {
     if (hookFilteredDevices.length > 0) {
-      setFilteredDevices(hookFilteredDevices)
+
       setExistingDevicesCount(existingCount)
     }
   }, [hookFilteredDevices, existingCount])
@@ -399,12 +402,12 @@ export default function ImportDrPhonePage() {
     }
   }, [parsedData])
 
-    const handleCompleteDeviceQC = async (deviceIndex: number, deviceData?: DrPhoneData) => {
+    const handleCompleteDeviceQC = async (deviceIndex: number, deviceData?: DrPhoneData): Promise<string | null> => {
     try {
       // Safety check: ensure device is in the filtered list
       if (!filteredDevices[deviceIndex]) {
         toast.error('Device not found. Please refresh and try again.')
-        return
+        return null
       }
 
       if (deviceData) {
@@ -415,21 +418,16 @@ export default function ImportDrPhonePage() {
           // Store the device ID for this device index
           setDeviceIds(prev => ({ ...prev, [deviceIndex]: deviceId }))
           
-          // Now mark as completed
-          markDeviceCompleted(deviceIndex)
+          // Don't mark as completed yet - let the QC process handle it
           toast.success(`Device ${deviceData.imei} created and ready for Initial QC`)
           
-          // Note: The QC check will be saved by the InitialQCDeviceCard component
-          // after the device is created and it has a valid deviceId
+          // Return the deviceId so QC can proceed
+          return deviceId
         } else {
           toast.error('Device creation failed. Please try again.')
-          return
+          return null
         }
         
-        // The filtered devices will be updated automatically by the hook
-        
-        // Reset all radio button states after filtering
-        resetAllStates()
         
       } else {
         // Device already exists, handle repair jobs and metrics if needed
@@ -442,7 +440,7 @@ export default function ImportDrPhonePage() {
             const existingDeviceId = deviceIds[deviceIndex]
             if (!existingDeviceId) {
               toast.error('Device ID not found. Please refresh and try again.')
-              return
+              return null
             }
             
             // Create repair jobs for selected repairs
@@ -472,16 +470,18 @@ export default function ImportDrPhonePage() {
             
           } catch {
             toast.error('Failed to create repair jobs. Please try again.')
-            return
+            return null
           }
         }
         
         // Mark as completed
-        markDeviceCompleted(deviceIndex)
+        // Device completion is now handled by individual cards
         toast.success(`Initial QC completed for device ${filteredDevices[deviceIndex].imei}`)
+        return null
       }
     } catch {
       toast.error('Failed to complete device QC. Please try again.')
+      return null
     }
   }
 
@@ -489,14 +489,21 @@ export default function ImportDrPhonePage() {
 
   // Callback when QC is actually completed (called from InitialQCDeviceCard)
   const handleQCCompleted = (deviceIndex: number) => {
-    markDeviceCompleted(deviceIndex)
+    console.log('🎉 handleQCCompleted called for device index:', deviceIndex)
     
-    // Force a re-render to ensure the UI updates
-    setTimeout(() => {
-      setFileInputKey(prev => prev + 1)
-    }, 100)
-    
-    toast.success(`Initial QC completed for device ${filteredDevices[deviceIndex].imei}`)
+    // Get device IMEI from the original list
+    const deviceImei = hookFilteredDevices[deviceIndex]?.imei || 'Unknown'
+    toast.success(`Initial QC completed for device ${deviceImei}`)
+  }
+
+  // Callback when data is saved to table
+  const handleSaveToTable = (_data: unknown) => {
+    // Здесь можно добавить дополнительную логику если нужно
+  }
+
+  // Callback when all operations are complete
+  const handleAllOperationsComplete = (deviceIndex: number) => {
+    handleQCCompleted(deviceIndex)
   }
 
   // Show loading state
@@ -694,12 +701,41 @@ export default function ImportDrPhonePage() {
                   const selectedGradeForDevice = deviceGrades[_index] || ''
 
                   
+                  const deviceId = deviceIds[_index]
+                  
+                  // If no deviceId exists for this device, create one
+                  if (!deviceId) {
+                    console.log(`🔍 No deviceId for device ${_index} (${device.imei}), creating device first`)
+                    // This will trigger device creation and then QC
+                    return (
+                      <InitialQCDeviceCard
+                        key={`preview-${_index}-${device.imei}`}
+                        device={device}
+                        deviceIndex={_index}
+                        deviceId={undefined} // No deviceId yet
+                        selectedRepairs={selectedRepairsForDevice}
+                        otherDescription={otherDescriptionForDevice}
+                        selectedGrade={selectedGradeForDevice}
+                        onRepairToggle={(repairId) => handleDeviceRepairToggle(_index, repairId)}
+                        onOtherDescriptionChange={(desc) => handleDeviceOtherDescription(_index, desc)}
+                        onGradeChange={(grade) => handleDeviceGradeChange(_index, grade)}
+                        onCompleteQCWithDevice={(deviceData, deviceIndex) => handleCompleteDeviceQC(deviceIndex, deviceData)}
+                        isRepairSectionExpanded={expandedRepairSections[_index] || false}
+                        onRepairSectionToggle={() => handleRepairSectionToggle(_index)}
+                        qcApproach={deviceQcApproaches[_index] || ''}
+                        onQcApproachChange={(approach) => handleQcApproachChange(_index, approach)}
+                        onSaveToTable={handleSaveToTable}
+                        onAllOperationsComplete={() => handleAllOperationsComplete(_index)}
+                      />
+                    )
+                  }
+                  
                   return (
                     <InitialQCDeviceCard
                       key={`preview-${_index}-${device.imei}`}
                       device={device}
                       deviceIndex={_index}
-                      deviceId={deviceIds[_index]} // Pass the device ID for this device
+                      deviceId={deviceId} // Pass the device ID for this device
                       selectedRepairs={selectedRepairsForDevice}
                       otherDescription={otherDescriptionForDevice}
                       selectedGrade={selectedGradeForDevice}
@@ -711,7 +747,8 @@ export default function ImportDrPhonePage() {
                       onRepairSectionToggle={() => handleRepairSectionToggle(_index)}
                       qcApproach={deviceQcApproaches[_index] || ''}
                       onQcApproachChange={(approach) => handleQcApproachChange(_index, approach)}
-                      onQCCompleted={() => handleQCCompleted(_index)}
+                      onSaveToTable={handleSaveToTable}
+                      onAllOperationsComplete={() => handleAllOperationsComplete(_index)}
                     />
                   )
                 })

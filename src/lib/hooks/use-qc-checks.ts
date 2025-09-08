@@ -36,20 +36,27 @@ export function useQCCheck(id: string) {
 export function useCreateQCCheck() {
   const queryClient = useQueryClient()
   const client = useSupabaseClient()
-  
+
   return useMutation({
     mutationFn: async ({ qcData, testResults }: { qcData: QCCheckFormData; testResults?: TestResultData[] }) => {
       if (!client) throw new Error('Supabase client not available')
       const qcChecksApi = createQCChecksAPI(client)
-      return qcChecksApi.create(qcData, testResults)
+
+      // Creating QC record (production_metrics is updated in API route)
+      const qcResult = await qcChecksApi.create(qcData, testResults)
+      return qcResult
     },
-    onSuccess: (_, { qcData }) => {
+    onSuccess: (data, { qcData }) => {
       queryClient.invalidateQueries({ queryKey: ['qc-checks', 'device', qcData.device_id] })
       queryClient.invalidateQueries({ queryKey: ['devices'] })
       queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
+    onError: (error, { qcData }) => {
+      console.error('❌ useCreateQCCheck onError called with:', { error, qcData })
+    },
   })
 }
+
 
 export function useUpdateQCCheck() {
   const queryClient = useQueryClient()

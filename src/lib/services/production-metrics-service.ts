@@ -52,6 +52,7 @@ export class ProductionMetricsService {
     }
   ) {
     try {
+      
       const supabase = await this.getSupabaseClient()
 
       // First, try to get existing metrics for the date
@@ -64,6 +65,7 @@ export class ProductionMetricsService {
       if (selectError && selectError.code !== 'PGRST116') {
         console.error('Error selecting existing metrics:', selectError)
       }
+
 
       // Calculate new values by adding updates to existing values
       const newMetrics = {
@@ -87,6 +89,7 @@ export class ProductionMetricsService {
         batches_created: (existingMetrics?.batches_created || 0) + (updates.batches_created || 0),
       }
 
+
       // Upsert production_metrics for the date
       const { error: metricsError } = await supabase
         .from('production_metrics')
@@ -96,7 +99,7 @@ export class ProductionMetricsService {
         })
 
       if (metricsError) {
-        console.error('Failed to update production metrics:', metricsError)
+        console.error('❌ Failed to update production metrics:', metricsError)
         throw metricsError
       }
 
@@ -244,6 +247,7 @@ export class ProductionMetricsService {
    */
   async updateInitialGradeMetrics(grade: 'A' | 'B' | 'C', date: string = new Date().toISOString().split('T')[0]) {
     try {
+      
       if (!grade || !['A', 'B', 'C'].includes(grade)) {
         console.warn('Invalid grade provided:', grade)
         return {}
@@ -266,13 +270,14 @@ export class ProductionMetricsService {
           console.warn(`Unknown grade: ${grade}`)
       }
 
+
       // Update the metrics
       await this.updateMetrics(date, initialGradeUpdates)
 
       return initialGradeUpdates
 
     } catch (error) {
-      console.error('Error updating initial grade metrics:', error)
+      console.error('❌ Error updating initial grade metrics:', error)
       throw error
     }
   }
@@ -283,18 +288,15 @@ export class ProductionMetricsService {
    */
   async updateFailQCMetrics(date: string = new Date().toISOString().split('T')[0]) {
     try {
-      console.log('❌ ProductionMetricsService: Updating fail QC metrics for date:', date)
 
       const failQCUpdates = {
         fail_qc_count: 1
       }
 
-      console.log('📊 ProductionMetricsService: Fail QC updates calculated:', failQCUpdates)
 
       // Update the metrics
       await this.updateMetrics(date, failQCUpdates)
 
-      console.log('✅ ProductionMetricsService: Successfully updated fail QC metrics')
       return failQCUpdates
 
     } catch (error) {

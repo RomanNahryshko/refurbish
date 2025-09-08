@@ -43,7 +43,8 @@ const StatsGrid: React.FC<{
       <StatCard key={i} {...item} />
     ))}
   </div>
-);
+  );
+
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData, selectedDateRange }) => {
   // Dashboard data received
@@ -71,6 +72,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData, selectedDateR
   const devicesStatsWithPercentages = getDevicesStatsWithPercentages(realData.devicesStats);
 
   console.log(realData);
+  const totalDevices = realData.devicesStats.awaitingRepair + realData.devicesStats.inRepair + realData.devicesStats.finalQC + realData.devicesStats.graded + realData.devicesStats.importedDevices + realData.devicesStats.expectedDevices;
   return (
     <div className="space-y-6">
       {/* 1. Batch Intake Stats */}
@@ -227,7 +229,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData, selectedDateR
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
                       <div className="text-sm font-medium">Total</div>
-                      <div className="text-lg font-bold">{realData.devicesStats.expectedDevices}</div>
+                      <div className="text-lg font-bold">{totalDevices}</div>
                     </div>
                   </div>
                 </div>

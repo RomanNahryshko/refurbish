@@ -16,12 +16,14 @@ export async function requirePermission(
   tableName: string,
   action: 'create' | 'read' | 'update' | 'delete'
 ): Promise<NextResponse | null> {
+  
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  
   
   // Check if user is Supabase superadmin (service_role)
   // Supabase dashboard users often have role metadata
@@ -33,7 +35,9 @@ export async function requirePermission(
     return null // Superadmin has all permissions
   }
   
-  if (!(await checkPermission(user.id, tableName, action))) {
+  const hasPermission = await checkPermission(user.id, tableName, action)
+  
+  if (!hasPermission) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   

@@ -6,11 +6,12 @@ import { TestResultData, DeviceStatus } from '@/lib/types/business-types'
 import { ProductionMetricsService } from '@/lib/services/production-metrics-service'
 
 export async function POST(request: NextRequest) {
-  console.log('🚀 QC API: POST request received')
   
   // Check permission
   const permissionCheck = await requirePermission('qc_checks', 'create')
-  if (permissionCheck) return permissionCheck
+  if (permissionCheck) {
+    return permissionCheck
+  }
 
   try {
     const supabase = await createSupabaseServerClient()
@@ -154,26 +155,60 @@ export async function POST(request: NextRequest) {
       // Note: We don't fail the entire request if device update fails
     }
 
-        // Update production metrics for required repairs when initial QC fails
-    // This ensures repair metrics are updated for devices that need repairs
-    if (check_type === 'initial' && overall_result === 'fail' && required_repairs && Array.isArray(required_repairs) && required_repairs.length > 0) {
-      try {
-        const productionMetricsService = new ProductionMetricsService()
-        await productionMetricsService.updateRepairMetrics(required_repairs)
-      } catch (metricsError) {
-        console.error('Error updating production metrics for required repairs:', metricsError)
-        // Don't fail the entire request if metrics update fails
-      }
-    }
 
-    // Update production metrics for initial grade when initial QC has grade assigned
-    // This ensures initial grade metrics are updated regardless of overall result
-    if (check_type === 'initial' && grade_assigned && grade_assigned !== 'ungraded') {
+    // Update production metrics for initial QC
+    if (check_type === 'initial') {
       try {
         const productionMetricsService = new ProductionMetricsService()
-        await productionMetricsService.updateInitialGradeMetrics(grade_assigned as 'A' | 'B' | 'C')
+        
+        // Prepare updates for production metrics
+        const updates: any = {
+          devices_received: 1 // +1 new device
+        }
+        
+        // Add repair metrics if repairs are required
+        if (required_repairs && Array.isArray(required_repairs) && required_repairs.length > 0) {
+          required_repairs.forEach(repair => {
+            switch (repair) {
+              case 'housing_change':
+                updates.housing_changes = 1
+                break
+              case 'glass_change':
+                updates.glass_changes = 1
+                break
+              case 'battery_change':
+                updates.battery_changes = 1
+                break
+              case 'software_update':
+                updates.software_updates = 1
+                break
+              case 'other':
+                updates.other_repairs = 1
+                break
+            }
+          })
+        }
+        
+        // Add grade metrics if grade is assigned
+        if (grade_assigned && grade_assigned !== 'ungraded') {
+          switch (grade_assigned) {
+            case 'A':
+              updates.initial_grade_a_count = 1
+              break
+            case 'B':
+              updates.initial_grade_b_count = 1
+              break
+            case 'C':
+              updates.initial_grade_c_count = 1
+              break
+          }
+        }
+        
+        // Update all metrics at once
+        await productionMetricsService.updateMetrics(new Date().toISOString().split('T')[0], updates)
+        
       } catch (metricsError) {
-        console.error('Error updating production metrics for initial grade:', metricsError)
+        console.error('❌ Error updating production metrics for initial QC:', metricsError)
         // Don't fail the entire request if metrics update fails
       }
     }

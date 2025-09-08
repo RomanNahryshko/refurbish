@@ -58,6 +58,7 @@ export async function checkPermission(
   action: 'create' | 'read' | 'update' | 'delete'
 ): Promise<boolean> {
   try {
+    
     const supabase = await createSupabaseServerClient()
     
     if (!supabase) {
@@ -87,7 +88,7 @@ export async function checkPermission(
       .single()
     
     if (profileError || !userProfile) {
-      console.error('Error fetching user profile in checkPermission:', profileError)
+      console.error('❌ Error fetching user profile in checkPermission:', profileError)
       // If no profile exists but user is authenticated, check if they're a superadmin
       if (authUser && authUser.id === userId) {
         // Already checked above, so this user has no permissions
@@ -95,13 +96,14 @@ export async function checkPermission(
       return false
     }
     
+    
     // Special case: admin role has all permissions
     if (userProfile.role === 'admin') {
       return true
     }
     
     // Check if the role has this permission
-    const { data: permission } = await supabase
+    const { data: permission, error: permissionError } = await supabase
       .from('permissions')
       .select(`
         id,
@@ -112,8 +114,18 @@ export async function checkPermission(
       .eq('role_permissions.role', userProfile.role)
       .single()
     
+    if (permissionError) {
+      // Fall back to config-based permissions
+      const configPermissions = getRolePermissions(userProfile.role as UserRole)
+      const permissionString = `${tableName}:${action}` as PermissionString
+      const hasConfigPermission = configPermissions.includes(permissionString)
+      return hasConfigPermission
+    }
+    
     // If role has permission, return true
-    if (permission) return true
+    if (permission) {
+      return true
+    }
     
     // Check for user-specific permission overrides
     const { data: userPermission } = await supabase
@@ -128,9 +140,19 @@ export async function checkPermission(
       .eq('user_permissions.granted', true)
       .single()
     
-    return !!userPermission
+    const hasUserPermission = !!userPermission
+    
+    // If no database permission found, check config-based permissions
+    if (!hasUserPermission) {
+      const configPermissions = getRolePermissions(userProfile.role as UserRole)
+      const permissionString = `${tableName}:${action}` as PermissionString
+      const hasConfigPermission = configPermissions.includes(permissionString)
+      return hasConfigPermission
+    }
+    
+    return hasUserPermission
   } catch (error) {
-    console.error('Permission check error:', error)
+    console.error('❌ Permission check error:', error)
     return false // Fail closed - deny access on error
   }
 }

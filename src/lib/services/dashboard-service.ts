@@ -64,9 +64,9 @@ export interface DashboardMetrics {
 interface TechnicianLevelStats {
   availableTechnicians: number;
   activeJobs: number;
-  completedToday: number; // This now represents completed jobs in the selected period
+  completedToday: number;
   averagePerTech: number;
-  technicians: Array<{ name: string; completedToday: number }>; // This now represents completed jobs in the selected period
+  technicians: Array<{ id: string; name: string; completedToday: number }>;
 }
 
 const DEFAULT_PRODUCTION_METRICS = {
@@ -92,10 +92,8 @@ const DEFAULT_PRODUCTION_METRICS = {
 function normalizeDateRange(dateRange?: { from: Date; to: Date }) {
   if (!dateRange) return undefined;
   return {
-    // for "date" columns like metric_date (YYYY-MM-DD)
     metricFrom: dayjs(dateRange.from).format('YYYY-MM-DD'),
     metricTo: dayjs(dateRange.to).format('YYYY-MM-DD'),
-    // for timestamp columns like created_at / completed_at
     startISO: dayjs(dateRange.from).startOf('day').toISOString(),
     endISO: dayjs(dateRange.to).endOf('day').toISOString(),
   };
@@ -118,15 +116,15 @@ export class DashboardService {
         this.getProductionMetrics(dateRange),
         this.getBatchIntakeStats(dateRange),
         this.getTechnicianUtilization(dateRange),
-        this.getFinalQCCount(),
-        this.getInRepairCount(),
-        this.getAwaitingRepairCount(),
+        this.getFinalQCCount(dateRange),
+        this.getInRepairCount(dateRange),
+        this.getAwaitingRepairCount(dateRange),
         this.getCompletedRepairsStats(dateRange),
       ]);
 
       return {
         batchIntakeStats: {
-          batchesCreated: productionMetrics.batches_created,
+          batchesCreated: batchIntake.batchesCreated,
           expectedDevicesCount: batchIntake.expectedDevicesCount,
           importedDevicesCount: batchIntake.importedDevicesCount,
         },
@@ -179,7 +177,6 @@ export class DashboardService {
     }
   }
 
-  /** production_metrics: select fields, if dateRange is present — sum on server side through selection and reduce in JS */
   private async getProductionMetrics(dateRange?: { from: Date; to: Date }) {
     const fields = [
       'batches_created',
@@ -200,27 +197,16 @@ export class DashboardService {
       'initial_grade_b_count',
       'initial_grade_c_count',
     ];
-
     const range = normalizeDateRange(dateRange);
-
     let query = this.supabase
       .from('production_metrics')
       .select(fields.join(','))
       .order('metric_date', { ascending: false });
-
-    if (range) {
-      query = query.gte('metric_date', range.metricFrom).lte('metric_date', range.metricTo);
-    }
-
+    if (range) query = query.gte('metric_date', range.metricFrom).lte('metric_date', range.metricTo);
     const { data, error } = await query;
     if (error) throw error;
-
-    if (!data || data.length === 0) {
-      return { ...DEFAULT_PRODUCTION_METRICS };
-    }
-
+    if (!data || data.length === 0) return { ...DEFAULT_PRODUCTION_METRICS };
     if (range) {
-      // sum fields in JS — avoid PostgREST parser issues
       const summed = { ...DEFAULT_PRODUCTION_METRICS };
       for (const row of data) {
         for (const key of Object.keys(summed) as (keyof typeof summed)[]) {
@@ -229,97 +215,64 @@ export class DashboardService {
       }
       return summed;
     }
-
-    // without range — return the latest
     const latest = data[0];
-    // Convert to numbers
     const normalized: any = {};
-    for (const k of fields) {
-      normalized[k] = Number((latest as any)[k] || 0);
-    }
+    for (const k of fields) normalized[k] = Number((latest as any)[k] || 0);
     return normalized;
   }
 
-  /** batches + imported devices — safe queries, sum counts in JS */
   private async getBatchIntakeStats(dateRange?: { from: Date; to: Date }) {
     const range = normalizeDateRange(dateRange);
-
     const batchQuery = this.supabase
       .from('batches')
       .select('device_count, created_at')
       .is('deleted_at', null)
-      .range(0, 999999); // safe fetch; for very large data — replace with aggregation/VIEW/RPC
-
+      .range(0, 999999);
     if (range) batchQuery.gte('created_at', range.startISO).lte('created_at', range.endISO);
 
     const deviceCountQuery = this.supabase
       .from('devices')
       .select('id', { count: 'exact', head: true })
       .is('deleted_at', null);
-
     if (range) deviceCountQuery.gte('created_at', range.startISO).lte('created_at', range.endISO);
 
     const [{ data: batches, error: bErr }, { count: importedCount, error: dErr }] = await Promise.all([
       batchQuery,
       deviceCountQuery,
     ]);
-
     if (bErr) throw bErr;
     if (dErr) throw dErr;
 
-    const batchesCreated = batches?.length || 0;
-    const expectedDevicesCount =
-      batches?.reduce((sum: number, b: { device_count?: number }) => sum + Number(b.device_count || 0), 0) || 0;
-
     return {
-      batchesCreated,
-      expectedDevicesCount,
+      batchesCreated: batches?.length || 0,
+      expectedDevicesCount:
+        batches?.reduce((sum: number, b: { device_count?: number }) => sum + Number(b.device_count || 0), 0) || 0,
       importedDevicesCount: Number(importedCount || 0),
     };
   }
 
-  private async getTechnicianUtilization(dateRange?: { from: Date; to: Date }): Promise<Record<'L1' | 'L2' | 'L3', TechnicianLevelStats>> {
+  private async getTechnicianUtilization(dateRange?: { from: Date; to: Date }) {
     const { data: technicians, error: techErr } = await this.supabase
       .from('user_profiles')
       .select('id, full_name, technician_level')
       .eq('role', 'technician')
       .is('deleted_at', null);
-
     if (techErr) throw techErr;
 
     const techs = technicians || [];
     const technicianIds = techs.map((t: any) => t.id).filter(Boolean);
-    
-    // if no technicians — return empty structure
+
     const grouped: Record<'L1' | 'L2' | 'L3', TechnicianLevelStats> = {
-      L1: {
-        availableTechnicians: 0,
-        activeJobs: 0,
-        completedToday: 0, // Completed jobs in selected period (or today if no range)
-        averagePerTech: 0,
-        technicians: [],
-      },
-      L2: {
-        availableTechnicians: 0,
-        activeJobs: 0,
-        completedToday: 0, // Completed jobs in selected period (or today if no range)
-        averagePerTech: 0,
-        technicians: [],
-      },
-      L3: {
-        availableTechnicians: 0,
-        activeJobs: 0,
-        completedToday: 0, // Completed jobs in selected period (or today if no range)
-        averagePerTech: 0,
-        technicians: [],
-      },
+      L1: { availableTechnicians: 0, activeJobs: 0, completedToday: 0, averagePerTech: 0, technicians: [] },
+      L2: { availableTechnicians: 0, activeJobs: 0, completedToday: 0, averagePerTech: 0, technicians: [] },
+      L3: { availableTechnicians: 0, activeJobs: 0, completedToday: 0, averagePerTech: 0, technicians: [] },
     };
 
     if (technicianIds.length === 0) return grouped;
 
     const range = normalizeDateRange(dateRange);
 
-    // Active jobs (current snapshot) — no date filter
+    // Активные работы (без фильтра по дате)
     const activeJobsPromise = this.supabase
       .from('repair_jobs')
       .select('id, status, assigned_to')
@@ -336,153 +289,119 @@ export class DashboardService {
       .is('deleted_at', null);
 
     if (range) {
-      completedJobsQuery = completedJobsQuery.gte('completed_at', range.startISO).lte('completed_at', range.endISO);
+      completedJobsQuery = completedJobsQuery
+        .gte('completed_at', range.startISO)
+        .lte('completed_at', range.endISO);
     } else {
       const startOfTodayISO = dayjs().startOf('day').toISOString();
       const endOfTodayISO = dayjs().endOf('day').toISOString();
-      completedJobsQuery = completedJobsQuery.gte('completed_at', startOfTodayISO).lte('completed_at', endOfTodayISO);
+      completedJobsQuery = completedJobsQuery
+        .gte('completed_at', startOfTodayISO)
+        .lte('completed_at', endOfTodayISO);
     }
 
-    const [{ data: activeJobs, error: activeErr }, { data: completedJobs, error: completedErr }] = await Promise.all([
-      activeJobsPromise,
-      completedJobsQuery,
-    ]);
+    const [{ data: activeJobs, error: activeErr }, { data: completedJobs, error: completedErr }] =
+      await Promise.all([activeJobsPromise, completedJobsQuery]);
 
     if (activeErr) throw activeErr;
     if (completedErr) throw completedErr;
-
-    // prepare quick access to profiles
+    // quick access to profiles
     const profilesById: Record<string, { full_name?: string; technician_level?: string }> = {};
-    for (const t of techs) profilesById[t.id] = { full_name: t.full_name, technician_level: t.technician_level };
-
-    // populate statistics by levels
     for (const t of techs) {
-      // Ensure technician_level exists and is valid
-      let level: 'L1' | 'L2' | 'L3' = 'L1';
-      if (t.technician_level === 'L2' || t.technician_level === 'L3') {
-        level = t.technician_level;
-      }
-      
-      // Add technician to ONLY ONE level
-      grouped[level].technicians.push({ name: t.full_name || 'Unknown', completedToday: 0 }); // completedToday will be updated based on selected period
-      grouped[level].availableTechnicians++;
+      profilesById[t.id] = { full_name: t.full_name, technician_level: t.technician_level };
     }
 
-    // technician index in array for quick increment
-    const techIndexByName: Record<string, { level: 'L1' | 'L2' | 'L3'; idx: number }> = {};
-    (['L1', 'L2', 'L3'] as const).forEach(level => {
-      grouped[level].technicians.forEach((tt, idx) => {
-        techIndexByName[tt.name] = { level, idx };
+    // add all technicians to the list (completedToday = 0)
+    for (const t of techs) {
+      const level: 'L1' | 'L2' | 'L3' = t.technician_level as any || 'L1';
+      grouped[level].technicians.push({
+        id: t.id,
+        name: t.full_name || 'Unknown',
+        completedToday: 0,
       });
-    });
+    }
 
-    // Count active jobs
+    // count active jobs
     for (const job of activeJobs || []) {
       const techId = (job as any).assigned_to;
       const profile = profilesById[techId];
       if (!profile) continue;
-
-      let level: 'L1' | 'L2' | 'L3' = 'L1';
-      if (profile.technician_level === 'L2' || profile.technician_level === 'L3') level = profile.technician_level;
+      const level: 'L1' | 'L2' | 'L3' = profile.technician_level as any || 'L1';
       grouped[level].activeJobs++;
     }
 
-    // Count completed jobs within period
+    // count completed jobs
     for (const job of completedJobs || []) {
       const techId = (job as any).assigned_to;
       const profile = profilesById[techId];
       if (!profile) continue;
-
-      let level: 'L1' | 'L2' | 'L3' = 'L1';
-      if (profile.technician_level === 'L2' || profile.technician_level === 'L3') level = profile.technician_level;
-
+      const level: 'L1' | 'L2' | 'L3' = profile.technician_level as any || 'L1';
       const group = grouped[level];
       group.completedToday++;
-
-      const techName = profile.full_name || 'Unknown';
-      const found = group.technicians.find(t => t.name === techName);
+      const found = group.technicians.find(t => t.id === techId);
       if (found) found.completedToday++;
     }
 
-    // Calculate average jobs per technician for the selected period
+    // filter: keep only technicians who actually worked in the period
     (['L1', 'L2', 'L3'] as const).forEach(level => {
       const g = grouped[level];
+      g.technicians = g.technicians.filter(t => t.completedToday > 0);
+      g.availableTechnicians = g.technicians.length;
       g.averagePerTech = g.availableTechnicians > 0 ? Math.round(g.completedToday / g.availableTechnicians) : 0;
     });
 
-    // Final grouped data ready with period-based statistics
-    
     return grouped;
   }
 
-  private async getFinalQCCount() {
-    const res = await this.supabase
-      .from('devices')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'final_qc')
-      .is('deleted_at', null);
+  private async getFinalQCCount(dateRange?: { from: Date; to: Date }) {
+    const range = normalizeDateRange(dateRange);
+    let query = this.supabase.from('devices').select('id', { count: 'exact', head: true }).eq('status', 'final_qc').is('deleted_at', null);
+    if (range) query = query.gte('updated_at', range.startISO).lte('updated_at', range.endISO);
+    const res = await query;
     if (res.error) throw res.error;
     return Number(res.count || 0);
   }
 
-  private async getInRepairCount() {
-    const { data, error } = await this.supabase
+  private async getInRepairCount(dateRange?: { from: Date; to: Date }) {
+    const range = normalizeDateRange(dateRange);
+    let query = this.supabase
       .from('repair_jobs')
       .select('device_id')
       .in('status', ['pending', 'in_progress'])
       .is('deleted_at', null);
-
+    if (range) query = query.gte('updated_at', range.startISO).lte('updated_at', range.endISO);
+    const { data, error } = await query;
     if (error) throw error;
-    if (!data) return 0;
-    return new Set(data.map((r: any) => r.device_id)).size;
+    return data ? new Set(data.map((r: any) => r.device_id)).size : 0;
   }
 
-  private async getAwaitingRepairCount() {
-    const res = await this.supabase
-      .from('devices')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'awaiting_repair')
-      .is('deleted_at', null);
+  private async getAwaitingRepairCount(dateRange?: { from: Date; to: Date }) {
+    const range = normalizeDateRange(dateRange);
+    let query = this.supabase.from('devices').select('id', { count: 'exact', head: true }).eq('status', 'awaiting_repair').is('deleted_at', null);
+    if (range) query = query.gte('updated_at', range.startISO).lte('updated_at', range.endISO);
+    const res = await query;
     if (res.error) throw res.error;
     return Number(res.count || 0);
   }
 
-  /** Count completed repairs by repair_type (filter by completed_at for dateRange) */
   private async getCompletedRepairsStats(dateRange?: { from: Date; to: Date }) {
     const range = normalizeDateRange(dateRange);
-
-    let query = this.supabase
-      .from('repair_jobs')
-      .select('repair_type, completed_at')
-      .eq('status', 'completed')
-      .is('deleted_at', null);
-
+    let query = this.supabase.from('repair_jobs').select('repair_type, completed_at').eq('status', 'completed').is('deleted_at', null);
     if (range) query = query.gte('completed_at', range.startISO).lte('completed_at', range.endISO);
-
     const { data, error } = await query;
     if (error) throw error;
-
     const stats = { housing: 0, glass: 0, battery: 0, software: 0, other: 0 };
-    (data || []).forEach((r: { repair_type: string }) => {
+    (data || []).forEach((r: any) => {
       switch (r.repair_type) {
-        case 'housing_change':
-          stats.housing++;
-          break;
-        case 'glass_change':
-          stats.glass++;
-          break;
-        case 'battery_change':
-          stats.battery++;
-          break;
-        case 'software_update':
-          stats.software++;
-          break;
+        case 'housing_change': stats.housing++; break;
+        case 'glass_change': stats.glass++; break;
+        case 'battery_change': stats.battery++; break;
+        case 'software_update': stats.software++; break;
         case 'other':
-        default:
-          stats.other++;
-          break;
+        default: stats.other++; break;
       }
     });
     return stats;
   }
 }
+
