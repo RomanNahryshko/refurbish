@@ -13,9 +13,10 @@ import { UserFilters, UserWithAuth } from '@/lib/api/users'
 
 interface UserListProps {
   currentUserId?: string
+  currentUserRole?: string
 }
 
-export function UserList({ currentUserId }: UserListProps) {
+export function UserList({ currentUserId, currentUserRole }: UserListProps) {
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -30,6 +31,9 @@ export function UserList({ currentUserId }: UserListProps) {
   const { data: users, isLoading, error, refetch } = useUsers(
     Object.keys(filters).length > 0 ? filters as UserFilters : undefined
   )
+
+  // Filter out current user from the list
+  const filteredUsers = users?.filter(user => user.id !== currentUserId) || []
 
   const handleRefresh = () => {
     refetch()
@@ -92,9 +96,12 @@ export function UserList({ currentUserId }: UserListProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
+                  {currentUserRole === 'admin' && (
+                    <SelectItem value="general_manager">General Manager</SelectItem>
+                  )}
                   <SelectItem value="ops_manager">Operations Manager</SelectItem>
-                  <SelectItem value="technician">Technician</SelectItem>
                   <SelectItem value="qc_controller">QC Controller</SelectItem>
+                  <SelectItem value="technician">Technician</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -130,7 +137,7 @@ export function UserList({ currentUserId }: UserListProps) {
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {users?.length || 0} user{users?.length === 1 ? '' : 's'} found
+          {filteredUsers.length} user{filteredUsers.length === 1 ? '' : 's'} found
         </p>
         <Button onClick={handleRefresh} variant="outline" size="sm">
           Refresh
@@ -146,7 +153,7 @@ export function UserList({ currentUserId }: UserListProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!users || users.length === 0 ? (
+          {filteredUsers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <p className="text-lg font-medium">No users found</p>
               <p className="text-sm mt-2">
@@ -173,7 +180,7 @@ export function UserList({ currentUserId }: UserListProps) {
                   </tr>
                 </thead>
                 <tbody>
-                                      {users.map((user: UserWithAuth) => (
+                  {filteredUsers.map((user: UserWithAuth) => (
                     <tr key={user.id} className="border-b hover:bg-accent/50">
                       <td className="p-3">
                         <div>

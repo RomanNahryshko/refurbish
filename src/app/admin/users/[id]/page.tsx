@@ -16,6 +16,7 @@ export default function EditUserPage({ params }: EditUserPageProps) {
   const { id } = use(params)
   const { user } = useUser()
   const currentUserId = user?.id || null
+  const currentUserRole = user?.role || null
 
   return (
     <div className="container mx-auto p-6">
@@ -29,7 +30,11 @@ export default function EditUserPage({ params }: EditUserPageProps) {
         </div>
 
         {/* Edit User Form */}
-        <EditUserForm userId={id} currentUserId={currentUserId || undefined} />
+        <EditUserForm 
+          userId={id} 
+          currentUserId={currentUserId || undefined} 
+          currentUserRole={currentUserRole || undefined}
+        />
 
         {/* Navigation */}
         <div className="flex gap-4">

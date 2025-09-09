@@ -8,6 +8,7 @@ import { useUser } from '@/lib/hooks/use-user'
 export default function UsersPage() {
   const { user } = useUser()
   const currentUserId = user?.id || null
+  const currentUserRole = user?.role || null
 
   return (
     <div className="container mx-auto p-6">
@@ -26,7 +27,10 @@ export default function UsersPage() {
         </div>
 
         {/* User List Component */}
-        <UserList currentUserId={currentUserId || undefined} />
+        <UserList 
+          currentUserId={currentUserId || undefined} 
+          currentUserRole={currentUserRole || undefined}
+        />
 
         {/* Navigation */}
         <div className="flex gap-4">

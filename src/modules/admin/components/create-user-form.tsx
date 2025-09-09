@@ -35,10 +35,11 @@ type CreateUserFormData = z.infer<typeof createUserSchema>
 
 interface CreateUserFormProps {
   currentUserId?: string
+  currentUserRole?: string
   onSuccess?: () => void
 }
 
-export function CreateUserForm({ currentUserId, onSuccess }: CreateUserFormProps) {
+export function CreateUserForm({ currentUserId, currentUserRole, onSuccess }: CreateUserFormProps) {
   const router = useRouter()
   const createUserMutation = useCreateUser()
   const [showPassword, setShowPassword] = useState(false)
@@ -200,6 +201,7 @@ export function CreateUserForm({ currentUserId, onSuccess }: CreateUserFormProps
                     <RoleSelector 
                       value={field.value} 
                       onValueChange={field.onChange}
+                      currentUserRole={currentUserRole}
                     />
                   </FormControl>
                   <FormDescription>

@@ -9,6 +9,7 @@ import { useSupabaseClient } from '@/lib/stores/supabase-store'
 
 export default function CreateUserPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const supabase = useSupabaseClient()
 
@@ -17,6 +18,18 @@ export default function CreateUserPage() {
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser()
         setCurrentUserId(user?.id || null)
+        
+        if (user) {
+          // Get user role from profile
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+          
+          setCurrentUserRole(profile?.role || null)
+        }
+        
         setLoading(false)
       }
     }
@@ -47,7 +60,10 @@ export default function CreateUserPage() {
         </div>
 
         {/* Create User Form */}
-        <CreateUserForm currentUserId={currentUserId || undefined} />
+        <CreateUserForm 
+          currentUserId={currentUserId || undefined} 
+          currentUserRole={currentUserRole || undefined}
+        />
 
         {/* Navigation */}
         <div className="flex gap-4">

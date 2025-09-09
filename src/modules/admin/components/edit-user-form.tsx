@@ -39,9 +39,10 @@ type EditUserFormData = z.infer<typeof editUserSchema>
 interface EditUserFormProps {
   userId: string
   currentUserId?: string
+  currentUserRole?: string
 }
 
-export function EditUserForm({ userId, currentUserId }: EditUserFormProps) {
+export function EditUserForm({ userId, currentUserId, currentUserRole }: EditUserFormProps) {
   const router = useRouter()
   const { data: user, isLoading, error, refetch } = useUser(userId)
   // Audit logs removed - not in MVP scope
@@ -51,9 +52,9 @@ export function EditUserForm({ userId, currentUserId }: EditUserFormProps) {
   const form = useForm<EditUserFormData>({
     resolver: zodResolver(editUserSchema),
     defaultValues: {
-      full_name: '',
-      role: undefined,
-      technician_level: undefined,
+      full_name: user?.full_name || '',
+      role: user?.role as 'admin' | 'general_manager' | 'ops_manager' | 'qc_controller' | 'technician' | undefined,
+      technician_level: user?.technician_level as 'L1' | 'L2' | 'L3' | undefined,
     },
   })
 
@@ -244,6 +245,7 @@ export function EditUserForm({ userId, currentUserId }: EditUserFormProps) {
                           <RoleSelector 
                             value={field.value} 
                             onValueChange={field.onChange}
+                            currentUserRole={currentUserRole}
                           />
                         </FormControl>
                         <FormDescription>

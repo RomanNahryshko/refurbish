@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 interface RoleSelectorProps {
   value?: string
   onValueChange: (value: string) => void
+  currentUserRole?: string
 }
 
 interface RoleBadgeProps {
@@ -28,16 +29,32 @@ const roleColors: Record<string, string> = {
   technician: 'bg-purple-100 text-purple-800'
 }
 
-export function RoleSelector({ value, onValueChange }: RoleSelectorProps) {
+export function RoleSelector({ value, onValueChange, currentUserRole }: RoleSelectorProps) {
+  // Only admin can create General Manager
+  const canCreateGeneralManager = currentUserRole === 'admin'
+  // Show General Manager if user already has this role OR if current user is admin
+  const shouldShowGeneralManager = canCreateGeneralManager || value === 'general_manager'
+  
+  
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select key={value} value={value} onValueChange={onValueChange}>
       <SelectTrigger>
-        <SelectValue placeholder="Select a role" />
+        <SelectValue placeholder="Select a role">
+          {value && roleLabels[value] ? roleLabels[value] : 'Select a role'}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
+        {shouldShowGeneralManager && (
+          <SelectItem 
+            value="general_manager"
+            disabled={!canCreateGeneralManager && value !== 'general_manager'}
+          >
+            General Manager{!canCreateGeneralManager && value !== 'general_manager' ? ' (Admin only)' : ''}
+          </SelectItem>
+        )}
+        <SelectItem value="ops_manager">Operations Manager</SelectItem>
         <SelectItem value="qc_controller">QC Controller</SelectItem>
         <SelectItem value="technician">Technician</SelectItem>
-        <SelectItem value="ops_manager">Operations Manager</SelectItem>
       </SelectContent>
     </Select>
   )
