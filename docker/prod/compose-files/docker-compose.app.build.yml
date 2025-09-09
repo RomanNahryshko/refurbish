@@ -1,0 +1,16 @@
+version: "3.4"
+
+######################################### Global Environment Variables
+
+##############################################################################
+#                           SERVICES                                         #
+##############################################################################
+
+services:
+######################################### Required Services
+
+  app:
+    build:
+      context: ../../..
+      dockerfile: ./docker/${DOCKER_ENV_TYPE}/nodejs/Dockerfile
+    image: ${HUB_REPOSITORY_DOMAIN}${COMPOSE_PROJECT_NAME}-app:${BUILD_NUMBER:-latest}

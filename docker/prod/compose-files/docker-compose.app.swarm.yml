@@ -1,0 +1,45 @@
+version: "3.8"
+######################################### Networks and global extensions
+#x-project-volumes: &project-volumes
+#    - /data/fileserver/${PROJECT_NAME_PREFIX}/frontend-logs:/var/log/nginx
+x-replicated: &replicated-service
+  command: ["node", "server.js"]
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "4"
+  deploy:
+    replicas: ${REPLICAS_COUNT}
+    mode: replicated
+    endpoint_mode: dnsrr
+    update_config:
+      parallelism: 1
+      delay: 7s
+      order: start-first
+    restart_policy:
+      condition: any
+      delay: 5s
+      max_attempts: 3
+      window: 120s
+networks:
+  default:
+    external:
+      name: ${NETWORK_NAME}
+##############################################################################
+#                           SERVICES                                         #
+##############################################################################
+services:
+######################################### Required Services
+  app:
+    <<: *replicated-service
+    image: ${HUB_REPOSITORY_DOMAIN}${COMPOSE_PROJECT_NAME}-app:${BUILD_NUMBER:-latest}
+    environment:
+      VIRTUAL_HOST: ${VIRTUAL_HOST}
+      VIRTUAL_PORT: ${VIRTUAL_PORT:-3000}
+      LETSENCRYPT_HOST: ${VIRTUAL_HOST}
+      LETSENCRYPT_EMAIL: shtalinberg@attractgroup.com
+      TASK_SLOT: "{{.Task.Slot}}"
+      NODE_ENV: production
+      PORT: ${VIRTUAL_PORT:-3000}
+      HOST: "0.0.0.0"
