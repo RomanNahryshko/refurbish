@@ -2,23 +2,25 @@
 
 # dependencies
 /node_modules
-/.pnp
+/package-lock.json
+
+/app/.pnp
 .pnp.*
 .yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
+/app/.yarn/patches
+/app/.yarn/plugins
+/app/.yarn/releases
 !.yarn/versions
 
 # testing
-/coverage
+/app/coverage
 
 # next.js
 /.next/
-/out/
+/app/out/
 
 # production
-/build
+/app/build
 
 # misc
 .DS_Store
