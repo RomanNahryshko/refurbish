@@ -69,6 +69,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData, selectedDateR
     }));
   };
 
+  /**
+   * Calculate average jobs per technician.
+   */
+  const calculateAverageJobsPerTech = (technicianUtilization: DashboardMetrics['repairStats']['technicianUtilization']) => {
+    const totalTechs = Object.values(technicianUtilization).reduce(
+      (sum, level) => sum + level.availableTechnicians,
+      0
+    );
+    const totalCompleted = Object.values(technicianUtilization).reduce(
+      (sum, level) => sum + level.completedToday,
+      0
+    );
+    return totalTechs > 0 ? (totalCompleted / totalTechs).toFixed(2) : 0;
+  };
+
   const devicesStatsWithPercentages = getDevicesStatsWithPercentages(realData.devicesStats);
 
   console.log(realData);
@@ -317,17 +332,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData, selectedDateR
             <StatCard
               icon="📊"
               label="Avg Jobs/Tech"
-              value={(() => {
-                const totalTechs = Object.values(realData.repairStats.technicianUtilization).reduce(
-                  (sum, level) => sum + level.availableTechnicians,
-                  0
-                );
-                const totalCompleted = Object.values(realData.repairStats.technicianUtilization).reduce(
-                  (sum, level) => sum + level.completedToday,
-                  0
-                );
-                return totalTechs > 0 ? totalCompleted / totalTechs : 0;
-              })()}
+              value={calculateAverageJobsPerTech(realData.repairStats.technicianUtilization)}
             />
           </div>
         </div>
