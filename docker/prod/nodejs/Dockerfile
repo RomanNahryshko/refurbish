@@ -28,7 +28,6 @@ ENV HOST=0.0.0.0
 
 # Copy the built application from the previous stage
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
 # Create cache directory and set permissions
