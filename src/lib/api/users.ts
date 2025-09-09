@@ -90,9 +90,7 @@ export class UsersAPI {
       if (filters?.status) {
         query = query.eq('status', filters.status)
       }
-      if (filters?.search) {
-        query = query.ilike('full_name', `%${filters.search}%`)
-      }
+      // Note: We don't apply search filter here because we need to search both name and email
 
       const { data: profiles, error: profilesError } = await query
 

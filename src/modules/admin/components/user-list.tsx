@@ -47,9 +47,88 @@ export function UserList({ currentUserId, currentUserRole }: UserListProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <LoadingSpinner size="md" />
-        <span className="ml-2">Loading users...</span>
+      <div className="space-y-6">
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Search & Filter</CardTitle>
+            <CardDescription>
+              Find users by name, email, role or status
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-4">
+              {/* Search */}
+              <div>
+                <Input
+                  placeholder="Search by name or email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Role Filter */}
+              <div>
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    {currentUserRole === 'admin' && (
+                      <SelectItem value="general_manager">General Manager</SelectItem>
+                    )}
+                    <SelectItem value="ops_manager">Operations Manager</SelectItem>
+                    <SelectItem value="qc_controller">QC Controller</SelectItem>
+                    <SelectItem value="technician">Technician</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="disabled">Disabled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Clear Filters */}
+              <div>
+                <Button 
+                  variant="outline" 
+                  onClick={clearFilters}
+                  className="w-full"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Loading Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Users</CardTitle>
+            <CardDescription>
+              Manage user accounts, roles and permissions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center p-8">
+              <LoadingSpinner size="md" />
+              <span className="ml-2">Loading users...</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -134,15 +213,6 @@ export function UserList({ currentUserId, currentUserRole }: UserListProps) {
         </CardContent>
       </Card>
 
-      {/* Results Summary */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {filteredUsers.length} user{filteredUsers.length === 1 ? '' : 's'} found
-        </p>
-        <Button onClick={handleRefresh} variant="outline" size="sm">
-          Refresh
-        </Button>
-      </div>
 
       {/* Users Table */}
       <Card>
