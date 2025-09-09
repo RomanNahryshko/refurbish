@@ -2,14 +2,7 @@
 
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { useSupabaseClient } from '@/lib/stores/supabase-store'
-
-interface DrPhoneData {
-  imei: string
-  model: string
-  brand: string
-  serialNumber: string
-  faults: string
-}
+import { DrPhoneData } from '@/lib/types/business-types'
 
 interface ExistingDevice {
   id: string
@@ -128,7 +121,7 @@ export function useFilterDevicesByExisting(devices: DrPhoneData[]) {
 
 
     const cleanedDevices = devices.map((device) => {
-      const cleanedIMEI = device.imei?.toString()?.trim() || ''
+      const cleanedIMEI = String(device.imei || '').trim()
       
       return {
         ...device,
@@ -175,7 +168,7 @@ export function useCompletedQCByDevices(devices: DrPhoneData[], createdDevices: 
     devices.forEach((device) => {
       const createdDevice = createdDevices.find((d) => d.imei === device.imei)
       if (createdDevice?.id && completedQC[createdDevice.id]?.length > 0) {
-        completedSet.add(device.imei)
+        completedSet.add(String(device.imei))
       }
     })
 

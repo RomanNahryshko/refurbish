@@ -16,7 +16,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // Removed: Direct Supabase import - using hooks instead
 import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
 import { REPAIR_TYPE_MAP } from '@/lib/constants';
-import { LegacyRepairType, RepairType } from '@/lib/types/business-types';
+import { LegacyRepairType, RepairType, DrPhoneData } from '@/lib/types/business-types';
 import {
   useFilterDevicesByExisting,
   useCompletedQCByDevices,
@@ -27,14 +27,7 @@ import { ProductionMetricsClientService } from '@/lib/services/production-metric
 import { useSupabaseClient } from '@/lib/stores/supabase-store';
 
 
-// Mock Dr. Phone data format
-interface DrPhoneData {
-  imei: string
-  model: string
-  brand: string
-  serialNumber: string
-  faults: string
-}
+// Using DrPhoneData from business types
 
 // Type guard function to check if a string is a valid legacy repair type
 function isLegacyRepairType(value: string): value is LegacyRepairType {
@@ -105,12 +98,15 @@ export default function ImportDrPhonePage() {
     
       
       return {
-        imei,
-        brand,
-        model,
-        serialNumber,
-        faults
-      }
+        imei: String(imei),
+        device_info: {
+          brand: String(brand),
+          model: String(model)
+        },
+        serialNumber: String(serialNumber),
+        faults: String(faults),
+        notes: `Imported from Dr. Phone Excel file`
+      } as DrPhoneData
     })
     
     
@@ -140,7 +136,7 @@ export default function ImportDrPhonePage() {
       setIsCreatingDevice(true)
       
       // Validate device data before proceeding
-      if (!deviceData?.imei || deviceData.imei.trim() === '') {
+      if (!deviceData?.imei || String(deviceData.imei).trim() === '') {
         throw new Error('Device IMEI is missing. Cannot create device.')
       }
       
@@ -149,12 +145,12 @@ export default function ImportDrPhonePage() {
       // Create device with status 'received' (according to schema)
       const deviceToCreate = {
         batch_id: batchId,
-        imei: deviceData.imei,
-        brand: deviceData.brand,
-        model: deviceData.model,
-        serial_number: deviceData.serialNumber,
+        imei: String(deviceData.imei),
+        brand: deviceData.device_info?.brand || '',
+        model: deviceData.device_info?.model || '',
+        serial_number: String(deviceData.serialNumber),
         dr_phone_data: {
-          faults: deviceData.faults,
+          faults: String(deviceData.faults),
           original_data: deviceData,
           required_repairs: selectedRepairs,
           other_repair_description: otherDescription
@@ -232,7 +228,7 @@ export default function ImportDrPhonePage() {
         try {
           // Device already exists, try to find it using the hook
           const existingDevice = await findExistingDevice.mutateAsync({
-            imei: deviceData.imei,
+            imei: String(deviceData.imei),
             batchId: batchId
           })
 
@@ -240,7 +236,7 @@ export default function ImportDrPhonePage() {
             // Add to createdDevices if not already there
             setCreatedDevices(prev => {
               if (!prev.find(d => d.id === existingDevice.id)) {
-                return [...prev, { id: existingDevice.id, imei: deviceData.imei }]
+                return [...prev, { id: existingDevice.id, imei: String(deviceData.imei) }]
               }
               return prev
             })
@@ -375,7 +371,7 @@ export default function ImportDrPhonePage() {
     if (completedIMEIs.size > 0 && hookFilteredDevices.length > 0) {
       const completedIndices = new Set<number>()
       hookFilteredDevices.forEach((device, index) => {
-        if (completedIMEIs.has(device.imei)) {
+        if (completedIMEIs.has(String(device.imei))) {
           completedIndices.add(index)
         }
       })
@@ -487,24 +483,12 @@ export default function ImportDrPhonePage() {
 
   // Removed: Unused navigation functions
 
-  // Callback when QC is actually completed (called from InitialQCDeviceCard)
-  const handleQCCompleted = (deviceIndex: number) => {
-    console.log('🎉 handleQCCompleted called for device index:', deviceIndex)
-    
-    // Get device IMEI from the original list
-    const deviceImei = hookFilteredDevices[deviceIndex]?.imei || 'Unknown'
-    toast.success(`Initial QC completed for device ${deviceImei}`)
-  }
 
   // Callback when data is saved to table
   const handleSaveToTable = (_data: unknown) => {
     // Здесь можно добавить дополнительную логику если нужно
   }
 
-  // Callback when all operations are complete
-  const handleAllOperationsComplete = (deviceIndex: number) => {
-    handleQCCompleted(deviceIndex)
-  }
 
   // Show loading state
   if (batchLoading) {
@@ -722,10 +706,9 @@ export default function ImportDrPhonePage() {
                         onCompleteQCWithDevice={(deviceData, deviceIndex) => handleCompleteDeviceQC(deviceIndex, deviceData)}
                         isRepairSectionExpanded={expandedRepairSections[_index] || false}
                         onRepairSectionToggle={() => handleRepairSectionToggle(_index)}
-                        qcApproach={deviceQcApproaches[_index] || ''}
-                        onQcApproachChange={(approach) => handleQcApproachChange(_index, approach)}
+                        qcApproach={deviceQcApproaches[_index] || 'repairs'}
+                        onQcApproachChange={(approach) => handleQcApproachChange(_index, approach || 'repairs')}
                         onSaveToTable={handleSaveToTable}
-                        onAllOperationsComplete={() => handleAllOperationsComplete(_index)}
                       />
                     )
                   }
@@ -745,10 +728,9 @@ export default function ImportDrPhonePage() {
                       onCompleteQCWithDevice={(deviceData, deviceIndex) => handleCompleteDeviceQC(deviceIndex, deviceData)}
                       isRepairSectionExpanded={expandedRepairSections[_index] || false}
                       onRepairSectionToggle={() => handleRepairSectionToggle(_index)}
-                      qcApproach={deviceQcApproaches[_index] || ''}
-                      onQcApproachChange={(approach) => handleQcApproachChange(_index, approach)}
+                      qcApproach={deviceQcApproaches[_index] || 'repairs'}
+                      onQcApproachChange={(approach) => handleQcApproachChange(_index, approach || 'repairs')}
                       onSaveToTable={handleSaveToTable}
-                      onAllOperationsComplete={() => handleAllOperationsComplete(_index)}
                     />
                   )
                 })
