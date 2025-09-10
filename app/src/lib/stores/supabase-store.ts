@@ -36,7 +36,7 @@ export const useSupabaseStore = create<SupabaseStore>((set, get) => ({
           console.log('✅ SupabaseStore: Session retrieved:', !!session?.user)
         }
         set({ user: session?.user ?? null })
-      }).catch((error) => {
+      }).catch((error: any) => {
         console.error('❌ SupabaseStore: Session fetch failed:', error)
       })
 
