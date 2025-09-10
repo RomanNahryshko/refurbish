@@ -18,7 +18,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   if (isAuthPage) {
     // Auth pages: no header/footer, full screen
     return (
-      <div className="h-screen w-screen overflow-hidden">
+      <div className="h-screen w-screen overflow-x-hidden">
         {children}
       </div>
     )
