@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import { DashboardService, DashboardMetrics } from '@/lib/services/dashboard-service'
-import { createSupabaseClient } from '@/lib/supabase/client'
-import { DateRange } from 'react-day-picker'
+import { useState, useEffect } from 'react';
+import { DashboardService, DashboardMetrics } from '@/lib/services/dashboard-service';
+import { createSupabaseClient } from '@/lib/supabase/client';
+import { DateRange } from 'react-day-picker';
 
 interface UseDashboardMetricsReturn {
   data: DashboardMetrics | null;
@@ -22,9 +22,11 @@ export function useDashboardMetrics(dateRange?: DateRange): UseDashboardMetricsR
 
       const supabase = createSupabaseClient();
       if (!supabase) {
-        throw new Error('Failed to initialize Supabase client');
+        console.error('❌ Dashboard: Supabase client is null');
+        throw new Error('Failed to initialize Supabase client - check environment variables');
       }
 
+      console.log('✅ Dashboard: Supabase client initialized, fetching metrics...');
       const dashboardService = new DashboardService(supabase);
       
       // Convert DateRange to the format expected by the service
@@ -37,9 +39,11 @@ export function useDashboardMetrics(dateRange?: DateRange): UseDashboardMetricsR
       }
       
       const metrics = await dashboardService.getDashboardMetrics(serviceDateRange);
+      console.log('✅ Dashboard: Metrics fetched successfully', metrics);
       
       setData(metrics);
     } catch (err) {
+      console.error('❌ Dashboard: Error fetching metrics:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch dashboard metrics';
       setError(errorMessage);
     } finally {

@@ -19,7 +19,13 @@ export const hasValidSupabaseConfig =
   !supabaseUrl.includes('your-project-ref')
 
 if (!hasValidSupabaseConfig) {
-  // Supabase configuration is missing or invalid
+  console.error('❌ Supabase Config: Invalid configuration detected')
+  console.error('❌ Supabase Config: URL:', supabaseUrl)
+  console.error('❌ Supabase Config: URL valid:', isValidSupabaseUrl(supabaseUrl))
+  console.error('❌ Supabase Config: Key length:', supabaseAnonKey.length)
+  console.error('❌ Supabase Config: Contains placeholder:', supabaseUrl.includes('your-project-ref'))
+} else {
+  console.log('✅ Supabase Config: Configuration is valid')
 }
 
 // Type for Supabase client options
