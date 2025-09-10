@@ -25,7 +25,7 @@ ENV HOST=0.0.0.0
 
 # Copy package.json and install production dependencies
 COPY --from=builder /app/package.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy the built application from the previous stage
 COPY --from=builder /app/next.config.ts ./
