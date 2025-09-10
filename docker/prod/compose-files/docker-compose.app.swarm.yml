@@ -3,7 +3,7 @@ version: "3.8"
 #x-project-volumes: &project-volumes
 #    - /data/fileserver/${PROJECT_NAME_PREFIX}/frontend-logs:/var/log/nginx
 x-replicated: &replicated-service
-  command: ["node", "npm", "run", "start"]
+  # command: ["node", "npm", "run", "start"]
   logging:
     driver: json-file
     options:
