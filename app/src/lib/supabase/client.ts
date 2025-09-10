@@ -12,38 +12,25 @@ let browserClient: ReturnType<typeof createBrowserClient> | null = null
  * This prevents unnecessary client creation and reduces load on Supabase
  */
 export function createSupabaseClient() {
-  console.log('🔄 createSupabaseClient: Starting...')
-  console.log('🔄 createSupabaseClient: hasValidSupabaseConfig:', hasValidSupabaseConfig)
-  console.log('🔄 createSupabaseClient: supabaseUrl:', supabaseUrl ? 'Set' : 'Missing')
-  console.log('🔄 createSupabaseClient: supabaseAnonKey:', supabaseAnonKey ? 'Set' : 'Missing')
   
   if (!hasValidSupabaseConfig) {
-    console.error('❌ createSupabaseClient: Invalid Supabase configuration')
-    console.error('❌ createSupabaseClient: URL valid:', supabaseUrl ? 'Yes' : 'No')
-    console.error('❌ createSupabaseClient: Key present:', supabaseAnonKey ? 'Yes' : 'No')
     // Return a mock client that won't crash the app
     return null
   }
   
   // Return existing client if already created
   if (browserClient) {
-    console.log('✅ createSupabaseClient: Returning existing client')
     return browserClient
   }
   
   // Create new client only once
-  try {
-    browserClient = createBrowserClient(
-      supabaseUrl,
-      supabaseAnonKey
-    )
-    
-    console.log('✅ createSupabaseClient: New client created successfully')
-    return browserClient
-  } catch (error) {
-    console.error('❌ createSupabaseClient: Failed to create client:', error)
-    return null
-  }
+  browserClient = createBrowserClient(
+    supabaseUrl,
+    supabaseAnonKey
+  )
+  
+  console.log('✅ createSupabaseClient: New client created successfully')
+  return browserClient
 }
 
 /**

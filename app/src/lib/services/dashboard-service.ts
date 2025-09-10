@@ -104,9 +104,6 @@ export class DashboardService {
 
   async getDashboardMetrics(dateRange?: { from: Date; to: Date }): Promise<DashboardMetrics> {
     try {
-      console.log('🔄 DashboardService: Starting to fetch metrics...')
-      console.log('🔄 DashboardService: Date range:', dateRange)
-      
       const [
         productionMetrics,
         batchIntake,
@@ -124,8 +121,6 @@ export class DashboardService {
         this.getAwaitingRepairCount(dateRange),
         this.getCompletedRepairsStats(dateRange),
       ]);
-
-      console.log('✅ DashboardService: All metrics fetched successfully')
 
       return {
         batchIntakeStats: {
@@ -177,45 +172,39 @@ export class DashboardService {
         },
       };
     } catch (err) {
-      console.error('❌ DashboardService: Error in getDashboardMetrics:', err);
-      throw new Error(`Failed to fetch dashboard metrics: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      console.error('Error in getDashboardMetrics:', err);
+      throw err;
     }
   }
 
   private async getProductionMetrics(dateRange?: { from: Date; to: Date }) {
-    try {
-      console.log('🔄 DashboardService: Fetching production metrics...')
-      const fields = [
-        'batches_created',
-        'devices_received',
-        'devices_in_repair',
-        'devices_completed',
-        'devices_shipped',
-        'housing_changes',
-        'glass_changes',
-        'battery_changes',
-        'software_updates',
-        'other_repairs',
-        'grade_a_count',
-        'grade_b_count',
-        'grade_c_count',
-        'fail_qc_count',
-        'initial_grade_a_count',
-        'initial_grade_b_count',
-        'initial_grade_c_count',
-      ];
-      const range = normalizeDateRange(dateRange);
-      let query = this.supabase
-        .from('production_metrics')
-        .select(fields.join(','))
-        .order('metric_date', { ascending: false });
-      if (range) query = query.gte('metric_date', range.metricFrom).lte('metric_date', range.metricTo);
-      const { data, error } = await query;
-      if (error) {
-        console.error('❌ DashboardService: Production metrics error:', error)
-        throw error
-      }
-      console.log('✅ DashboardService: Production metrics fetched:', data?.length || 0, 'records')
+    const fields = [
+      'batches_created',
+      'devices_received',
+      'devices_in_repair',
+      'devices_completed',
+      'devices_shipped',
+      'housing_changes',
+      'glass_changes',
+      'battery_changes',
+      'software_updates',
+      'other_repairs',
+      'grade_a_count',
+      'grade_b_count',
+      'grade_c_count',
+      'fail_qc_count',
+      'initial_grade_a_count',
+      'initial_grade_b_count',
+      'initial_grade_c_count',
+    ];
+    const range = normalizeDateRange(dateRange);
+    let query = this.supabase
+      .from('production_metrics')
+      .select(fields.join(','))
+      .order('metric_date', { ascending: false });
+    if (range) query = query.gte('metric_date', range.metricFrom).lte('metric_date', range.metricTo);
+    const { data, error } = await query;
+    if (error) throw error;
     if (!data || data.length === 0) return { ...DEFAULT_PRODUCTION_METRICS };
     if (range) {
       const summed = { ...DEFAULT_PRODUCTION_METRICS };
@@ -230,10 +219,6 @@ export class DashboardService {
     const normalized: any = {};
     for (const k of fields) normalized[k] = Number((latest as any)[k] || 0);
     return normalized;
-    } catch (error) {
-      console.error('❌ DashboardService: Error in getProductionMetrics:', error)
-      throw error
-    }
   }
 
   private async getBatchIntakeStats(dateRange?: { from: Date; to: Date }) {

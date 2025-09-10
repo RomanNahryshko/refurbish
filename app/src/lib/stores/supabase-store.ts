@@ -20,38 +20,27 @@ export const useSupabaseStore = create<SupabaseStore>((set, get) => ({
   user: null,
 
   initialize: () => {
-    console.log('🔄 SupabaseStore: Initializing...')
     const supabaseClient = createSupabaseClient()
-    console.log('🔄 SupabaseStore: Client created:', !!supabaseClient)
+    console.log(supabaseClient, 'supabaseClient')
 
     if (supabaseClient) {
       set({ client: supabaseClient, isReady: true })
-      console.log('✅ SupabaseStore: Client set, getting session...')
 
       // Get initial session
-      supabaseClient.auth.getSession().then(({ data: { session }, error }: { data: { session: Session | null }, error: any }) => {
-        if (error) {
-          console.error('❌ SupabaseStore: Session error:', error)
-        } else {
-          console.log('✅ SupabaseStore: Session retrieved:', !!session?.user)
-        }
+      supabaseClient.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
+        console.log(session, 'session')
         set({ user: session?.user ?? null })
-      }).catch((error: any) => {
-        console.error('❌ SupabaseStore: Session fetch failed:', error)
       })
 
       // Listen for auth changes
       const {
         data: { subscription },
-      } = supabaseClient.auth.onAuthStateChange((event: string, session: Session | null) => {
-        console.log('🔄 SupabaseStore: Auth state changed:', event, !!session?.user)
+      } = supabaseClient.auth.onAuthStateChange((_event: string, session: Session | null) => {
         set({ user: session?.user ?? null })
       })
 
       // Store subscription for cleanup
       get().cleanup = () => subscription.unsubscribe()
-    } else {
-      console.error('❌ SupabaseStore: Failed to create client - check environment variables')
     }
   },
 

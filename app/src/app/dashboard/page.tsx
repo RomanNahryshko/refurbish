@@ -8,8 +8,6 @@ import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-
 import DashboardMain from '@/components/dashboard/dashboard-main';
 import { RouteGuard } from '@/components/auth/route-guard';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
-import { DebugInfo } from '@/components/common/debug-info';
-import { ApiTest } from '@/components/common/api-test';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -58,8 +56,6 @@ export default function DashboardPage() {
     <RouteGuard requireAuth={true}>
       <div className="container mx-auto px-4 py-8">
         <DashboardMain />
-        <DebugInfo />
-        <ApiTest />
       </div>
     </RouteGuard>
   );
