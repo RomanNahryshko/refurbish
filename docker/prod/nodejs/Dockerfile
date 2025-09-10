@@ -6,10 +6,6 @@ WORKDIR /app
 # Copy package files and install dependencies
 COPY app/package.json app/package-lock.json ./
 
-# Install the missing Geist font package
-RUN npm ci
-RUN npm install geist@1.3.1
-
 # Copy the rest of the application code
 COPY app/ ./
 
@@ -26,9 +22,14 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
 
+# Copy package.json and install production dependencies
+COPY --from=builder /app/package.json ./
+RUN npm ci --only=production && npm cache clean --force
+
 # Copy the built application from the previous stage
+COPY --from=builder /app/next.config.ts ./
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/.next ./.next
 
 # Create cache directory and set permissions
 RUN mkdir -p .next/cache && chown -R node:node .next
@@ -40,4 +41,4 @@ EXPOSE 3000
 USER node
 
 # Start the application
-CMD ["node", "npm", "run", "start"] 
+CMD ["npm", "run", "start"] 
