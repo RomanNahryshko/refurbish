@@ -14,6 +14,7 @@ COPY app/ ./
 RUN npm run build
 
 
+
 # Stage 2: Production image
 FROM node:20-alpine AS runner
 
@@ -23,6 +24,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
+
+# Supabase environment variables (will be overridden by docker-compose)
+ENV NEXT_PUBLIC_SUPABASE_URL=""
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=""
+ENV SUPABASE_SERVICE_ROLE_KEY=""
 
 # Copy package.json + lockfile to install production deps
 COPY --from=builder /app/package.json /app/package-lock.json ./

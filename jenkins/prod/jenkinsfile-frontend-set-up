@@ -28,6 +28,16 @@ pipeline {
                 //############## HOSTS
                 VIRTUAL_HOST="workflow.remobile.eu"
                 VIRTUAL_PORT=3000
+                //############################################# SUPABASE SETTINGS
+                // Option 1: Using Jenkins credentials (recommended)
+                NEXT_PUBLIC_SUPABASE_URL=credentials('supabase-url')
+                NEXT_PUBLIC_SUPABASE_ANON_KEY=credentials('supabase-anon-key')
+                SUPABASE_SERVICE_ROLE_KEY=credentials('supabase-service-role-key')
+                
+                // Option 2: Direct values (uncomment and replace with actual values)
+                // NEXT_PUBLIC_SUPABASE_URL="https://your-project-ref.supabase.co"
+                // NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key-here"
+                // SUPABASE_SERVICE_ROLE_KEY="your-service-role-key-here"
                 //############################################# SLACK SETTINGS
                 SLACK_NOTIFICATION_STATUS="false"
                 CHANNEL_NAME="devops-testing"
