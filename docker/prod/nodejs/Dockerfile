@@ -40,4 +40,4 @@ EXPOSE 3000
 USER node
 
 # Start the application
-CMD ["node", "server.js"] 
+CMD ["node", "npm", "run", "start"] 
