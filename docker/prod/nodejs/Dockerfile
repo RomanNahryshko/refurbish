@@ -42,7 +42,7 @@ RUN mkdir -p .next/cache && chown -R node:node .next
 EXPOSE 3000
 
 # Use non-root user
-USER node
+# USER node
 
 # Start Next.js
 CMD ["npm", "run", "start"]
