@@ -32,7 +32,6 @@ networks:
 services:
 ######################################### Required Services
   app:
-    <<: *replicated-service
     image: ${HUB_REPOSITORY_DOMAIN}${COMPOSE_PROJECT_NAME}-app:${BUILD_NUMBER:-latest}
     environment:
       VIRTUAL_HOST: ${VIRTUAL_HOST}
@@ -47,6 +46,11 @@ services:
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "4"
     deploy:
       replicas: ${REPLICAS_COUNT}
       mode: replicated
@@ -60,8 +64,3 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
-      environment:
-        # Supabase environment variables for Docker Swarm
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
