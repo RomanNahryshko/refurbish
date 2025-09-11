@@ -274,7 +274,7 @@ export default function ImportDrPhonePage() {
         
         // Check if it's an Excel file (case insensitive)
         const fileName = file.name.toLowerCase()
-        if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+        if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls') && !fileName.endsWith('.Xlsx') && !fileName.endsWith('.Xls')) {
           toast.error('Please upload an Excel file (.xlsx or .xls)')
           return
         }
@@ -327,7 +327,8 @@ export default function ImportDrPhonePage() {
     const files = e.dataTransfer.files
     if (files.length > 0) {
       const file = files[0]
-      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      console.log(file.name)
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.Xlsx') || file.name.endsWith('.Xls')) {
         parseExcelFile(file)
         toast.info('Processing Excel file...')
       } else {
@@ -689,7 +690,6 @@ export default function ImportDrPhonePage() {
                   
                   // If no deviceId exists for this device, create one
                   if (!deviceId) {
-                    console.log(`🔍 No deviceId for device ${_index} (${device.imei}), creating device first`)
                     // This will trigger device creation and then QC
                     return (
                       <InitialQCDeviceCard
