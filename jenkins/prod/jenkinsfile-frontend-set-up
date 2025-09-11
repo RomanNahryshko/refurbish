@@ -30,14 +30,9 @@ pipeline {
                 VIRTUAL_PORT=3000
                 //############################################# SUPABASE SETTINGS
                 // Option 1: Using Jenkins credentials (recommended)
-                NEXT_PUBLIC_SUPABASE_URL=credentials('supabase-url')
-                NEXT_PUBLIC_SUPABASE_ANON_KEY=credentials('supabase-anon-key')
-                SUPABASE_SERVICE_ROLE_KEY=credentials('supabase-service-role-key')
-                
-                // Option 2: Direct values (uncomment and replace with actual values)
-                // NEXT_PUBLIC_SUPABASE_URL="https://your-project-ref.supabase.co"
-                // NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key-here"
-                // SUPABASE_SERVICE_ROLE_KEY="your-service-role-key-here"
+                AWS_ACCESS_KEY_ID=credentials("AWS-KEY-remobile-refubrish")
+                AWS_DEFAULT_REGION="eu-central-1"
+                AWS_SECRET_ACCESS_KEY=credentials("AWS-SECRET-remobile-refubrish")
                 //############################################# SLACK SETTINGS
                 SLACK_NOTIFICATION_STATUS="false"
                 CHANNEL_NAME="devops-testing"
@@ -54,12 +49,22 @@ pipeline {
                 slackSend channel: "${CHANNEL_NAME}", color: '#0a8031', message: "*${env.JOB_NAME}* - #${env.BUILD_ID} \n Started by - ${currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').userName} \n Branch ${env.GIT_BRANCH} \n Link - (<${env.BUILD_URL}|Open>)", tokenCredentialId: "${SLACK_TOKEN}"
             }  
         }
+        stage('Get AWS SECRETS for build') {
+            steps {
+                    sh '''#!/bin/bash
+                        source ./get_credentials_prod.sh
+                        function_get_credential
+                        if [ "$?" -ne "0" ]; then echo "WARNING: Problem can't get secrets from SSM !"; exit 1; fi
+                        '''
+            }
+        }
         stage('Start BUILD') {
             steps {
                 echo "=================================================="
                 echo "BUILD"
                 echo "=================================================="
                 sh '''#!/bin/bash
+                export $(grep -v '^#' env.ini | xargs -d '\n')
                 cd ./docker/${DOCKER_ENV_TYPE}/
                 chmod u+x ./build.sh
                 ./build.sh  $DOCKER_HUB_PWD $BUILD_FILE $BUILD_CACHE_ENABLED
@@ -70,6 +75,7 @@ pipeline {
           stage('Start DEPLOY') {
             steps {
                 sh '''#!/bin/bash
+                export $(grep -v '^#' env.ini | xargs -d '\n')
                 cd ./docker/${DOCKER_ENV_TYPE}/
                 chmod u+x ./stack_workaround.sh
                 chmod u+x ./network.sh
