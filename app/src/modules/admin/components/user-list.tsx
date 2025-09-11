@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { UserActions } from './user-actions'
 import { UserFilters, UserWithAuth } from '@/lib/api/users'
+import { USER_ROLES_LABELS } from '@/lib/constants'
 
 interface UserListProps {
   currentUserId?: string
@@ -264,7 +265,7 @@ export function UserList({ currentUserId, currentUserRole }: UserListProps) {
                       </td>
                       <td className="p-3">
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {user.role}
+                          {USER_ROLES_LABELS[user.role]}
                         </span>
                       </td>
                       <td className="p-3">

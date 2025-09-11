@@ -12,6 +12,14 @@ export const USER_ROLES = {
   'technician': 'technician'
 } as const
 
+export const USER_ROLES_LABELS = {
+  'admin': 'Administrator',
+  'general_manager': 'General Manager',
+  'ops_manager': 'Operations Manager',
+  'qc_controller': 'Quality Control',
+  'technician': 'Technician'
+} as const
+
 // Technician levels enum - matches database schema
 export const TECHNICIAN_LEVELS = {
   'L1': 'L1',  // Housing repairs only

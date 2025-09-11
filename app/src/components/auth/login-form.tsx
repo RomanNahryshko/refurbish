@@ -26,6 +26,7 @@ export function LoginForm() {
       const supabase = createSupabaseClient()
       
       if (!supabase) {
+        console.error('❌ Login failed: Supabase client is null')
         setError('Configuration error. Please contact your administrator.')
         setIsLoading(false)
         return

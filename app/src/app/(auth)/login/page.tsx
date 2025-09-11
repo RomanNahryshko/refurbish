@@ -1,4 +1,5 @@
 import { LoginForm } from '@/components/auth/login-form'
+import { SupabaseConfigDebug } from '@/components/debug/supabase-config-debug'
 import Image from 'next/image'
 
 export default function LoginPage() {
@@ -31,6 +32,9 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+      
+      {/* Debug component for troubleshooting */}
+      <SupabaseConfigDebug />
     </div>
   )
 } 
