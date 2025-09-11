@@ -1,4 +1,3 @@
-version: "3.8"
 ######################################### Networks and global extensions
 #x-project-volumes: &project-volumes
 #    - /data/fileserver/${PROJECT_NAME_PREFIX}/frontend-logs:/var/log/nginx

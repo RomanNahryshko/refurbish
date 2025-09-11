@@ -1,0 +1,40 @@
+######################################### Global Environment Variables
+
+##############################################################################
+#                           SERVICES                                         #
+##############################################################################
+
+services:
+######################################### Required Services
+
+  app:
+    build:
+      context: ../../..
+      dockerfile: ./docker/prod/nodejs/Dockerfile
+      args:
+        # Build arguments for NEXT_PUBLIC_* variables (required at build time)
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    image: ${COMPOSE_PROJECT_NAME:-remobile-refurbish}-app:local
+    ports:
+      - "${VIRTUAL_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${VIRTUAL_PORT:-3000}
+      HOST: "0.0.0.0"
+      # Supabase environment variables
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+    volumes:
+      # Монтируем .next/cache для кеширования
+      - nextjs_cache:/app/.next/cache
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "4"
+
+volumes:
+  nextjs_cache:
