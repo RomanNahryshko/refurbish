@@ -3,8 +3,8 @@ import Image from 'next/image'
 
 export default function LoginPage() {
   return (
-    <div className="h-full flex items-center justify-center bg-gray-50">
-      <div className="max-w-md h-full w-full space-y-8 p-8">
+    <div className="h-full flex min-h-[600px] items-center justify-center bg-gray-50">
+      <div className="max-w-md h-full w-full space-y-8 p-8 flex flex-col justify-center">
         {/* Logo and Brand Section */}
         <div className="text-center">
           <div>
