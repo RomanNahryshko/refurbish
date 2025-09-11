@@ -3,10 +3,6 @@
 import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '@/lib/supabase'
 
 export function SupabaseConfigDebug() {
-  if (process.env.NODE_ENV === 'production') {
-    return null // Don't show debug info in production
-  }
-
   return (
     <div className="fixed bottom-4 right-4 bg-black text-white p-4 rounded-lg text-xs max-w-md z-50">
       <h3 className="font-bold mb-2">🔧 Supabase Config Debug</h3>
