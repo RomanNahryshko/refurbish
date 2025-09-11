@@ -26,6 +26,7 @@ ENV PORT=3000
 ENV HOST=0.0.0.0
 
 # Supabase environment variables (will be overridden by docker-compose)
+# These are set as empty defaults and will be overridden by the compose file
 ENV NEXT_PUBLIC_SUPABASE_URL=""
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=""
 ENV SUPABASE_SERVICE_ROLE_KEY=""
