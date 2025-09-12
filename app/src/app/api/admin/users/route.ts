@@ -72,22 +72,42 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    console.log('🔧 API Route Debug: Starting user creation API call')
+    
     const body = await request.json()
     const { userData, performedBy } = body
 
+    console.log('🔧 API Route Debug: Request body:', {
+      userData: userData ? {
+        email: userData.email,
+        full_name: userData.full_name,
+        role: userData.role
+      } : 'MISSING',
+      performedBy
+    })
+
     if (!userData?.email || !userData?.role || !userData?.full_name) {
+      console.error('❌ API Route: Missing required fields')
       return NextResponse.json(
         { error: 'Missing required fields: email, role, full_name' },
         { status: 400 }
       )
     }
 
+    console.log('🔧 API Route Debug: Creating UsersAPI instance')
     const usersApi = createUsersAPI(supabase)
+    
+    console.log('🔧 API Route Debug: Calling usersApi.create')
     const result = await usersApi.create(userData, performedBy)
     
+    console.log('✅ API Route Debug: User creation successful')
     return NextResponse.json(result)
   } catch (error) {
-    console.error('Error creating user:', error)
+    console.error('❌ API Route: Error creating user:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    })
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create user' },
       { status: 500 }

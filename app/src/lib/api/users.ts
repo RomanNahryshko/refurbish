@@ -179,15 +179,37 @@ export class UsersAPI {
    */
   async create(userData: CreateUserData, performedBy: string) {
     try {
+      console.log('🔧 User Creation Debug: Starting user creation process')
+      console.log('🔧 User Creation Debug: User data:', {
+        email: userData.email,
+        full_name: userData.full_name,
+        role: userData.role,
+        performedBy
+      })
+
       const adminClient = createSupabaseAdminClient()
       if (!adminClient) {
+        console.error('❌ User Creation: Admin client not configured')
         throw new Error('Admin client not configured. Set SUPABASE_SERVICE_ROLE_KEY environment variable.')
       }
+
+      console.log('✅ User Creation: Admin client created successfully')
 
       // Generate temporary password if not provided
       const temporaryPassword = userData.temporary_password || generateTemporaryPassword()
 
       // Create user in auth.users table
+      console.log('🔧 User Creation: Attempting to create auth user with admin client')
+      console.log('🔧 User Creation: Auth user data:', {
+        email: userData.email,
+        passwordLength: temporaryPassword.length,
+        email_confirm: true,
+        user_metadata: {
+          full_name: userData.full_name,
+          role: userData.role
+        }
+      })
+
       const { data: authUser, error: authError } = await adminClient.auth.admin.createUser({
         email: userData.email,
         password: temporaryPassword,
@@ -199,8 +221,19 @@ export class UsersAPI {
       })
 
       if (authError) {
+        console.error('❌ User Creation: Auth user creation failed:', {
+          error: authError,
+          message: authError.message,
+          code: authError.status,
+          details: authError
+        })
         throw new Error(`Failed to create auth user: ${authError.message}`)
       }
+
+      console.log('✅ User Creation: Auth user created successfully:', {
+        userId: authUser.user?.id,
+        email: authUser.user?.email
+      })
 
       if (!authUser.user) {
         throw new Error('Failed to create user - no user returned')

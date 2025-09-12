@@ -7,17 +7,41 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 let adminClient: ReturnType<typeof createClient> | null = null
 
 export function createSupabaseAdminClient() {
+  // Debug environment variables
+  console.log('🔧 Admin Client Debug:', {
+    supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
+    supabaseServiceKey: supabaseServiceKey ? `${supabaseServiceKey.substring(0, 20)}...` : 'MISSING',
+    urlLength: supabaseUrl.length,
+    serviceKeyLength: supabaseServiceKey.length,
+    hasUrl: !!supabaseUrl,
+    hasServiceKey: !!supabaseServiceKey
+  })
+
   if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('❌ Admin Client: Missing required environment variables')
+    console.error('Required: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY')
+    return null
+  }
+
+  // Validate service key format
+  if (!supabaseServiceKey.startsWith('eyJ')) {
+    console.error('❌ Admin Client: Invalid service key format. Should start with "eyJ"')
     return null
   }
 
   if (!adminClient) {
-    adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
+    try {
+      adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      })
+      console.log('✅ Admin Client: Created successfully')
+    } catch (error) {
+      console.error('❌ Admin Client: Failed to create client:', error)
+      return null
+    }
   }
 
   return adminClient
