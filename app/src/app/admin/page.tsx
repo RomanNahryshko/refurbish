@@ -37,36 +37,6 @@ export default function AdminPage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* System Settings Card (Future) */}
-          <Card className="opacity-60">
-            <CardHeader>
-              <CardTitle>System Settings</CardTitle>
-              <CardDescription>
-                Configure system-wide settings and preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" variant="secondary" disabled>
-                Coming Soon
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Reports & Analytics Card (Future) */}
-          <Card className="opacity-60">
-            <CardHeader>
-              <CardTitle>Reports & Analytics</CardTitle>
-              <CardDescription>
-                View system usage and performance reports
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" variant="secondary" disabled>
-                Coming Soon
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
