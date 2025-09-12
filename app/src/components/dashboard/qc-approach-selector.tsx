@@ -9,7 +9,7 @@ export default function QcApproachSelector({
   deviceIndex,
 }: {
   qcApproach: string;
-  onQcApproachChange?: (value: 'repairs' | 'grade') => void;
+  onQcApproachChange?: (value: 'repairs' | 'grade' | '') => void;
   deviceIndex: number;
 }) {
   return (
@@ -20,7 +20,7 @@ export default function QcApproachSelector({
       <RadioGroup
         value={qcApproach}
         onValueChange={(value) =>
-          onQcApproachChange?.(value as 'repairs' | 'grade')
+          onQcApproachChange?.(value as 'repairs' | 'grade' | '')
         }
         className="mt-2"
       >

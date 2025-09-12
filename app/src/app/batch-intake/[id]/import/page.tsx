@@ -12,27 +12,21 @@ import { useExcelParser } from '@/lib/hooks/use-excel-parser';
 import { useBatch } from '@/lib/hooks/use-batches';
 import { useCreateDevicesFromImport } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
-import type { SupabaseClient } from '@supabase/supabase-js';
 // Removed: Direct Supabase import - using hooks instead
-import { useCreateRepairJob } from '@/lib/hooks/use-repair-jobs';
-import { REPAIR_TYPE_MAP } from '@/lib/constants';
-import { LegacyRepairType, RepairType, DrPhoneData } from '@/lib/types/business-types';
+// Removed: useCreateRepairJob - repair jobs are now created by QC checks API
+import { DrPhoneData } from '@/lib/types/business-types';
 import {
   useFilterDevicesByExisting,
   useCompletedQCByDevices,
   useFindExistingDevice
 } from '@/lib/hooks/use-device-import';
 import { useDeviceImportState } from '@/lib/hooks/use-device-import-state';
-import { ProductionMetricsClientService } from '@/lib/services/production-metrics-client-service';
 import { useSupabaseClient } from '@/lib/stores/supabase-store';
 
 
 // Using DrPhoneData from business types
 
-// Type guard function to check if a string is a valid legacy repair type
-function isLegacyRepairType(value: string): value is LegacyRepairType {
-  return value in REPAIR_TYPE_MAP
-}
+// Removed: isLegacyRepairType function - no longer needed
 
 export default function ImportDrPhonePage() {
   const params = useParams()
@@ -79,7 +73,6 @@ export default function ImportDrPhonePage() {
   const [deviceIds, setDeviceIds] = useState<Record<number, string>>({})
   
   const createDevicesFromImport = useCreateDevicesFromImport()
-  const createRepairJob = useCreateRepairJob()
   const findExistingDevice = useFindExistingDevice()
   const supabase = useSupabaseClient()
 
@@ -131,7 +124,7 @@ export default function ImportDrPhonePage() {
 
   
   // Function to create a single device when QC is completed
-  const createSingleDevice = async (deviceData: DrPhoneData, deviceIndex: number, selectedRepairs: string[], otherDescription: string, selectedGrade: string, supabaseClient?: unknown) => {
+  const createSingleDevice = async (deviceData: DrPhoneData, deviceIndex: number, selectedRepairs: string[], otherDescription: string, selectedGrade: string, _supabaseClient?: unknown) => {
     try {
       setIsCreatingDevice(true)
       
@@ -164,50 +157,8 @@ export default function ImportDrPhonePage() {
       if (result && result.length > 0) {
         const createdDevice = result[0]
           
-          // Create repair jobs for selected repairs
-          if (selectedRepairs.length > 0) {
-            try {
-              for (const repairType of selectedRepairs) {
-                // Map old values to new schema values (backward compatibility)
-                if (!isLegacyRepairType(repairType)) {
-                  continue
-                }
-                
-                const mappedRepairType = REPAIR_TYPE_MAP[repairType]
-                
-                if (!mappedRepairType) {
-                  continue
-                }
-                
-                const repairJobData = {
-                  device_id: createdDevice.id,
-                  repair_type: mappedRepairType,
-                  description: mappedRepairType === 'other' ? otherDescription : undefined
-                }
-                
-                await createRepairJob.mutateAsync({
-                  data: repairJobData,
-                })
-              }
-              
-              // Update production metrics immediately after creating repair jobs
-              try {
-                if (!supabaseClient || typeof supabaseClient !== 'object') {
-                  throw new Error('Supabase client not available')
-                }
-                
-                const productionMetricsService = new ProductionMetricsClientService(supabaseClient as unknown as SupabaseClient)
-                await productionMetricsService.updateRepairMetrics(selectedRepairs as RepairType[])
-                
-              } catch (metricsError) {
-                console.error('Failed to update production metrics:', metricsError)
-              }
-              
-            } catch (error) {
-              console.error(`❌ handleCompleteDeviceQC: Error creating repair jobs:`, error)
-              // Continue even if repair jobs fail
-            }
-          }
+          // Don't create repair jobs here - let the QC process handle it
+          // Repair jobs will be created when QC is completed with repairs selected
           
           setCreatedDevices(prev => {
             const newState = [...prev, { id: createdDevice.id, imei: createdDevice.imei }]
@@ -426,49 +377,9 @@ export default function ImportDrPhonePage() {
         
         
       } else {
-        // Device already exists, handle repair jobs and metrics if needed
-        const selectedRepairs = deviceRepairs[deviceIndex] || []
-        const qcApproach = deviceQcApproaches[deviceIndex] || ''
-        
-        if (qcApproach === 'repairs' && selectedRepairs.length > 0) {
-          try {
-            // Get existing device ID from deviceIds state
-            const existingDeviceId = deviceIds[deviceIndex]
-            if (!existingDeviceId) {
-              toast.error('Device ID not found. Please refresh and try again.')
-              return null
-            }
-            
-            // Create repair jobs for selected repairs
-            for (const repairType of selectedRepairs) {
-              await createRepairJob.mutateAsync({
-                data: {
-                  device_id: existingDeviceId,
-                  repair_type: repairType as RepairType,
-                  status: 'pending',
-                  priority: 'medium',
-                  notes: `Initial QC: ${repairType} required`,
-                  estimated_hours: 2,
-                  actual_hours: null
-                }
-              })
-            }
-            
-            // Update production metrics for repairs
-            try {
-              if (supabase) {
-                const productionMetricsService = new ProductionMetricsClientService(supabase)
-                await productionMetricsService.updateRepairMetrics(selectedRepairs as RepairType[])
-              }
-            } catch (metricsError) {
-              console.error('Failed to update production metrics:', metricsError)
-            }
-            
-          } catch {
-            toast.error('Failed to create repair jobs. Please try again.')
-            return null
-          }
-        }
+        // Device already exists
+        // Repair jobs will be created by the QC checks API when QC is completed
+        // No need to create them here to avoid duplicates
         
         // Mark as completed
         // Device completion is now handled by individual cards
@@ -697,8 +608,8 @@ export default function ImportDrPhonePage() {
                         onCompleteQCWithDevice={(deviceData, deviceIndex) => handleCompleteDeviceQC(deviceIndex, deviceData)}
                         isRepairSectionExpanded={expandedRepairSections[_index] || false}
                         onRepairSectionToggle={() => handleRepairSectionToggle(_index)}
-                        qcApproach={deviceQcApproaches[_index] || 'repairs'}
-                        onQcApproachChange={(approach) => handleQcApproachChange(_index, approach || 'repairs')}
+                        qcApproach={deviceQcApproaches[_index] || ''}
+                        onQcApproachChange={(approach) => handleQcApproachChange(_index, approach || '')}
                       />
                     )
                   }
@@ -718,8 +629,8 @@ export default function ImportDrPhonePage() {
                       onCompleteQCWithDevice={(deviceData, deviceIndex) => handleCompleteDeviceQC(deviceIndex, deviceData)}
                       isRepairSectionExpanded={expandedRepairSections[_index] || false}
                       onRepairSectionToggle={() => handleRepairSectionToggle(_index)}
-                      qcApproach={deviceQcApproaches[_index] || 'repairs'}
-                      onQcApproachChange={(approach) => handleQcApproachChange(_index, approach || 'repairs')}
+                      qcApproach={deviceQcApproaches[_index] || ''}
+                      onQcApproachChange={(approach) => handleQcApproachChange(_index, approach || '')}
                     />
                   )
                 })

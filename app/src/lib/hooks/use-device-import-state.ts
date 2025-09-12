@@ -18,6 +18,9 @@ export interface DeviceImportState {
   
   // Completed devices tracking
   completedDevices: Set<number>
+  
+  // Function signatures
+  handleQcApproachChange: (deviceIndex: number, approach: 'repairs' | 'grade' | '') => void
 }
 
 export function useDeviceImportState() {
@@ -54,7 +57,7 @@ export function useDeviceImportState() {
   }, [])
 
   // Handle QC approach changes for each device
-  const handleQcApproachChange = useCallback((deviceIndex: number, approach: 'repairs' | 'grade') => {
+  const handleQcApproachChange = useCallback((deviceIndex: number, approach: 'repairs' | 'grade' | '') => {
     setDeviceQcApproaches(prev => ({
       ...prev,
       [deviceIndex]: approach
