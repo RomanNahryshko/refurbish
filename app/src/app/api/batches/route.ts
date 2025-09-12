@@ -159,7 +159,6 @@ export async function POST(request: NextRequest) {
 
     // Update production_metrics for the current date
     const today = new Date().toISOString().split('T')[0]
-    console.log('🔄 Updating production_metrics for date:', today)
     
     // First, try to get existing metrics for today
     const { data: existingMetrics, error: selectError } = await supabase
@@ -172,21 +171,12 @@ export async function POST(request: NextRequest) {
       console.error('❌ Error selecting existing metrics:', selectError)
     }
     
-    console.log('📊 Existing metrics:', existingMetrics)
     
     // Calculate new values
     const currentDevicesReceived = existingMetrics?.devices_received || 0
     const newDevicesReceived = currentDevicesReceived + parseInt(device_count)
     const currentBatchesCreated = existingMetrics?.batches_created || 0
     const newBatchesCreated = currentBatchesCreated + 1
-    
-    console.log('🧮 Calculated values:', {
-      currentDevicesReceived,
-      newDevicesReceived,
-      currentBatchesCreated,
-      newBatchesCreated,
-      deviceCount: parseInt(device_count)
-    })
     
     // Try to upsert production_metrics for today
     const { error: metricsError } = await supabase
@@ -201,7 +191,6 @@ export async function POST(request: NextRequest) {
       })
 
     if (metricsError) {
-      console.error('❌ Failed to update production metrics:', metricsError)
       console.error('❌ Error details:', {
         code: metricsError.code,
         message: metricsError.message,

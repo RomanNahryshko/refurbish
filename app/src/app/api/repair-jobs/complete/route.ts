@@ -47,7 +47,6 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
 
-    console.log(`Completing repair job ${repair_job_id} for device ${repairJob.device_id}, type: ${repairJob.repair_type}`)
 
     if (!repairJob) {
       return NextResponse.json({ 
@@ -139,29 +138,11 @@ export async function POST(request: NextRequest) {
       // Don't fail the entire request if this check fails
     } else {
       // Log all repair jobs for this device to debug the issue
-      const { data: allRepairJobs, error: allJobsError } = await supabase
+      await supabase
         .from('repair_jobs')
         .select('id, status, repair_type, created_at')
         .eq('device_id', repairJob.device_id)
         .is('deleted_at', null)
-
-      if (!allJobsError && allRepairJobs) {
-        console.log(`Device ${repairJob.device_id} has ${allRepairJobs.length} repair jobs:`, 
-          allRepairJobs.map(job => `${job.repair_type}: ${job.status} (ID: ${job.id})`))
-        console.log(`Pending/In-progress repairs: ${pendingRepairs?.length || 0}`)
-        
-        // Additional debug info
-        const completedJobs = allRepairJobs.filter(job => job.status === 'completed')
-        const pendingJobs = allRepairJobs.filter(job => job.status === 'pending')
-        const inProgressJobs = allRepairJobs.filter(job => job.status === 'in_progress')
-        
-        console.log(`Repair job breakdown:`, {
-          completed: completedJobs.length,
-          pending: pendingJobs.length,
-          inProgress: inProgressJobs.length,
-          total: allRepairJobs.length
-        })
-      }
 
       // If all repairs are completed, send device to final QC
       if (!pendingRepairs || pendingRepairs.length === 0) {

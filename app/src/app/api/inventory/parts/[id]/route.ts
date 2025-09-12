@@ -67,7 +67,6 @@ export async function DELETE(
 
   try {
     const { id } = await params
-    console.log(`Attempting to delete spare part with ID: ${id}`)
     
     const supabase = await createSupabaseServerClient()
     
@@ -112,10 +111,8 @@ export async function DELETE(
       )
     }
     
-    console.log(`Deleting part: ${existingPart.name} (SKU: ${existingPart.sku})`)
     await inventoryApi.deletePart(id)
     
-    console.log(`Successfully deleted part: ${id}`)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting part:', error)

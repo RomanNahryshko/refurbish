@@ -327,7 +327,6 @@ export default function ImportDrPhonePage() {
     const files = e.dataTransfer.files
     if (files.length > 0) {
       const file = files[0]
-      console.log(file.name)
       if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.Xlsx') || file.name.endsWith('.Xls')) {
         parseExcelFile(file)
         toast.info('Processing Excel file...')
@@ -480,14 +479,6 @@ export default function ImportDrPhonePage() {
       toast.error('Failed to complete device QC. Please try again.')
       return null
     }
-  }
-
-  // Removed: Unused navigation functions
-
-
-  // Callback when data is saved to table
-  const handleSaveToTable = (_data: unknown) => {
-    // Здесь можно добавить дополнительную логику если нужно
   }
 
 
@@ -708,7 +699,6 @@ export default function ImportDrPhonePage() {
                         onRepairSectionToggle={() => handleRepairSectionToggle(_index)}
                         qcApproach={deviceQcApproaches[_index] || 'repairs'}
                         onQcApproachChange={(approach) => handleQcApproachChange(_index, approach || 'repairs')}
-                        onSaveToTable={handleSaveToTable}
                       />
                     )
                   }
@@ -730,7 +720,6 @@ export default function ImportDrPhonePage() {
                       onRepairSectionToggle={() => handleRepairSectionToggle(_index)}
                       qcApproach={deviceQcApproaches[_index] || 'repairs'}
                       onQcApproachChange={(approach) => handleQcApproachChange(_index, approach || 'repairs')}
-                      onSaveToTable={handleSaveToTable}
                     />
                   )
                 })
