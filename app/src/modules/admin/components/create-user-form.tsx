@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useCreateUser } from '@/lib/hooks/use-users'
+import { useToast } from '@/lib/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -42,8 +43,10 @@ interface CreateUserFormProps {
 export function CreateUserForm({ currentUserId, currentUserRole, onSuccess }: CreateUserFormProps) {
   const router = useRouter()
   const createUserMutation = useCreateUser()
+  const toast  = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const [generatedPassword, setGeneratedPassword] = useState('')
+  const [userEmail, setUserEmail] = useState('')
 
   const form = useForm<CreateUserFormData>({
     resolver: zodResolver(createUserSchema),
@@ -62,8 +65,9 @@ export function CreateUserForm({ currentUserId, currentUserRole, onSuccess }: Cr
         performedBy: currentUserId || 'unknown-admin'
       })
 
-      // Show the generated password
+      // Show the generated password and store user email
       setGeneratedPassword(result.temporaryPassword)
+      setUserEmail(data.email)
       setShowPassword(true)
 
       // Reset form
@@ -79,9 +83,20 @@ export function CreateUserForm({ currentUserId, currentUserRole, onSuccess }: Cr
     }
   }
 
-  const handleCopyPassword = () => {
-    navigator.clipboard.writeText(generatedPassword)
-    // You could add a toast here to confirm copy
+  const handleCopyCredentials = () => {
+    const fullMessage = `Hi,
+
+Your credentials to access https://workflow.remobile.eu/:
+
+Email: ${userEmail}
+
+Password: ${generatedPassword}`
+    
+    navigator.clipboard.writeText(fullMessage)
+    toast.success({
+      title: 'Credentials copied to clipboard!',
+      description: 'The full message with email and password has been copied.',
+    })
   }
 
   const goToUserList = () => {
@@ -99,23 +114,26 @@ export function CreateUserForm({ currentUserId, currentUserRole, onSuccess }: Cr
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-            <h4 className="font-semibold text-yellow-800 mb-2">Temporary Login Credentials</h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold text-yellow-800">Temporary Login Credentials</h4>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={handleCopyCredentials}
+                className="ml-2"
+              >
+                Copy All
+              </Button>
+            </div>
             <div className="space-y-2 text-sm">
               <div>
-                <span className="font-medium">Email:</span> {form.getValues('email')}
+                <span className="font-medium">Email:</span> {userEmail}
               </div>
-              <div className="flex items-center gap-2">
+              <div>
                 <span className="font-medium">Password:</span> 
-                <code className="bg-gray-100 px-2 py-1 rounded text-red-600 font-mono">
+                <code className="bg-gray-100 px-2 py-1 rounded text-red-600 font-mono ml-2">
                   {generatedPassword}
                 </code>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={handleCopyPassword}
-                >
-                  Copy
-                </Button>
               </div>
             </div>
             <p className="text-yellow-700 text-xs mt-2">
