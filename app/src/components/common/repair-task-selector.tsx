@@ -12,7 +12,12 @@ export const repairTypes = [
   { id: 'glass_change', label: 'Glass Change', level: 'L2' },
   { id: 'battery_change', label: 'Battery Change', level: 'L3' },
   { id: 'software_update', label: 'Software Update', level: 'L3' },
-  { id: 'other', label: 'Other', level: 'L3', requiresDescription: true }
+  { 
+    id: 'other', 
+    label: 'Other', 
+    level: 'L3', 
+    requiresDescription: true
+  }
 ]
 
 interface RepairTaskSelectorProps {

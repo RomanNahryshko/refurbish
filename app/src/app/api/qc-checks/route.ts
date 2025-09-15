@@ -222,8 +222,10 @@ export async function POST(request: NextRequest) {
           let description: string | undefined
           if (repairType === 'other') {
             // Extract repair details from notes
+            // Notes format: "Initial QC: Repairs required. Selected repairs: Other [description]"
             const repairDetails = notes?.replace('Initial QC: Repairs required. Selected repairs: ', '') || ''
-            description = repairDetails || 'Other repair required'
+            // Remove "Other " prefix to get just the description
+            description = repairDetails.replace(/^Other\s+/, '') || 'Other repair required'
           }
 
           const { error: repairJobError } = await supabase

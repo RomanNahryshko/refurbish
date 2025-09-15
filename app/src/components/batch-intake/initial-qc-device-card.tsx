@@ -82,7 +82,7 @@ export function InitialQCDeviceCard(props: InitialQCDeviceCardProps) {
           ? `Initial QC: Repairs required. Selected repairs: ${selectedRepairs
               .map(getRepairLabel)
               .join(', ')}${
-              otherDescription ? ` Additional notes: ${otherDescription}` : ''
+              otherDescription ? ` ${otherDescription}` : ''
             }`
           : `Initial QC: Grade assigned. Grade: ${selectedGrade}`,
       required_repairs:
