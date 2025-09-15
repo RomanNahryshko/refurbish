@@ -98,12 +98,7 @@ const config: Config = {
           position: 'left',
           label: 'Tech Docs - Future Scopes',
         },
-        {
-          type: 'docSidebar',
-          sidebarId: 'devSidebar',
-          position: 'left',
-          label: 'For Developers',
-        },
+        // Removed 'For Developers' section from navbar
         // Your GitHub repo
         {
           href: 'https://github.com/vladimirterehoff/remobile-refurbish',
@@ -122,10 +117,7 @@ const config: Config = {
               label: 'MVP Scope',
               to: '/docs/tech-docs-mvp/intro',
             },
-            {
-              label: 'For Developers',
-              to: '/docs/for-developers/intro',
-            },
+            // Removed 'For Developers' footer link
           ],
         },
         {
