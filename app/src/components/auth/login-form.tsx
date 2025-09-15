@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,15 +13,25 @@ import { login } from '@/lib/actions/auth'
 interface UserProfile {
   must_change_password: boolean
   role: string
+  status: string
 }
 
 export function LoginForm() {
   const { push } = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const { setUser } = useSupabaseStore()
+
+  // Check for error parameter in URL
+  useEffect(() => {
+    const errorParam = searchParams.get('error')
+    if (errorParam === 'account_inactive') {
+      setError('Your account is inactive. Please contact an administrator.')
+    }
+  }, [searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,7 +74,7 @@ export function LoginForm() {
 
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('must_change_password, role')
+        .select('must_change_password, role, status')
         .eq('id', user.id)
         .single()
 
@@ -73,8 +83,15 @@ export function LoginForm() {
         return
       }
 
-      // Check if user must change password
+      // Check if user account is active
       const userProfile = profile as UserProfile | null
+      if (userProfile && userProfile.status !== 'active') {
+        setError('Your account is inactive. Please contact an administrator.')
+        setIsLoading(false)
+        return
+      }
+
+      // Check if user must change password
       if (userProfile && userProfile.must_change_password) {
         push('/change-password')
       } else {

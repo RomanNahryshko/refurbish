@@ -75,6 +75,31 @@ export async function middleware(request: NextRequest) {
         
         return NextResponse.redirect(redirectUrl)
       }
+
+      // Check user status in user_profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('status')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) {
+        console.error('🔒 Middleware: Error fetching user profile:', profileError)
+        // If we can't check the profile, allow the request to continue
+        // This prevents middleware from blocking requests due to database issues
+      } else if (profile && profile.status !== 'active') {
+        console.log('🔒 Middleware: User status is not active:', profile.status, 'redirecting to login')
+        // Clear auth cookies and redirect to login for inactive users
+        const redirectUrl = new URL('/login', request.url)
+        redirectUrl.searchParams.set('redirectTo', pathname)
+        redirectUrl.searchParams.set('error', 'account_inactive')
+        
+        // Clear auth cookies in response
+        supabaseResponse.cookies.delete('sb-access-token')
+        supabaseResponse.cookies.delete('sb-refresh-token')
+        
+        return NextResponse.redirect(redirectUrl)
+      }
       
       console.log('🔒 Middleware: User authenticated, allowing access to:', pathname)
       

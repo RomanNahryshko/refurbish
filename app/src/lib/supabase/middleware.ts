@@ -7,26 +7,26 @@ import { hasRouteAccess, getRedirectPath } from '@/lib/config/route-permissions'
 import { type UserRole } from '@/lib/types/business-types';
 
 // Simple cache for user profile data to prevent duplicate queries
-const userProfileCache = new Map<string, { must_change_password: boolean; role: string; timestamp: number }>()
+const userProfileCache = new Map<string, { must_change_password: boolean; role: string; status: string; timestamp: number }>()
 const PROFILE_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 /**
  * Get cached user profile data or fetch from database
  */
-async function getCachedUserProfile(supabase: SupabaseClient, userId: string): Promise<{ must_change_password: boolean; role: string } | null> {
+async function getCachedUserProfile(supabase: SupabaseClient, userId: string): Promise<{ must_change_password: boolean; role: string; status: string } | null> {
   const now = Date.now()
   const cached = userProfileCache.get(userId)
   
   // Return cached data if still valid
   if (cached && (now - cached.timestamp) < PROFILE_CACHE_TTL) {
-    return { must_change_password: cached.must_change_password, role: cached.role }
+    return { must_change_password: cached.must_change_password, role: cached.role, status: cached.status }
   }
   
   // Fetch from database
   try {
     const { data: profile, error } = await supabase
       .from('user_profiles')
-      .select('must_change_password, role')
+      .select('must_change_password, role, status')
       .eq('id', userId)
       .single()
     
@@ -36,10 +36,11 @@ async function getCachedUserProfile(supabase: SupabaseClient, userId: string): P
     const profileData = { 
       must_change_password: profile.must_change_password, 
       role: profile.role,
+      status: profile.status,
       timestamp: now 
     }
     userProfileCache.set(userId, profileData)
-    return { must_change_password: profileData.must_change_password, role: profileData.role }
+    return { must_change_password: profileData.must_change_password, role: profileData.role, status: profileData.status }
   } catch (error) {
     console.error('Error fetching user profile in middleware:', error)
     return null
@@ -137,13 +138,26 @@ export async function updateSession(request: NextRequest) {
     try {
       const profile = await getCachedUserProfile(supabase, user.id)
 
+      // Check if user account is active
+      if (profile && profile.status !== 'active') {
+        // Clear auth cookies and redirect to login for inactive users
+        const redirectUrl = new URL('/login', request.url)
+        redirectUrl.searchParams.set('error', 'account_inactive')
+        
+        // Clear auth cookies in response
+        supabaseResponse.cookies.delete('sb-access-token')
+        supabaseResponse.cookies.delete('sb-refresh-token')
+        
+        return NextResponse.redirect(redirectUrl)
+      }
+
       // Redirect to password change page if flag is set
       if (profile?.must_change_password === true) {
         return NextResponse.redirect(new URL(passwordChangePath, request.url))
       }
     } catch {
       // If we can't check the profile, allow the request to continue
-      console.warn('Could not check must_change_password flag')
+      console.warn('Could not check user profile')
     }
   }
 
@@ -152,6 +166,19 @@ export async function updateSession(request: NextRequest) {
     // First check if they need to change password
     try {
       const profile = await getCachedUserProfile(supabase, user.id)
+
+      // Check if user account is active
+      if (profile && profile.status !== 'active') {
+        // Clear auth cookies and redirect to login for inactive users
+        const redirectUrl = new URL('/login', request.url)
+        redirectUrl.searchParams.set('error', 'account_inactive')
+        
+        // Clear auth cookies in response
+        supabaseResponse.cookies.delete('sb-access-token')
+        supabaseResponse.cookies.delete('sb-refresh-token')
+        
+        return NextResponse.redirect(redirectUrl)
+      }
 
       if (profile?.must_change_password === true) {
         return NextResponse.redirect(new URL(passwordChangePath, request.url))

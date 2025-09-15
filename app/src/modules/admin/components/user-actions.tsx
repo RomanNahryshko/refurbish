@@ -47,7 +47,7 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
   const isActive = String(user.status) === 'active' || !user.status
 
   const handleStatusChange = async () => {
-    const newStatus = isActive ? 'disabled' : 'active'
+    const newStatus = isActive ? 'inactive' : 'active'
     
     try {
       await updateStatusMutation.mutateAsync({

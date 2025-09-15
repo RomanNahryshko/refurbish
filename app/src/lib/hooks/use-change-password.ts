@@ -69,12 +69,18 @@ export function usePasswordStatus() {
       // Get user profile
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('must_change_password, role')
+        .select('must_change_password, role, status')
         .eq('id', user.id)
         .single()
 
       if (profileError) {
         setError('Failed to fetch user profile')
+        return null
+      }
+
+      // Check if user account is active
+      if (profile?.status !== 'active') {
+        setError('Account is inactive')
         return null
       }
 

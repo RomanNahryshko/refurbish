@@ -84,8 +84,7 @@ export const TEST_RESULT = {
 // User account status enum - matches database schema
 export const USER_STATUS = {
   'active': 'active',
-  'inactive': 'inactive',
-  'suspended': 'suspended'
+  'inactive': 'inactive'
 } as const
 
 // Pagination settings

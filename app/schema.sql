@@ -83,8 +83,7 @@ CREATE TYPE test_result AS ENUM (
 -- User account status
 CREATE TYPE user_status AS ENUM (
   'active',
-  'inactive',
-  'suspended'
+  'inactive'
 );
 
 -- =====================================================
