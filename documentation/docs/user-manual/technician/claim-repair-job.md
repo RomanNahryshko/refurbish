@@ -5,7 +5,7 @@ sidebar_position: 2
 
 # Claiming Repair Jobs
 
-This page shows you how to pick repair jobs from the queue.
+https://remobile-refurbish.vercel.app/repair-jobs - on this page you can pick repair jobs from the queue.
 
 ## When you need this
 Every time you finish a job and want to start working on something new.
@@ -14,11 +14,13 @@ Every time you finish a job and want to start working on something new.
 
 1. Go to "Repair Jobs" in the main menu
 2. Look at the list of available jobs
-3. You'll only see jobs you can do (based on your technician level)
+3. You'll only see jobs you can do (based on your technician level):
 4. Pick a job that looks interesting
 5. Click "Start Repair" button
 6. Confirm you want to take this job
 7. The job is now yours!
+
+<img src="/user-manual-images/repair-jobs.jpg" alt="Repair Jobs page" width="600" />
 
 ## What you'll see in the job list
 
@@ -29,13 +31,10 @@ Every time you finish a job and want to start working on something new.
 
 ## How to pick good jobs
 
-**Start with easy ones** - if you're new, pick simple repairs first
-
-**Read the description** - understand what's wrong before you start
-
-**Check the phone model** - work on models you know well
-
-**Consider time** - don't take huge jobs at the end of your shift
+- **Start with easy ones** - if you're new, pick simple repairs first
+- **Read the description** - understand what's wrong before you start
+- **Check the phone model** - work on models you know well
+- **Consider time** - don't take huge jobs at the end of your shift
 
 ## What happens when you claim a job
 

@@ -5,7 +5,7 @@ sidebar_position: 4
 
 # Inventory Management
 
-This page shows you how to check spare parts stock and manage inventory.
+https://workflow.remobile.eu/inventory - on this you can check spare parts stock and manage inventory.
 
 ## When you need this
 - Planning what parts to order
@@ -16,7 +16,9 @@ This page shows you how to check spare parts stock and manage inventory.
 ## Viewing inventory
 
 1. Click "Inventory" in the main menu
-2. You'll see a list of all spare parts
+2. You'll see a list of all spare parts:
+<img src="/user-manual-images/inventory1.jpg" alt="Inventory list" width="600" />
+
 3. Each part shows:
    - **Part name** and description
    - **Current stock** (how many we have)
@@ -24,55 +26,55 @@ This page shows you how to check spare parts stock and manage inventory.
    - **Stock status** (good, medium, low)
    - **Supplier** information
 
+
+
 ## Understanding stock levels
 
-**Green (Good)** - We have plenty of this part
-
-**Yellow (Medium)** - Getting low, should order soon
-
-**Red (Low)** - Very low stock, order immediately!
+- **Green (Good)** - We have plenty of this part
+- **Yellow (Medium)** - Getting low, should order soon
+- **Red (Low)** - Very low stock, order immediately!
 
 ## Adding new parts to inventory
 
-1. Click "Add New Part"
+1. Click "Add Part":
+<img src="/user-manual-images/inventory2.jpg" alt="Add New Part form" width="600" />
+
 2. Fill in the details:
-   - **SKU:** Part number from supplier
-   - **Name:** What everyone calls it
-   - **Description:** More details about the part
+   - **SKU:** Part number
+   - **Part Name**
+   - **Description**
    - **Category:** Screen, battery, housing, etc.
-   - **Compatible Models:** Which phones use this part
+   - **Compatible Models:** Which phones can use this part
    - **Minimum Stock:** When to reorder
    - **Unit Cost:** How much each part costs
    - **Supplier:** Who we buy it from
-3. Click "Save Part"
+3. Click "Create Part"
+
+
 
 ## Adjusting stock levels
 
 When you receive new parts or need to fix mistakes:
 
 1. Find the part in the list
-2. Click "Adjust Stock"
-3. Choose the type:
+2. Click "Adjust Stock":
+<img src="/user-manual-images/inventory3.jpg" alt="" width="600" />
+
+3. Choose the "Adjustment type":
+<img src="/user-manual-images/inventory4.jpg" alt="" width="600" />
+
    - **Add:** New parts arrived
    - **Remove:** Parts were damaged or lost
    - **Correction:** Fix a counting mistake
+
+<img src="/user-manual-images/inventory5.jpg" alt="" width="600" />
+
 4. Enter the quantity
 5. Add a reason (like "Invoice #12345" or "Damaged in shipping")
-6. Click "Save Adjustment"
+6. Click "Apply Adjustment".
+7. You'll see the updated Stock numbers here:
+<img src="/user-manual-images/inventory6.jpg" alt="" width="600" />
 
-## Managing suppliers
-
-1. Click "Suppliers" tab
-2. You can add new suppliers or edit existing ones
-3. Track which suppliers provide which parts
-4. Keep contact information up to date
-
-## Reports you can generate
-
-- **Low stock report** - what to order right now
-- **Usage report** - which parts we use most
-- **Cost analysis** - how much we spend on parts
-- **Supplier performance** - which suppliers are reliable
 
 ## Pro tips
 - **Check inventory weekly** - don't run out of popular parts

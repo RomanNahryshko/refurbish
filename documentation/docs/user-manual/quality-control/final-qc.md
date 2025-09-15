@@ -5,14 +5,21 @@ sidebar_position: 2
 
 # Final QC Process
 
-Check phones after technicians complete repairs.
+https://remobile-refurbish.vercel.app/qc - here you check phones after technicians complete repairs.
 
 ## Steps
 
 1. Go to "Quality Control" in the main menu
-2. Click on a phone ready for Final QC
+2. Click on a phone ready for Final QC:
+<img src="/user-manual-images/qc1.jpg" alt="Final QC screen" width="600" />
+
 3. Run through the QC Checklist (see QC Checklist page for full details)
-4. Make your decision
+4. Make your decision:
+<img src="/user-manual-images/qc2.jpg" alt="QC decision screen" width="600" />
+
+
+
+
 
 ## Your decision
 

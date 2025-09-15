@@ -30,6 +30,7 @@ Assign grades to phones that pass QC.
 - Battery holds charge but may not be perfect
 - Shows clear signs of use but still sellable
 
+
 ## Key rule
 
 **When in doubt, go lower** - Better to under-promise than disappoint customers.

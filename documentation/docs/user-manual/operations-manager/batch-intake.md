@@ -5,7 +5,7 @@ sidebar_position: 2
 
 # Batch Intake Process
 
-This page shows you how to register a new batch of phones from start to finish.
+https://workflow.remobile.eu/batch-intake - this page shows you how to register a new batch of phones from start to finish.
 
 ## When you need this
 Every time new phones arrive from a supplier.
@@ -13,23 +13,38 @@ Every time new phones arrive from a supplier.
 ## Step 1: Create the batch
 
 1. Click "Batch Intake" in the main menu
-2. Click "Create New Batch" button
+2. Click "Create New Batch" button.
+
 3. Fill in the details:
    - **Supplier:** Choose from the dropdown
+   - **Expected Device Count:** The number of devices you expect in this Batch
    - **Invoice Number:** From the supplier's paperwork
    - **Invoice Date:** When the supplier sent the invoice
    - **Invoice Amount:** Total cost of this batch
    - **Device Count:** How many phones are in this batch
    - **Notes:** Anything special about this batch
+
+
+   
 4. Click "Create Batch"
+
+
 
 ## Step 2: Import Dr. Phone data
 
 1. Use Dr. Phone software to scan each phone's IMEI
-2. Export the results to Excel/CSV file
-3. Back in ReMobile, click "Import Dr. Phone Data"
-4. Upload your Excel/CSV file
+2. Export the results to Excel file
+3. Back in Workflow, click "Import Devices":
+<img src="/user-manual-images/batch-create-import-data.jpg" alt="Import Dr. Phone Data dialog" width="600" />
+
+
+4. Upload your Excel file:
+<img src="/user-manual-images/batch-create-import-data2.jpg" alt="Import data preview" width="600" />
+
+
 5. Check that all phones imported correctly
+
+
 
 ## Step 3: Review and modify (Initial QC)
 
@@ -46,12 +61,22 @@ Every time new phones arrive from a supplier.
 4. Add notes about problems Dr. Phone missed
 5. **Important:** When you save, repair jobs are created automatically for all checked repairs
 
+<img src="/user-manual-images/batch-create-import-data-review.jpg" alt="Initial QC review screen" width="600" />
+
 ## Step 4: Print labels
 
-1. Click "Generate Labels" 
+1. Click "Generate Labels":
+<img src="/user-manual-images/batch-create-print-labels.jpg" alt="Generated labels" width="600" />
+
 2. Print the labels on sticker paper
+<img src="/user-manual-images/batch-create-print-labels2.jpg" alt="Print labels preview" width="600" />
+
 3. Stick each label on the matching phone
 4. Each label shows: Internal ID, IMEI, Model, Serial Number
+
+
+
+
 
 ## What happens next
 - **If you selected repairs:** System creates repair jobs automatically, phones go to repair queue
@@ -62,4 +87,3 @@ Every time new phones arrive from a supplier.
 ## Pro tips
 - **Double-check IMEI numbers** - wrong numbers cause big problems later
 - **Be honest about damage** - it's better to catch problems now
-- **Print extra labels** - they sometimes fall off phones

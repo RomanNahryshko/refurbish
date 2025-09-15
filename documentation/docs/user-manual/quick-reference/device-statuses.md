@@ -39,6 +39,10 @@ This page explains what each device status means and what happens next.
 Every phone follows this path:
 **Received** → **Awaiting Repair** → **In Repair** → **Final QC** → **Graded**
 
+:::note Screenshot placeholder
+Simple flow diagram of statuses (left to right) matching the text.
+:::
+
 ## Special cases
 
 Some phones skip steps:

@@ -5,7 +5,7 @@ sidebar_position: 2
 
 # Dashboard Overview
 
-Your dashboard shows you the most important numbers about your business in one place.
+https://workflow.remobile.eu/dashboard - the dashboard shows you the most important numbers about the business in one place.
 
 ## When you need this
 Every morning to see how yesterday went, and anytime you want to check current performance.
@@ -15,6 +15,8 @@ Every morning to see how yesterday went, and anytime you want to check current p
 1. Click "Dashboard" in the main menu (only managers see this)
 2. The dashboard loads automatically with today's data
 3. Use the date picker to see different time periods
+
+<img src="/user-manual-images/dashboard1.jpg" alt="Dashboard overview" width="600" />
 
 ## Main sections you'll see
 

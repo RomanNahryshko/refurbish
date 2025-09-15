@@ -68,6 +68,8 @@ const config: Config = {
     ],
   ],
 
+  plugins: [require.resolve('docusaurus-plugin-image-zoom')],
+
   themeConfig: {
     // Replace with your project's social card
     image: 'img/remobile-social-card.jpg', // Create this image later
@@ -155,10 +157,15 @@ const config: Config = {
       ],
       copyright: `Copyright © ${new Date().getFullYear()} ReMobile Refurbish. Internal Use Only.`,
     },
+    zoom: {
+      selector: '.markdown img',
+      background: { light: 'rgb(255, 255, 255)', dark: 'rgb(50, 50, 50)' },
+      config: {},
+    },
     prism: {
       theme: prismThemes.github,
     },
-  } satisfies Preset.ThemeConfig,
+  } satisfies Preset.ThemeConfig & { zoom?: unknown },
 };
 
 export default config;

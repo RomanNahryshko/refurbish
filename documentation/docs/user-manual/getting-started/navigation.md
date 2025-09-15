@@ -24,10 +24,11 @@ Every time you use the system - the menu is always there to help you move around
 
 **Inventory** - Managers check spare parts stock here. Shows what parts we have and need.
 
+<img src="/user-manual-images/main-menu-items.jpg" alt="Main menu items screenshot" width="480" />
+
 ## What you'll see
 Your menu only shows what you need for your job. Don't worry if you don't see everything - that's how it should be!
 
 ## Tips
 - Click "Devices" when you need to find a specific phone
 - Your most-used menu item will depend on your job
-- The menu works the same way on phones and computers

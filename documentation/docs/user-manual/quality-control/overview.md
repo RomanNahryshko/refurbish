@@ -9,11 +9,9 @@ As a QC Controller, you're the final judge of phone quality. You decide if phone
 
 ## What you do
 
-**Final Quality Control** - Check phones after technicians finish repairs
-
-**Grade Assignment** - Give each phone a grade: A (best), B (good), or C (acceptable)
-
-**Trigger Repairs** - When you fail a device and select needed repairs, the system automatically creates repair jobs
+- **Final Quality Control** - Check phones after technicians finish repairs
+- **Grade Assignment** - Give each phone a grade: A (best), B (good), or C (acceptable)
+- **Trigger Repairs** - When you fail a device and select needed repairs, the system automatically creates repair jobs
 
 ## Your workflow
 
