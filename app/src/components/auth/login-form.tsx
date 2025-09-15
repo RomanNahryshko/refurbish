@@ -8,6 +8,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useSupabaseStore } from '@/lib/stores/supabase-store'
+import { login } from '@/lib/actions/auth'
+
+interface UserProfile {
+  must_change_password: boolean
+  role: string
+}
 
 export function LoginForm() {
   const { push } = useRouter()
@@ -23,28 +29,19 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
-      const supabase = createSupabaseClient()
-      
-      if (!supabase) {
-        console.error('❌ Login failed: Supabase client is null')
-        setError('Configuration error. Please contact your administrator.')
+      // Use server action for login with last_login update
+      const result = await login({ email, password })
+
+      if (result.error) {
+        setError(result.error)
         setIsLoading(false)
         return
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (signInError) {
-        setError(signInError.message)
-        setIsLoading(false)
-        return
+      if (result.success) {
+        // Check login status and redirect
+        checkLoginStatus()
       }
-
-      // Check login status and redirect
-      checkLoginStatus()
     } catch (err) {
       console.error('Login error:', err)
       setError('An unexpected error occurred. Please try again.')
@@ -77,11 +74,12 @@ export function LoginForm() {
       }
 
       // Check if user must change password
-      if (profile?.must_change_password) {
+      const userProfile = profile as UserProfile | null
+      if (userProfile && userProfile.must_change_password) {
         push('/change-password')
       } else {
         // Check if user has access to specific modules based on role
-        // const userRole = profile?.role || 'technician'
+        // const userRole = userProfile?.role || 'technician'
         
         // Always redirect to homepage after successful login
         push('/homepage')

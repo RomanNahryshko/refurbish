@@ -47,6 +47,29 @@ export async function login(formData: LoginFormData) {
     console.log('✅ Supabase auth successful, user:', data.user?.id)
     console.log('📧 User email:', data.user?.email)
     
+    // Update last_login timestamp in user_profiles
+    if (data.user?.id) {
+      try {
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({ 
+            last_login: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', data.user.id)
+        
+        if (updateError) {
+          console.error('⚠️ Failed to update last_login:', updateError)
+          // Don't fail the login if last_login update fails
+        } else {
+          console.log('✅ Last login timestamp updated successfully')
+        }
+      } catch (updateError) {
+        console.error('⚠️ Error updating last_login:', updateError)
+        // Don't fail the login if last_login update fails
+      }
+    }
+    
     // Log cookies after successful login
     const cookiesAfterLogin = cookieStore.getAll()
     console.log('🍪 All cookies after login:', cookiesAfterLogin.map(c => ({ name: c.name, value: c.value.substring(0, 20) + '...' })))
@@ -78,12 +101,12 @@ export async function logout() {
   
   if (!supabase) {
     redirect('/login')
-    return
   }
 
   const { error } = await supabase.auth.signOut()
 
   if (error) {
+    console.error('Logout error:', error)
   }
 
   revalidatePath('/', 'layout')
