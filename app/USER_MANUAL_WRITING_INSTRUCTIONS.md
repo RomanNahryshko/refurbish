@@ -3,7 +3,7 @@
 ## Your Task
 Write content for each page of the ReMobile Refurbish User Manual, one page at a time. This manual helps new employees learn their job quickly.
 
-## Before You Start
+## Before You Start 
 1. **Read the database schema**: Check `schema.sql` to understand data structure
 2. **Explore the codebase**: Look at `/src/app`, `/src/components`, `/src/modules` to see actual features
 3. **Check existing tech docs**: Review `/documentation/docs/tech-docs-mvp` for system details
