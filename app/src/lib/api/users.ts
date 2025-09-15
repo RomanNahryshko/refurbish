@@ -253,7 +253,7 @@ export class UsersAPI {
 
       const { data: profile, error: profileError } = await adminClient
         .from('user_profiles')
-        .insert(profileData)
+        .insert(profileData as never)
         .select()
         .single()
 
@@ -262,7 +262,7 @@ export class UsersAPI {
       }
 
       return {
-        ...profile,
+        ...profile as UserProfile,
         auth_user: {
           id: authUser.user.id,
           email: authUser.user.email,
@@ -374,7 +374,7 @@ export class UsersAPI {
         .update({ 
           must_change_password: true,
           updated_at: new Date().toISOString()
-        })
+        } as never)
         .eq('id', userId)
 
       return {
