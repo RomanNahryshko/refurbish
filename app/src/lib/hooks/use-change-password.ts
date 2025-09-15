@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useSupabaseClient } from '@/lib/stores/supabase-store'
+import { getFirstAvailableModule } from '@/lib/config/route-permissions'
 
 interface PasswordStatus {
   user: {
@@ -141,7 +142,7 @@ export function useChangePassword() {
 
       // Redirect to appropriate page based on user role
       setTimeout(() => {
-        router.replace(result.redirectPath || '/dashboard')
+        router.replace(result.redirectPath || getFirstAvailableModule('technician'))
       }, 1500)
 
       return true

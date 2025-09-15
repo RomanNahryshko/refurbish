@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '../supabase';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { hasRouteAccess, getRedirectPath } from '@/lib/config/route-permissions';
+import { hasRouteAccess, getRedirectPath, getFirstAvailableModule } from '@/lib/config/route-permissions';
 import { type UserRole } from '@/lib/types/business-types';
 
 // Simple cache for user profile data to prevent duplicate queries
@@ -184,10 +184,10 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(new URL(passwordChangePath, request.url))
       }
       
-      // Redirect based on user role
+      // Redirect based on user role to first available page
       const userRole = profile?.role as UserRole
-      const defaultRedirectPath = getRedirectPath(userRole || 'technician', '/dashboard')
-      return NextResponse.redirect(new URL(defaultRedirectPath, request.url))
+      const firstAvailablePage = getFirstAvailableModule(userRole || 'technician')
+      return NextResponse.redirect(new URL(firstAvailablePage, request.url))
     } catch {
       // Continue to home if we can't check role
       return NextResponse.redirect(new URL('/', request.url))

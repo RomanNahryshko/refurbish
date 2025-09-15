@@ -3,7 +3,10 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/hooks/use-user'
+import { useProfile } from '@/lib/hooks/use-profile'
 import { useSupabaseIsReady } from '@/lib/stores/supabase-store'
+import { getFirstAvailableModule } from '@/lib/config/route-permissions'
+import { type UserRole } from '@/lib/types/business-types'
 
 interface RouteGuardProps {
   children: React.ReactNode
@@ -18,6 +21,7 @@ export function RouteGuard({
 }: RouteGuardProps) {
   const router = useRouter()
   const { user, isLoading } = useUser()
+  const { data: profile, isLoading: profileLoading } = useProfile(!!user)
   const isReady = useSupabaseIsReady()
 
   useEffect(() => {
@@ -31,13 +35,15 @@ export function RouteGuard({
       return
     }
 
-    // If user is authenticated but trying to access login page, redirect to dashboard
-    if (!requireAuth && user) {
-      console.log('RouteGuard: User already authenticated, redirecting to dashboard')
-      router.push('/dashboard')
+    // If user is authenticated but trying to access login page, redirect to first available page
+    if (!requireAuth && user && !profileLoading) {
+      console.log('RouteGuard: User already authenticated, redirecting to first available page')
+      const userRole = (profile?.role || 'technician') as UserRole
+      const firstAvailablePage = getFirstAvailableModule(userRole)
+      router.push(firstAvailablePage)
       return
     }
-  }, [user, isLoading, isReady, requireAuth, redirectTo, router])
+  }, [user, isLoading, isReady, requireAuth, redirectTo, router, profile, profileLoading])
 
   // Show loading state while checking auth
   if (!isReady || (requireAuth && isLoading)) {

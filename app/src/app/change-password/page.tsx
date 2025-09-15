@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { usePasswordStatus, useChangePassword } from '@/lib/hooks/use-change-password'
-import { getRedirectPath } from '@/lib/config/route-permissions'
+import { getRedirectPath, getFirstAvailableModule } from '@/lib/config/route-permissions'
 import { UserRole } from '@/lib/types/business-types'
 import { PasswordStatusChecker } from '@/components/auth/password-status-checker'
 
@@ -105,7 +105,8 @@ export default function ChangePasswordPage() {
       const redirectPath = getRedirectPath(userInfo.role as UserRole, '/change-password')
       router.push(redirectPath)
     } else {
-      router.push('/dashboard')
+      const firstAvailablePage = getFirstAvailableModule('technician')
+      router.push(firstAvailablePage)
     }
   }
 
