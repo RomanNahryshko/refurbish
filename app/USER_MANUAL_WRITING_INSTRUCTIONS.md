@@ -1,6 +1,6 @@
 # User Manual Writing Instructions
 
-## Your Task
+## Your Task 
 Write content for each page of the ReMobile Refurbish User Manual, one page at a time. This manual helps new employees learn their job quickly.
 
 ## Before You Start
