@@ -21,7 +21,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { MoreHorizontal, Edit, Shield, ShieldOff, Key, Eye } from 'lucide-react'
+import { MoreHorizontal, Edit, Shield, ShieldOff, Key } from 'lucide-react'
 import { UserWithAuth } from '@/lib/api/users'
 import { TablePermissionGuard } from '@/components/auth/permission-guard'
 import { useProfile } from '@/lib/hooks/use-profile'
@@ -89,21 +89,6 @@ export function UserActions({ user, currentUserId, onUpdate }: UserActionsProps)
   return (
     <>
       <div className="flex items-center gap-2">
-        {/* View Button - Always available if user can read user profiles */}
-        <TablePermissionGuard 
-          userProfile={currentUserProfile || null}
-          table="user_profiles" 
-          action="read"
-          hideOnNoPermission={true}
-        >
-          <Link href={`/admin/users/${String(user.id)}`}>
-            <Button size="sm" variant="outline">
-              <Eye className="h-4 w-4 mr-1" />
-              View
-            </Button>
-          </Link>
-        </TablePermissionGuard>
-
         {/* More Actions Dropdown - Only show if user has update permissions */}
         <TablePermissionGuard 
           userProfile={currentUserProfile || null}

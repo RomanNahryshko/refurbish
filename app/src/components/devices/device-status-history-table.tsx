@@ -126,7 +126,7 @@ export function DeviceStatusHistoryTable({
                           {history.changed_by ? (
                             <>
                               <div className="font-medium">
-                                User ID: {history.changed_by}
+                                {history.changed_by}
                               </div>
                               <div className="text-xs text-gray-500">
                                 User details not loaded

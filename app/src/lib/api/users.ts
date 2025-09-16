@@ -34,6 +34,7 @@ export interface UserProfile {
   phone_number?: string
   employee_id?: string
   created_by?: string
+  created_by_email?: string | null
   last_login?: string
   created_at: string
   updated_at: string
@@ -49,6 +50,7 @@ export interface AuthUser {
 
 export interface UserWithAuth extends UserProfile {
   auth_user: AuthUser | null
+  creator_email?: string | null
 }
 
 /**
@@ -149,6 +151,7 @@ export class UsersAPI {
           phone_number,
           employee_id,
           created_by,
+          created_by_email,
           last_login,
           created_at,
           updated_at
@@ -239,6 +242,13 @@ export class UsersAPI {
         throw new Error('Failed to create user - no user returned')
       }
 
+      // Get creator's email
+      let creatorEmail = null
+      if (performedBy) {
+        const creatorAuthUser = await this.getAuthUserById(performedBy)
+        creatorEmail = creatorAuthUser?.email || null
+      }
+
       // Create user profile
       const profileData: Record<string, unknown> = {
         id: authUser.user.id,
@@ -248,6 +258,7 @@ export class UsersAPI {
         status: 'active',
         must_change_password: true, // Force password change on first login
         created_by: performedBy,
+        created_by_email: creatorEmail,
         created_at: new Date().toISOString()
       }
 

@@ -159,7 +159,7 @@ export function EditUserForm({ userId, currentUserId, currentUserRole }: EditUse
                 </Badge>
               </CardTitle>
               <CardDescription>
-                {user.auth_user?.email || 'No email'} • User ID: {String(user.id)}
+                {user.auth_user?.email || 'No email'}
               </CardDescription>
             </div>
             <UserActions 
@@ -181,7 +181,7 @@ export function EditUserForm({ userId, currentUserId, currentUserRole }: EditUse
             </div>
             <div>
               <p className="font-medium text-muted-foreground">Created By</p>
-              <p>{String(user.created_by || 'System')}</p>
+              <p>{user.created_by_email || 'System'}</p>
             </div>
             <div>
               <p className="font-medium text-muted-foreground">Must Change Password</p>

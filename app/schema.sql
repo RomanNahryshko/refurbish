@@ -107,6 +107,7 @@ CREATE TABLE user_profiles (
   
   -- Metadata
   created_by UUID REFERENCES auth.users(id),
+  created_by_email TEXT, -- Email of the user who created this profile
   last_login TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
