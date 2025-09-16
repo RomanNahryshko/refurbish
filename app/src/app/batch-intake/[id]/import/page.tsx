@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { InitialQCDeviceCard } from '@/components/batch-intake/initial-qc-device-card';
 import { useExcelParser } from '@/lib/hooks/use-excel-parser';
 import { useBatch } from '@/lib/hooks/use-batches';
-import { useCreateDevicesFromImport } from '@/lib/hooks/use-devices';
+import { useCreateDevicesFromImport, useCreateDevicesFromImportWithoutInvalidation } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 // Removed: Direct Supabase import - using hooks instead
 // Removed: useCreateRepairJob - repair jobs are now created by QC checks API
@@ -72,7 +72,8 @@ export default function ImportDrPhonePage() {
   // Store device IDs for each device index
   const [deviceIds, setDeviceIds] = useState<Record<number, string>>({})
   
-  const createDevicesFromImport = useCreateDevicesFromImport()
+  const _createDevicesFromImport = useCreateDevicesFromImport()
+  const createDevicesFromImportWithoutInvalidation = useCreateDevicesFromImportWithoutInvalidation()
   const findExistingDevice = useFindExistingDevice()
   const supabase = useSupabaseClient()
 
@@ -152,7 +153,7 @@ export default function ImportDrPhonePage() {
         notes: `Imported from Dr. Phone Excel file`
       }
       
-      const result = await createDevicesFromImport.mutateAsync([deviceToCreate])
+      const result = await createDevicesFromImportWithoutInvalidation.mutateAsync([deviceToCreate])
 
       if (result && result.length > 0) {
         const createdDevice = result[0]

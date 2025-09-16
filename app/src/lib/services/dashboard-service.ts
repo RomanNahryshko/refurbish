@@ -367,7 +367,7 @@ export class DashboardService {
     let query = this.supabase
       .from('repair_jobs')
       .select('device_id')
-      .in('status', ['pending', 'in_progress'])
+      .in('status', ['in_progress'])
       .is('deleted_at', null);
     if (range) query = query.gte('updated_at', range.startISO).lte('updated_at', range.endISO);
     const { data, error } = await query;
@@ -377,7 +377,7 @@ export class DashboardService {
 
   private async getAwaitingRepairCount(dateRange?: { from: Date; to: Date }) {
     const range = normalizeDateRange(dateRange);
-    let query = this.supabase.from('devices').select('id', { count: 'exact', head: true }).eq('status', 'awaiting_repair').is('deleted_at', null);
+    let query = this.supabase.from('devices').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('deleted_at', null);
     if (range) query = query.gte('updated_at', range.startISO).lte('updated_at', range.endISO);
     const res = await query;
     if (res.error) throw res.error;

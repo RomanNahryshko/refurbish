@@ -101,11 +101,13 @@ export function InitialQCDeviceCard(props: InitialQCDeviceCardProps) {
       if (!currentDeviceId) {
         if (!onCompleteQCWithDevice) {
           toast.error('Device ID missing');
+          setIsSubmitting(false);
           return;
         }
         const deviceId = await onCompleteQCWithDevice(device, deviceIndex);
         if (!deviceId) {
           toast.error('Failed to create device');
+          setIsSubmitting(false);
           return;
         }
         currentDeviceId = deviceId;

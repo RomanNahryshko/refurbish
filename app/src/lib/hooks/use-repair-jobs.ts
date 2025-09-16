@@ -73,11 +73,11 @@ export function useCreateRepairJob() {
       const repairJobsApi = createRepairJobsAPI(client)
       return repairJobsApi.create(data)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
       // Also invalidate devices queries since device status might change
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
-      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }
@@ -92,12 +92,12 @@ export function useUpdateRepairJob() {
       const repairJobsApi = createRepairJobsAPI(client)
       return repairJobsApi.update(id, data)
     },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
-      queryClient.invalidateQueries({ queryKey: ['repair-jobs', id] })
+    onSuccess: async (_, { id }) => {
+      await queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
+      await queryClient.invalidateQueries({ queryKey: ['repair-jobs', id] })
       // Also invalidate devices queries since device status might change
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
-      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }
@@ -112,11 +112,11 @@ export function useDeleteRepairJob() {
       const repairJobsApi = createRepairJobsAPI(client)
       return repairJobsApi.delete(id)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
       // Also invalidate devices queries since device status might change
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
-      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }
@@ -215,27 +215,27 @@ export function useCompleteRepairJob() {
       const result = await response.json()
       return result.data
     },
-    onSuccess: (data, { repairJobId, partsUsed }) => {
+    onSuccess: async (data, { repairJobId, partsUsed }) => {
       
       // Invalidate repair jobs queries
-      queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
-      queryClient.invalidateQueries({ queryKey: ['repair-jobs', repairJobId] })
+      await queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
+      await queryClient.invalidateQueries({ queryKey: ['repair-jobs', repairJobId] })
       
       // Also invalidate devices queries since device status changes to final_qc
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
-      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
       
       // Also invalidate QC checks queries since a new QC check is created
-      queryClient.invalidateQueries({ queryKey: ['qc-checks'] })
+      await queryClient.invalidateQueries({ queryKey: ['qc-checks'] })
       
       // Invalidate inventory queries if parts were used (stock levels changed)
       if (partsUsed && partsUsed.length > 0) {
         // Invalidate all spare parts queries (used by repair jobs page)
-        queryClient.invalidateQueries({ queryKey: ['spare-parts'] })
+        await queryClient.invalidateQueries({ queryKey: ['spare-parts'] })
         
         // Invalidate inventory module queries (used by inventory page)
-        queryClient.invalidateQueries({ queryKey: ['parts'] })
-        queryClient.invalidateQueries({ queryKey: ['parts', 'low-stock'] })
+        await queryClient.invalidateQueries({ queryKey: ['parts'] })
+        await queryClient.invalidateQueries({ queryKey: ['parts', 'low-stock'] })
         
         // Invalidate general inventory queries if they exist
         queryClient.invalidateQueries({ queryKey: ['inventory'] })
@@ -270,17 +270,17 @@ export function useStartRepairJob() {
       const repairJobsApi = createRepairJobsAPI(client)
       return repairJobsApi.startRepairJob(repairJobId, assignedTo)
     },
-    onSuccess: (data, { repairJobId }) => {
+    onSuccess: async (data, { repairJobId }) => {
       // Invalidate repair jobs queries
-      queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
-      queryClient.invalidateQueries({ queryKey: ['repair-jobs', repairJobId] })
+      await queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
+      await queryClient.invalidateQueries({ queryKey: ['repair-jobs', repairJobId] })
       
       // Also invalidate devices queries since device status changes
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
       
       // Force refetch devices to see the status change immediately
-      queryClient.refetchQueries({ queryKey: ['devices'] })
-      queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
+      await queryClient.refetchQueries({ queryKey: ['devices'] })
+      await queryClient.refetchQueries({ queryKey: ['devices', 'final-qc'] })
     },
   })
 }

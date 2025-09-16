@@ -47,18 +47,21 @@ const navigationItems: NavigationItem[] = [
     title: 'Repair Jobs',
     href: '/repair-jobs',
     description: 'Manage repair assignments',
+    //super admin + general manager + ops manager + technician
     showIf: (perms) => perms.canViewRepairJobs && !perms.isQC
   },
   {
     title: 'Quality Control',
     href: '/qc',
     description: 'Final QC and grading',
+    //super admin + general manager + ops manager
     showIf: (perms) => perms.canViewQC && !perms.isOpsManager
   },
   {
     title: 'Inventory',
     href: '/inventory',
     description: 'Spare parts management',
+    //super admin + general manager
     showIf: (perms) => perms.canViewInventory && !perms.isOpsManager && !perms.isTechnician
   },
 ]

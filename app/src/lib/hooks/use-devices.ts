@@ -370,8 +370,8 @@ export function useCreateDevice() {
       const devicesApi = createDevicesAPI(client)
       return devicesApi.create(deviceData)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
     },
   })
 }
@@ -386,9 +386,9 @@ export function useUpdateDevice() {
       const devicesApi = createDevicesAPI(client)
       return devicesApi.update(id, data)
     },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
-      queryClient.invalidateQueries({ queryKey: ['devices', id] })
+    onSuccess: async (_, { id }) => {
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices', id] })
     },
   })
 }
@@ -403,8 +403,8 @@ export function useDeleteDevice() {
       const devicesApi = createDevicesAPI(client)
       return devicesApi.delete(id)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
     },
   })
 }
@@ -419,9 +419,9 @@ export function useUpdateDeviceStatus() {
       const devicesApi = createDevicesAPI(client)
       return devicesApi.updateStatus(id, status, grade)
     },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
-      queryClient.invalidateQueries({ queryKey: ['devices', id] })
+    onSuccess: async (_, { id }) => {
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices', id] })
     },
   })
 }
@@ -436,8 +436,8 @@ export function useBulkCreateDevices() {
       const devicesApi = createDevicesAPI(client)
       return devicesApi.bulkCreate(devicesData)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
     },
   })
 }
@@ -452,8 +452,8 @@ export function useBulkUpdateDevices() {
       const devicesApi = createDevicesAPI(client)
       return devicesApi.bulkUpdate(updates)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
     },
   })
 }
@@ -521,10 +521,23 @@ export function useCreateDevicesFromImport() {
       const devicesApi = createDevicesAPI(client)
       return devicesApi.bulkCreate(devicesData)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
-      queryClient.invalidateQueries({ queryKey: ['batches'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: ['batches'] })
     },
+  })
+}
+
+export function useCreateDevicesFromImportWithoutInvalidation() {
+  const client = useSupabaseClient()
+  
+  return useMutation({
+    mutationFn: async (devicesData: CreateDeviceData[]) => {
+      if (!client) throw new Error('Supabase client not available')
+      const devicesApi = createDevicesAPI(client)
+      return devicesApi.bulkCreate(devicesData)
+    },
+    // No onSuccess - no cache invalidation
   })
 }
 
