@@ -45,7 +45,7 @@ export default function RepairJobsPage() {
   const [statusFilter, setStatusFilter] = useState('all') // Default to all jobs
   const [currentPage, setCurrentPage] = useState(1)
   const user = useUser()
-  
+  const [loading, setLoading] = useState(false)
   // Fetch real data from API
   const { data: repairJobsData, isPending: repairJobsLoading, error: repairJobsError, refetch: refetchRepairJobs, isFetching: repairJobsFetching } = useRepairJobs()
   const { batches: batchesData, loading: batchesLoading, fetchBatches: refetchBatches } = useBatches()
@@ -313,6 +313,8 @@ export default function RepairJobsPage() {
   const submitCompleteRepair = () => {
     if (!partsRecording.repairId) return
 
+    setLoading(true)
+
     // Complete the repair job and send device to QC
     completeRepairJob.mutate({
       repairJobId: partsRecording.repairId,
@@ -322,12 +324,18 @@ export default function RepairJobsPage() {
         quantity_used: part.quantity,
         notes: undefined
       }))
-    })
-    
-    setPartsRecording({
-      repairId: null,
-      parts: [],
-      notes: ''
+    }, {
+      onSuccess: () => {
+        setLoading(false)
+        setPartsRecording({
+          repairId: null,
+          parts: [],
+          notes: ''
+        })
+      },
+      onError: () => {
+        setLoading(false)
+      }
     })
   }
 
@@ -484,8 +492,9 @@ export default function RepairJobsPage() {
                   size="sm"
                   onClick={() => handleCompleteRepair(activeRepair)}
                   className="bg-green-600 hover:bg-green-700 text-white"
+                  disabled={loading}
                 >
-                  Complete Repair
+                  {loading ? 'Completing...' : 'Complete Repair'}
                 </Button>
                 <Button
                   variant="ghost"
@@ -698,7 +707,7 @@ export default function RepairJobsPage() {
                       const sparePart = spareParts.find(p => p.id === part.partId)
                       return sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock < part.quantity
                     })
-                    return hasInsufficientParts || completeRepairJob.isPending
+                    return hasInsufficientParts || completeRepairJob.isPending || loading
                   })()}
                 >
                   {completeRepairJob.isPending ? 'Completing...' : `Complete Repair${partsRecording.parts.length > 0 ? ` (${partsRecording.parts.length} part${partsRecording.parts.length > 1 ? 's' : ''})` : ''}`}
