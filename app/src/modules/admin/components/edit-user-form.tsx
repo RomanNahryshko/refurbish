@@ -1,21 +1,19 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { useUser, useUpdateUser } from '@/lib/hooks/use-users'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { LoadingSpinner } from '@/components/common/loading-spinner'
-import { RoleSelector, RoleBadge } from './role-selector'
-import { UserActions } from './user-actions'
+'use client';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useUser, useUpdateUser } from '@/lib/hooks/use-users';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { LoadingSpinner } from '@/components/common/loading-spinner';
+import { RoleSelector, RoleBadge } from './role-selector';
 
 const editUserSchema = z.object({
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -162,11 +160,6 @@ export function EditUserForm({ userId, currentUserId, currentUserRole }: EditUse
                 {user.auth_user?.email || 'No email'}
               </CardDescription>
             </div>
-            <UserActions 
-              user={user}
-              currentUserId={currentUserId}
-              onUpdate={handleRefresh}
-            />
           </div>
         </CardHeader>
         <CardContent>
@@ -193,12 +186,6 @@ export function EditUserForm({ userId, currentUserId, currentUserRole }: EditUse
 
       {/* Tabs */}
       <Tabs defaultValue="details">
-        <TabsList>
-          <TabsTrigger value="details">User Details</TabsTrigger>
-
-        </TabsList>
-
-        {/* User Details Tab */}
         <TabsContent value="details">
           <Card>
             <CardHeader>
