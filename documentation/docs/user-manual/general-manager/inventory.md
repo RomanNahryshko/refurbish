@@ -30,9 +30,9 @@ https://workflow.remobile.eu/inventory - on this you can check spare parts stock
 
 ## Understanding stock levels
 
-- **Green (Good)** - We have plenty of this part
-- **Yellow (Medium)** - Getting low, should order soon
-- **Red (Low)** - Very low stock, order immediately!
+- **Blue** (Good) - We have plenty of this part (when more than x2 from Minimum Stock Level)
+- **Gray** (Medium) - Getting low, should order soon (between Blue and Red)
+- **Red (Low)** - Very low stock, order immediately! (when equal or lower than Minimum Stock Level)
 
 ## Adding new parts to inventory
 

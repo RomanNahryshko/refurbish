@@ -17,7 +17,7 @@ https://workflow.remobile.eu/repair-jobs - here you can monitor the status of al
 2. You'll see:
    - **Pending** - Waiting for a technician to claim (includes cancelled jobs)
    - **In Progress** - Being worked on
-3. Use filters to find specific jobs by device or technician
+3. Use filters to find specific jobs by device
 
 <img src="/user-manual-images/repair-jobs.jpg" alt="Repair Jobs page" width="600" />
 
