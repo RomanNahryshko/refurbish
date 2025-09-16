@@ -22,7 +22,7 @@ const editUserSchema = z.object({
   role: z.enum(['admin', 'general_manager', 'ops_manager', 'qc_controller', 'technician']).refine((val) => val !== undefined, {
     message: 'Please select a role',
   }),
-  technician_level: z.enum(['L1', 'L2', 'L3']).optional(),
+  technician_level: z.enum(['L1', 'L2', 'L3']).optional().nullable(),
 }).refine((data) => {
   // If role is technician, technician_level is required
   if (data.role === 'technician' && !data.technician_level) {
@@ -52,9 +52,9 @@ export function EditUserForm({ userId, currentUserId, currentUserRole }: EditUse
   const form = useForm<EditUserFormData>({
     resolver: zodResolver(editUserSchema),
     defaultValues: {
-      full_name: user?.full_name || '',
-      role: user?.role as 'admin' | 'general_manager' | 'ops_manager' | 'qc_controller' | 'technician' | undefined,
-      technician_level: user?.technician_level as 'L1' | 'L2' | 'L3' | undefined,
+      full_name: '',
+      role: undefined,
+      technician_level: undefined,
     },
   })
 
@@ -64,10 +64,18 @@ export function EditUserForm({ userId, currentUserId, currentUserRole }: EditUse
       form.reset({
         full_name: String(user.full_name || ''),
         role: user.role as 'admin' | 'general_manager' | 'ops_manager' | 'qc_controller' | 'technician',
-        technician_level: user.technician_level as 'L1' | 'L2' | 'L3' | undefined,
+        technician_level: user.technician_level as 'L1' | 'L2' | 'L3' | null | undefined,
       })
     }
   }, [user, form])
+
+  // Watch for role changes and clear technician_level if not technician
+  const watchedRole = form.watch('role')
+  useEffect(() => {
+    if (watchedRole && watchedRole !== 'technician') {
+      form.setValue('technician_level', null)
+    }
+  }, [watchedRole, form])
 
   // Watch for changes
   useEffect(() => {
@@ -75,7 +83,10 @@ export function EditUserForm({ userId, currentUserId, currentUserRole }: EditUse
       if (user) {
         const changed = 
           values.full_name !== user.full_name ||
-          values.role !== user.role
+          values.role !== user.role ||
+          values.technician_level !== user.technician_level
+        
+        
         setHasChanges(changed)
       }
     })
@@ -90,9 +101,8 @@ export function EditUserForm({ userId, currentUserId, currentUserRole }: EditUse
         performedBy: currentUserId || 'unknown-admin'
       })
 
-      // Refresh user data
-      refetch()
-      setHasChanges(false)
+      // Redirect to users list after successful update
+      router.push('/admin/users')
     } catch {
       // Error is handled by the mutation hook's toast
     }
@@ -265,7 +275,7 @@ export function EditUserForm({ userId, currentUserId, currentUserRole }: EditUse
                         <FormItem>
                           <FormLabel>Technician Level</FormLabel>
                           <FormControl>
-                            <Select value={field.value} onValueChange={field.onChange}>
+                            <Select value={field.value || undefined} onValueChange={field.onChange}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select technician level" />
                               </SelectTrigger>
