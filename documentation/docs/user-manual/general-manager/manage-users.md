@@ -37,6 +37,8 @@ https://workflow.remobile.eu/admin/users - this page shows you how to add, edit,
 - **QC Controller** - Does final quality control and grading
 - **Technician** - Fixes phones (must also pick L1, L2, or L3 level)
 
+> See also: [Role Access Matrix](../quick-reference/role-access-matrix)
+
 ## Editing existing users
 
 1. Find the user in the list

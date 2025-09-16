@@ -20,6 +20,8 @@ This document outlines the user roles and their corresponding permissions within
 - Decides necessary actions for phones that fail QA
 - Assigns tasks to Technicians and Quality Control
 - Can reassign repairs between technicians
+**Quality Control:**
+- Can perform Final QC and assign grades
 
 ### Quality Control (QC)
 - Conducts post-repair quality control

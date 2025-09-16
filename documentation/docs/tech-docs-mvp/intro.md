@@ -78,7 +78,7 @@ Devices are identified through printed labels containing:
 ## User Roles Summary
 
 - **General Manager**: Full system access, reporting and analytics
-- **Operations Manager**: Batch intake, QC, repair job creation
+- **Operations Manager**: Batch intake, Final QC, repair job creation
 - **Quality Control**: Post-repair QC, grading decisions
 - **Technicians**: L1 (Housing), L2 (Glass), L3 (Battery + Others), Software Updates
 

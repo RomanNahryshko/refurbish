@@ -27,7 +27,6 @@ As an Operations Manager, you're the person who gets new phones into our system 
 7. **Check progress** throughout the day
 
 ## What you can't do
-- You can't do final quality control (that's for QC staff)
 - You can't manage inventory or spare parts
 - You can't see detailed financial reports
 
