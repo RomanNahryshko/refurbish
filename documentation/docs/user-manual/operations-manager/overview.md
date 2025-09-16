@@ -26,9 +26,5 @@ As an Operations Manager, you're the person who gets new phones into our system 
 6. **Print labels** for all phones so technicians can find them
 7. **Check progress** throughout the day
 
-## What you can't do
-- You can't manage inventory or spare parts
-- You can't see detailed financial reports
-
 ## Remember
 You're the bridge between suppliers and our repair team. Everything starts with you getting phones properly registered in the system!

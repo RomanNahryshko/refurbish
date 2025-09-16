@@ -20,6 +20,4 @@ This page shows which modules each user role can access. Use it as a quick refer
 | Technicians |  |  | Yes | Yes |  |  |  |
 | Quality Control |  |  |  |  | Yes |  |  |
 
-Notes:
-- “Admin (Super Admin)” is a full-access role intended for system administrators.
-- Per current policy, Operations Managers can perform Final QC.
+
