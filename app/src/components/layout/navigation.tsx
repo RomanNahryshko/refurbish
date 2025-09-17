@@ -4,11 +4,11 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  navigationMenuTriggerStyle,
+    NavigationMenu,
+    NavigationMenuItem,
+    NavigationMenuLink,
+    NavigationMenuList,
+    navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu'
 import { cn } from '@/lib/utils'
 import { type UserProfile, type PermissionString, type TableName, type PermissionAction } from '@/lib/types/business-types'
@@ -55,7 +55,7 @@ const navigationItems: NavigationItem[] = [
     href: '/qc',
     description: 'Final QC and grading',
     //super admin + general manager + ops manager
-    showIf: (perms) => perms.canViewQC && !perms.isOpsManager
+    showIf: (perms) => perms.canViewQC
   },
   {
     title: 'Inventory',
