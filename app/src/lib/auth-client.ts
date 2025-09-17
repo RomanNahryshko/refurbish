@@ -34,13 +34,13 @@ export async function loginClient(formData: LoginFormData) {
         if (updateError) {
           // Don't fail the login if last_login update fails
         }
-      } catch (updateError) {
+      } catch {
         // Don't fail the login if last_login update fails
       }
     }
 
     return { success: true, user: data.user }
-  } catch (error) {
+  } catch {
     return { error: 'An unexpected error occurred during login. Please try again.' }
   }
 }
@@ -60,7 +60,7 @@ export async function logoutClient() {
     }
 
     return { success: true }
-  } catch (error) {
+  } catch {
     return { error: 'An unexpected error occurred during logout.' }
   }
 }
@@ -102,7 +102,7 @@ export async function getCurrentUserClient() {
       ...user,
       ...profile,
     }
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -128,7 +128,7 @@ export async function updateLastLoginClient(userId: string) {
     }
     
     return { success: true }
-  } catch (error) {
+  } catch {
     return { error: 'Failed to update last login' }
   }
 }
