@@ -119,6 +119,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Get current device status
+    const { data: currentDevice, error: deviceFetchError } = await supabase
+      .from('devices')
+      .select('status')
+      .eq('id', device_id)
+      .single()
+
+    if (deviceFetchError) {
+      console.error('Error fetching current device status:', deviceFetchError)
+      return NextResponse.json({ 
+        error: `Failed to fetch device: ${deviceFetchError.message}` 
+      }, { status: 500 })
+    }
+
+    const currentDeviceStatus = currentDevice.status
+
     // Update device status based on QC result
     let newDeviceStatus: DeviceStatus = DEVICE_STATUS.received
     if (check_type === 'initial') {
