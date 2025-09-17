@@ -9,8 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useSupabaseStore } from '@/lib/stores/supabase-store'
 import { login } from '@/lib/actions/auth'
-import { getFirstAvailableModule } from '@/lib/config/route-permissions'
-import { type UserRole } from '@/lib/types/business-types'
 
 interface UserProfile {
   must_change_password: boolean
@@ -97,10 +95,8 @@ export function LoginForm() {
       if (userProfile && userProfile.must_change_password) {
         push('/change-password')
       } else {
-        // Redirect to first available page based on user role
-        const userRole = (userProfile?.role || 'technician') as UserRole
-        const firstAvailablePage = getFirstAvailableModule(userRole)
-        push(firstAvailablePage)
+        // Always redirect to homepage after login
+        push('/homepage')
       }
     } else {
       // Fallback to homepage if no supabase client

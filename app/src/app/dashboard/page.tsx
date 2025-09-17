@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/lib/hooks/use-user';
 import { useProfile } from '@/lib/hooks/use-profile-optimized';
-import { hasDashboardAccess, getFirstAvailableModule } from '@/lib/config/route-permissions';
+import { hasDashboardAccess } from '@/lib/config/route-permissions';
 import DashboardMain from '@/components/dashboard/dashboard-main';
 import { RouteGuard } from '@/components/auth/route-guard';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
@@ -24,10 +24,9 @@ export default function DashboardPage() {
 
       const userRole = profile?.role || 'technician';
       
-      // If user doesn't have dashboard access, redirect to first available module
+      // If user doesn't have dashboard access, redirect to homepage
       if (!hasDashboardAccess(userRole)) {
-        const firstModule = getFirstAvailableModule(userRole);
-        router.push(firstModule);
+        router.push('/homepage');
         return;
       }
     }

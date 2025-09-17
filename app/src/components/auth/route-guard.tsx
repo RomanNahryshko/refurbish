@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/hooks/use-user'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { useSupabaseIsReady } from '@/lib/stores/supabase-store'
-import { getFirstAvailableModule } from '@/lib/config/route-permissions'
-import { type UserRole } from '@/lib/types/business-types'
 
 interface RouteGuardProps {
   children: React.ReactNode
@@ -35,12 +33,10 @@ export function RouteGuard({
       return
     }
 
-    // If user is authenticated but trying to access login page, redirect to first available page
+    // If user is authenticated but trying to access login page, redirect to homepage
     if (!requireAuth && user && !profileLoading) {
-      console.log('RouteGuard: User already authenticated, redirecting to first available page')
-      const userRole = (profile?.role || 'technician') as UserRole
-      const firstAvailablePage = getFirstAvailableModule(userRole)
-      router.push(firstAvailablePage)
+      console.log('RouteGuard: User already authenticated, redirecting to homepage')
+      router.push('/homepage')
       return
     }
   }, [user, isLoading, isReady, requireAuth, redirectTo, router, profile, profileLoading])
