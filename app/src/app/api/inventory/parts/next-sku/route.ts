@@ -14,7 +14,7 @@ export async function GET() {
     const nextSku = await inventoryApi.getNextSku()
     
     return NextResponse.json({ sku: nextSku })
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Failed to get next SKU' },
       { status: 500 }
