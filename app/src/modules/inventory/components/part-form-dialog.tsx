@@ -60,14 +60,7 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
 
   // Reset form when dialog opens/closes or editing part changes
   useEffect(() => {
-    if (open && !isEditing && nextSku) {
-      // New part - use auto-generated SKU
-      setFormData(prev => ({
-        ...prev,
-        sku: nextSku,
-        compatible_models: [], // Ensure this is explicitly set
-      }))
-    } else if (open && isEditing && editingPart) {
+    if (open && isEditing && editingPart) {
       // Editing existing part - populate form
       setFormData({
         sku: editingPart.sku,
@@ -79,11 +72,27 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
         unit_cost: editingPart.unit_cost?.toString() || '',
         primary_supplier_id: editingPart.primary_supplier_id || '',
       })
+    } else if (open && !isEditing) {
+      // New part - reset form and will be populated with SKU when available
+      setFormData(prev => ({
+        ...prev,
+        compatible_models: [], // Ensure this is explicitly set
+      }))
     } else if (!open) {
       // Reset form when dialog closes
       resetForm()
     }
-  }, [open, isEditing, editingPart, nextSku])
+  }, [open, isEditing, editingPart])
+
+  // Update SKU when nextSku becomes available for new parts
+  useEffect(() => {
+    if (open && !isEditing && nextSku && !formData.sku) {
+      setFormData(prev => ({
+        ...prev,
+        sku: nextSku,
+      }))
+    }
+  }, [open, isEditing, nextSku, formData.sku])
 
   const resetForm = () => {
     setFormData({
@@ -106,10 +115,6 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
       return
     }
 
-    if (!formData.sku.trim()) {
-      toast.error('SKU is required')
-      return
-    }
 
     setIsSubmitting(true)
 
@@ -194,16 +199,28 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
               {/* SKU */}
               <div className="grid gap-2">
                 <Label htmlFor="sku">SKU</Label>
-                <Input
-                  id="sku"
-                  value={formData.sku}
-                  onChange={(e) => setFormData({...formData, sku: e.target.value})}
-                  placeholder="Auto-generated SKU"
-                  required
-                  className="font-mono"
-                />
+                <div className="relative">
+                  <Input
+                    id="sku"
+                    value={formData.sku}
+                    onChange={(e) => setFormData({...formData, sku: e.target.value})}
+                    placeholder={isEditing ? "Optional SKU" : skuLoading ? "Generating SKU..." : "Optional SKU"}
+                    className="font-mono"
+                    disabled={!isEditing && skuLoading}
+                  />
+                  {!isEditing && skuLoading && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    </div>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {isEditing ? 'Edit the SKU if needed' : 'Auto-generated, but can be modified'}
+                  {isEditing 
+                    ? 'Edit the SKU if needed (optional)' 
+                    : skuLoading 
+                      ? 'Generating auto SKU...' 
+                      : 'Auto-generated SKU - you can edit it if needed'
+                  }
                 </p>
               </div>
               
