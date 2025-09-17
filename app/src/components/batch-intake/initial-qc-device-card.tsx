@@ -116,7 +116,6 @@ export function InitialQCDeviceCard(props: InitialQCDeviceCardProps) {
       const qcData = { ...prepareQCData(), device_id: currentDeviceId };
 
       const result = await createQCCheck.mutateAsync({ qcData });
-      toast.success('QC completed successfully');
 
       onSaveToTable?.(result);
 
@@ -126,6 +125,8 @@ export function InitialQCDeviceCard(props: InitialQCDeviceCardProps) {
       onOtherDescriptionChange('');
 
       setIsCompleted(true);
+      toast.success('QC completed successfully');
+
     } catch (error) {
       console.error('Error saving QC data:', error);
       toast.error('Failed to save QC data');
