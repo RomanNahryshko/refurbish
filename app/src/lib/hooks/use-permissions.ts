@@ -2,17 +2,17 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { getUserPermissionsClient } from '@/lib/services/permissions-client'
 import {
-  type PermissionString,
-  type PermissionAction,
-  type TableName,
-  type UserProfile,
-  type RepairType
+    type PermissionString,
+    type PermissionAction,
+    type TableName,
+    type UserProfile,
+    type RepairType
 } from '@/lib/types/business-types'
 import { USER_ROLES } from '@/lib/constants'
 import {
-  getRolePermissions,
-  getTechnicianRepairTypes,
-  canTechnicianPerformRepair
+    getRolePermissions,
+    getTechnicianRepairTypes,
+    canTechnicianPerformRepair
 } from '@/lib/config/permissions'
 
 /**
@@ -154,7 +154,7 @@ export function useRolePermissions(userProfile: UserProfile | null | undefined) 
     isTechnician: userProfile?.role === USER_ROLES.technician,
     isQC: userProfile?.role === USER_ROLES.qc_controller,
     isOpsManager: userProfile?.role === USER_ROLES.ops_manager,
-    isGeneralManager: userProfile?.role === USER_ROLES.admin 
+    isGeneralManager: userProfile?.role === USER_ROLES.general_manager 
   }
 }
 

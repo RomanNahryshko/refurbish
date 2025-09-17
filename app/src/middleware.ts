@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { hasRouteAccess } from '@/lib/config/route-permissions'
+import type { UserRole } from '@/lib/types/business-types'
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -60,10 +62,10 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(redirectUrl)
       }
 
-      // Check user status in user_profiles table
+      // Check user status and role in user_profiles table
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('status')
+        .select('status, role')
         .eq('id', user.id)
         .single()
 
@@ -81,6 +83,20 @@ export async function middleware(request: NextRequest) {
         supabaseResponse.cookies.delete('sb-refresh-token')
         
         return NextResponse.redirect(redirectUrl)
+      }
+
+      // Check role-based route access (skip for homepage to prevent redirect loops)
+      if (profile && profile.role && pathname !== '/homepage') {
+        const hasAccess = hasRouteAccess(profile.role as UserRole, pathname)
+        
+        if (!hasAccess) {
+          // Always redirect to homepage for unauthorized access
+          // Check if we're not already trying to redirect to homepage to prevent loops
+          if (pathname !== '/homepage') {
+            const redirectUrl = new URL('/homepage', request.url)
+            return NextResponse.redirect(redirectUrl)
+          }
+        }
       }
       
       // Simplified logic - just check if user exists, don't check password status here

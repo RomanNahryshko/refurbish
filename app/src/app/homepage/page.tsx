@@ -24,7 +24,7 @@ const allModules: HomepageModule[] = [
     description: 'Overview & metrics',
     href: '/dashboard',
     icon: '📈',
-    showIf: (perms) => perms.isGeneralManager
+    showIf: (perms) => perms.isAdmin || perms.isGeneralManager
   },
   {
     title: 'Batch Intake',
@@ -119,7 +119,7 @@ export default function HomePage() {
           {/* Dynamic grid based on available modules */}
           <div className={`grid gap-6 ${
             availableModules.length <= 2 
-              ? 'grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto'
+              ? 'grid-cols-1 md:grid-cols-2'
               : availableModules.length <= 4
               ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
               : availableModules.length <= 6

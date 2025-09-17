@@ -19,6 +19,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
   
   ops_manager: [
     '/',
+    '/homepage',
     '/batch-intake',
     '/batch-intake/*',
     '/devices',
@@ -32,6 +33,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
   
   qc_controller: [
     '/',
+    '/homepage',
     '/qc',
     '/qc/*',
     '/devices',
@@ -41,6 +43,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
   
   technician: [
     '/',
+    '/homepage',
     '/devices',
     '/devices/*',
     '/repair-jobs',
