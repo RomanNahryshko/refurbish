@@ -4,7 +4,7 @@ export default function DeviceInfo({ device }: { device: DrPhoneData }) {
   return (
     <div className="grid md:grid-cols-3 gap-4">
       <InfoRow label="IMEI:" value={device.imei as string} mono />
-      <InfoRow label="Model:" value={`${device.brand} ${device.model}`} />
+      <InfoRow label="Model:" value={`${device.device_info?.brand} ${device.device_info?.model}`} />
       <InfoRow label="Serial:" value={device.serialNumber as string} mono />
     </div>
   );
