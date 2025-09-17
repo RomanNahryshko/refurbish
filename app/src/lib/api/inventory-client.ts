@@ -197,14 +197,43 @@ export async function isSkuUnique(sku: string, excludeId?: string): Promise<bool
 }
 
 /**
- * Get next available SKU
+ * Get next available SKU - Direct Supabase call
  */
 export async function getNextSku(): Promise<string> {
-  const response = await fetch('/api/inventory/parts/next-sku')
-  if (!response.ok) {
-    throw new Error(`Failed to get next SKU: ${response.statusText}`)
-  }
+  // Import Supabase client dynamically to avoid SSR issues
+  const { createSupabaseClient } = await import('@/lib/supabase/client')
   
-  const data = await response.json()
-  return data.sku
+  const supabase = createSupabaseClient()
+  if (!supabase) {
+    throw new Error('Supabase client not available')
+  }
+
+  // Get the highest SKU number
+  const { data, error } = await supabase
+    .from('spare_parts')
+    .select('sku')
+    .order('sku', { ascending: false })
+    .limit(1)
+
+  if (error) {
+    throw new Error(`Failed to fetch SKU: ${error.message}`)
+  }
+
+  // If no parts exist, start with SKU-001
+  if (!data || data.length === 0) {
+    return 'SKU-001'
+  }
+
+  // Extract number from last SKU and increment
+  const lastSku = data[0].sku
+  const match = lastSku.match(/SKU-(\d+)/)
+  
+  if (!match) {
+    // If format is unexpected, start with SKU-001
+    return 'SKU-001'
+  }
+
+  const lastNumber = parseInt(match[1], 10)
+  const nextNumber = lastNumber + 1
+  return `SKU-${nextNumber.toString().padStart(3, '0')}`
 }

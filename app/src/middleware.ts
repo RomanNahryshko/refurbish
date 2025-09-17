@@ -10,7 +10,6 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/api/') ||
       pathname.startsWith('/favicon') ||
       pathname.includes('.')) {
-    console.log('🔒 Middleware: Skipping path:', pathname)
     return NextResponse.next()
   }
 
@@ -28,15 +27,11 @@ export async function middleware(request: NextRequest) {
   if (isProtectedPath) {
     
     try {
-      // Simple Supabase auth check
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      // Simple Supabase auth check - use proxy URL if available
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       
       const supabaseResponse = NextResponse.next()
-      
-      // Log all cookies for debugging
-      const allCookies = request.cookies.getAll()
-      console.log('🔒 Middleware: All cookies:', allCookies.map(c => ({ name: c.name, value: c.value.substring(0, 20) + '...' })))
       
       const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
         cookies: {
@@ -51,20 +46,9 @@ export async function middleware(request: NextRequest) {
         },
       })
 
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
-      console.log('🔒 Middleware: Auth check result:', {
-        hasUser: !!user,
-        userId: user?.id,
-        error: userError?.message
-      })
-      
-      if (userError) {
-        console.error('🔒 Middleware: Auth error:', userError)
-      }
+      const { data: { user }, error: _userError } = await supabase.auth.getUser()
       
       if (!user) {
-        console.log('🔒 Middleware: No user, redirecting to login')
         // Clear any existing auth cookies when redirecting to login
         const redirectUrl = new URL('/login', request.url)
         redirectUrl.searchParams.set('redirectTo', pathname)
@@ -84,11 +68,9 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (profileError) {
-        console.error('🔒 Middleware: Error fetching user profile:', profileError)
         // If we can't check the profile, allow the request to continue
         // This prevents middleware from blocking requests due to database issues
       } else if (profile && profile.status !== 'active') {
-        console.log('🔒 Middleware: User status is not active:', profile.status, 'redirecting to login')
         // Clear auth cookies and redirect to login for inactive users
         const redirectUrl = new URL('/login', request.url)
         redirectUrl.searchParams.set('redirectTo', pathname)
@@ -101,20 +83,16 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(redirectUrl)
       }
       
-      console.log('🔒 Middleware: User authenticated, allowing access to:', pathname)
-      
       // Simplified logic - just check if user exists, don't check password status here
       // Password status will be checked on the client side after redirect
       return supabaseResponse
-    } catch (error) {
-      console.error('🔒 Middleware: Error during auth check:', error)
+    } catch {
       // If there's any error, allow the request to continue
       // This prevents middleware from blocking requests due to auth issues
       return NextResponse.next()
     }
   }
   
-  console.log('🔒 Middleware: Allowing access to:', pathname)
   return NextResponse.next()
 }
 

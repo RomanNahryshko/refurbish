@@ -193,7 +193,7 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
             <div className="grid gap-4 py-4">
               {/* SKU */}
               <div className="grid gap-2">
-                <Label htmlFor="sku">SKU *</Label>
+                <Label htmlFor="sku">SKU</Label>
                 <Input
                   id="sku"
                   value={formData.sku}

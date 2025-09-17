@@ -29,7 +29,6 @@ export function createSupabaseClient() {
     supabaseAnonKey
   ) as unknown as SupabaseClient
   
-  console.log('✅ createSupabaseClient: New client created successfully')
   return browserClient
 }
 

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useSupabaseStore } from '@/lib/stores/supabase-store'
-import { login } from '@/lib/actions/auth'
+import { loginClient } from '@/lib/auth-client'
 
 interface UserProfile {
   must_change_password: boolean
@@ -39,8 +39,8 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
-      // Use server action for login with last_login update
-      const result = await login({ email, password })
+      // Use client-side login function (goes through proxy)
+      const result = await loginClient({ email, password })
 
       if (result.error) {
         setError(result.error)
