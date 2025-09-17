@@ -11,7 +11,6 @@ import { LoadingSpinner } from '@/components/common/loading-spinner';
 import {
   ArrowLeft,
   Smartphone,
-  Wrench,
   Hash
 } from 'lucide-react';
 import { useDeviceByInternalId, useDeviceStatusHistory } from '@/lib/hooks/use-devices';

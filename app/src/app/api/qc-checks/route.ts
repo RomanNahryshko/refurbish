@@ -279,17 +279,17 @@ export async function POST(request: NextRequest) {
       : `Initial QC: ${overall_result === 'pass' ? 'Passed' : 'Failed'}`
     )
 
-    const { error: historyError } = await supabase
-      .from('device_status_history')
-      .insert({
+    // Use helper function to record status change with full user information
+    try {
+      const { recordDeviceStatusChange } = await import('@/lib/helpers/device-status-history')
+      await recordDeviceStatusChange(supabase, {
         device_id: device_id,
+        old_status: currentDeviceStatus,
         new_status: newDeviceStatus,
-        notes: historyNotes,
         changed_by: user.id,
-        created_at: new Date().toISOString()
+        notes: historyNotes
       })
-
-    if (historyError) {
+    } catch (historyError) {
       console.error('Error recording device status history:', historyError)
       // Note: We don't fail the entire request if history recording fails
     }

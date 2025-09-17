@@ -98,6 +98,7 @@ CREATE TYPE user_status AS ENUM (
 CREATE TABLE user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT NOT NULL,
+  email TEXT NOT NULL, -- User's email address
   role user_role NOT NULL DEFAULT 'technician',
   technician_level technician_level, -- Only for technicians
   status user_status NOT NULL DEFAULT 'active',
@@ -205,6 +206,7 @@ CREATE TABLE devices (
   
   -- Metadata
   created_by UUID REFERENCES auth.users(id),
+  updated_by UUID REFERENCES auth.users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ -- Soft delete
@@ -565,8 +567,9 @@ CREATE OR REPLACE FUNCTION track_device_status_change()
 RETURNS TRIGGER AS $$
 BEGIN
   IF OLD.status IS DISTINCT FROM NEW.status THEN
-    INSERT INTO device_status_history (device_id, old_status, new_status, changed_by)
-    VALUES (NEW.id, OLD.status, NEW.status, NEW.created_by);
+    INSERT INTO device_status_history (device_id, old_status, new_status, changed_by, notes)
+    VALUES (NEW.id, OLD.status, NEW.status, NEW.updated_by, 
+            'Status changed from ' || OLD.status || ' to ' || NEW.status);
   END IF;
   RETURN NEW;
 END;

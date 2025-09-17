@@ -170,6 +170,7 @@ export async function POST(request: NextRequest) {
           .from('devices')
           .update({ 
             status: DEVICE_STATUS.final_qc,
+            updated_by: user.id,
             updated_at: new Date().toISOString()
           })
           .eq('id', repairJob.device_id)
@@ -195,18 +196,17 @@ export async function POST(request: NextRequest) {
           // Don't fail the entire request if QC check creation fails
         }
 
-        // Record device status change in history
-        const { error: historyError } = await supabase
-          .from('device_status_history')
-          .insert({
+        // Record device status change in history with full user information
+        try {
+          const { recordDeviceStatusChange } = await import('@/lib/helpers/device-status-history')
+          await recordDeviceStatusChange(supabase, {
             device_id: repairJob.device_id,
             old_status: DEVICE_STATUS.in_repair,
             new_status: DEVICE_STATUS.final_qc,
             changed_by: user.id,
             notes: `Device sent to final QC after completing ${repairJob.repair_type} repair`
           })
-
-        if (historyError) {
+        } catch (historyError) {
           console.error('Error recording device status history:', historyError)
           // Don't fail the entire request if history recording fails
         }

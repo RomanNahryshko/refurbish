@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { Device, DeviceStatus, DeviceGrade, DrPhoneData, DeviceStatusUpdateData } from '@/lib/types/business-types'
+import { Device, DeviceStatus, DeviceGrade, DrPhoneData, DeviceStatusUpdateData, DeviceStatusHistory } from '@/lib/types/business-types'
 
 // Enhanced types for better type safety and structure
 export interface CreateDeviceData {
@@ -220,7 +220,7 @@ export class DevicesAPI {
   /**
    * Update device status
    */
-  async updateStatus(id: string, status: DeviceStatus, grade?: DeviceGrade) {
+  async updateStatus(id: string, status: DeviceStatus, grade?: DeviceGrade, changedBy?: string) {
     const updateData: DeviceStatusUpdateData = { 
       status, 
       updated_at: new Date().toISOString() 
@@ -228,6 +228,10 @@ export class DevicesAPI {
     
     if (grade) {
       updateData.grade = grade
+    }
+
+    if (changedBy) {
+      updateData.updated_by = changedBy
     }
 
     const { data, error } = await this.supabase
@@ -238,6 +242,23 @@ export class DevicesAPI {
       .single()
 
     if (error) throw error
+
+    // Record status change in history if changedBy is provided
+    if (changedBy) {
+      try {
+        const { recordDeviceStatusChange } = await import('@/lib/helpers/device-status-history')
+        await recordDeviceStatusChange(this.supabase, {
+          device_id: id,
+          new_status: status,
+          changed_by: changedBy,
+          notes: `Device status updated to ${status}${grade ? ` with grade ${grade}` : ''}`
+        })
+      } catch (historyError) {
+        console.warn('Failed to record device status history:', historyError)
+        // Don't fail the main operation if history recording fails
+      }
+    }
+
     return data as Device
   }
 
@@ -373,7 +394,7 @@ export class DevicesAPI {
   }
 
   /**
-   * Get device status history
+   * Get device status history with user information
    */
   async getDeviceStatusHistory(deviceId: string) {
     const { data, error } = await this.supabase
@@ -383,8 +404,65 @@ export class DevicesAPI {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data
+    
+    // Get user profiles separately since there's no direct foreign key relationship
+    const enrichedData = await this.enrichWithUserProfiles(data)
+    return enrichedData
   }
+
+  /**
+   * Enrich status history with user profile data
+   */
+  private async enrichWithUserProfiles(historyData: DeviceStatusHistory[]): Promise<DeviceStatusHistory[]> {
+    try {
+      // Get all unique user IDs
+      const userIds = [...new Set(historyData
+        .map(h => h.changed_by)
+        .filter(Boolean)
+      )]
+
+      if (userIds.length === 0) {
+        return historyData.map(history => ({
+          ...history,
+          user_profile: null
+        }))
+      }
+
+      // Get user profiles
+      const { data: userProfiles, error: profilesError } = await this.supabase
+        .from('user_profiles')
+        .select('id, full_name, email')
+        .in('id', userIds)
+
+      if (profilesError) {
+        console.warn('Error fetching user profiles:', profilesError)
+      }
+
+      // Create profile map
+      const profileMap = new Map()
+      if (userProfiles) {
+        userProfiles.forEach(profile => {
+          profileMap.set(profile.id, profile)
+        })
+      }
+
+      // Enrich the data
+      return historyData.map(history => ({
+        ...history,
+        user_profile: history.changed_by && profileMap.has(history.changed_by) 
+          ? profileMap.get(history.changed_by) 
+          : null
+      }))
+
+    } catch (error) {
+      console.warn('Error enriching with user profiles:', error)
+      return historyData.map(history => ({
+        ...history,
+        user_profile: null
+      }))
+    }
+  }
+
 
   /**
    * Get devices in final QC status

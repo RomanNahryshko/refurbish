@@ -13,6 +13,7 @@ export interface CreateUserData {
 
 export interface UpdateUserData {
   full_name?: string
+  email?: string
   role?: UserRole
   technician_level?: TechnicianLevel | null
   status?: UserAccountStatus
@@ -27,6 +28,7 @@ export interface UserFilters {
 export interface UserProfile {
   id: string
   full_name: string
+  email: string
   role: UserRole
   status: UserAccountStatus
   technician_level?: TechnicianLevel | null
@@ -72,6 +74,7 @@ export class UsersAPI {
         .select(`
           id,
           full_name,
+          email,
           role,
           status,
           technician_level,
@@ -121,7 +124,7 @@ export class UsersAPI {
         const searchLower = filters.search.toLowerCase()
         return usersWithEmails.filter(user => 
           (user.full_name && String(user.full_name).toLowerCase().includes(searchLower)) ||
-          (user.auth_user?.email && user.auth_user.email.toLowerCase().includes(searchLower))
+          (user.email && user.email.toLowerCase().includes(searchLower))
         )
       }
 
@@ -144,6 +147,7 @@ export class UsersAPI {
         .select(`
           id,
           full_name,
+          email,
           role,
           status,
           technician_level,
@@ -253,6 +257,7 @@ export class UsersAPI {
       const profileData: Record<string, unknown> = {
         id: authUser.user.id,
         full_name: userData.full_name,
+        email: userData.email, // Store email in user_profiles
         role: userData.role,
         technician_level: userData.role === 'technician' ? (userData.technician_level || 'L1') : null,
         status: 'active',
