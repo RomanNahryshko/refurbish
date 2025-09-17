@@ -148,14 +148,6 @@ export default function DeviceJobSheetPage() {
           </div>
         </div>
         
-        <div>
-          <Link href="/repair-jobs">
-            <Button variant="outline" size="sm" className="cursor-pointer">
-              <Wrench className="mr-2 h-4 w-4" />
-              Repair Queue
-            </Button>
-          </Link>
-        </div>
       </div>
 
       {/* Status Card */}
