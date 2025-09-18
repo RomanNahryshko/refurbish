@@ -1,37 +1,21 @@
 // Supabase environment configuration
-export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+// Use proxy URL if available, otherwise fallback to direct Supabase URL
+export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-// Debug logging for production troubleshooting
-if (typeof window !== 'undefined') {
-  console.log('🔧 Supabase Config Debug:', {
-    url: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
-    anonKey: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'MISSING',
-    urlLength: supabaseUrl.length,
-    anonKeyLength: supabaseAnonKey.length
-  })
-}
 
-// Validate Supabase URL format
+// Validate Supabase URL format (supports both direct Supabase and proxy URLs)
 const isValidSupabaseUrl = (url: string): boolean => {
   try {
     const parsed = new URL(url)
-    const isValid = parsed.protocol === 'https:' && url.includes('supabase.co')
+    // Allow both https (direct Supabase) and http (local proxy)
+    const isValidProtocol = parsed.protocol === 'https:' || parsed.protocol === 'http:'
+    const isValidDomain = url.includes('supabase.co') || url.includes('localhost') || url.includes('127.0.0.1') || url.includes('backend-proxy.attractgroup.com')
+    const isValid = isValidProtocol && isValidDomain
     
-    if (typeof window !== 'undefined') {
-      console.log('🔧 URL Validation:', {
-        url: url ? `${url.substring(0, 30)}...` : 'MISSING',
-        protocol: parsed.protocol,
-        hasSupabaseCo: url.includes('supabase.co'),
-        isValid
-      })
-    }
     
     return isValid
-  } catch (error) {
-    if (typeof window !== 'undefined') {
-      console.log('🔧 URL Validation Error:', error)
-    }
+  } catch {
     return false
   }
 }
@@ -42,21 +26,7 @@ export const hasValidSupabaseConfig =
   supabaseAnonKey.length > 0 &&
   !supabaseUrl.includes('your-project-ref')
 
-if (typeof window !== 'undefined') {
-  console.log('🔧 Supabase Config Status:', {
-    hasValidSupabaseConfig,
-    urlValid: isValidSupabaseUrl(supabaseUrl),
-    anonKeyPresent: supabaseAnonKey.length > 0,
-    notPlaceholder: !supabaseUrl.includes('your-project-ref')
-  })
-}
 
-if (!hasValidSupabaseConfig) {
-  // Supabase configuration is missing or invalid
-  if (typeof window !== 'undefined') {
-    console.error('❌ Supabase configuration is invalid or missing')
-  }
-}
 
 // Type for Supabase client options
 export type SupabaseOptions = {

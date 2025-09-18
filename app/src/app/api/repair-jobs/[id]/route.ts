@@ -60,6 +60,7 @@ export async function PATCH(
         .from('devices')
         .update({ 
           status: DEVICE_STATUS.in_repair,
+          updated_by: user.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingRepairJob.device_id)
@@ -68,18 +69,18 @@ export async function PATCH(
         // Don't fail the entire request if device update fails
       }
 
-      // Record device status change in history
-      const { error: historyError } = await supabase
-        .from('device_status_history')
-        .insert({
+      // Record device status change in history with full user information
+      try {
+        const { recordDeviceStatusChange } = await import('@/lib/helpers/device-status-history')
+        await recordDeviceStatusChange(supabase, {
           device_id: existingRepairJob.device_id,
           old_status: DEVICE_STATUS.awaiting_repair,
           new_status: DEVICE_STATUS.in_repair,
           changed_by: user.id,
           notes: `Device status changed to in_repair when starting repair job`
         })
-
-      if (historyError) {
+      } catch (historyError) {
+        console.error('Error recording device status history:', historyError)
         // Don't fail the entire request if history recording fails
       }
     } else if (updateData.status === 'pending') {
@@ -88,6 +89,7 @@ export async function PATCH(
         .from('devices')
         .update({ 
           status: DEVICE_STATUS.awaiting_repair,
+          updated_by: user.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingRepairJob.device_id)
@@ -96,18 +98,18 @@ export async function PATCH(
         // Don't fail the entire request if device update fails
       }
 
-      // Record device status change in history
-      const { error: historyError } = await supabase
-        .from('device_status_history')
-        .insert({
+      // Record device status change in history with full user information
+      try {
+        const { recordDeviceStatusChange } = await import('@/lib/helpers/device-status-history')
+        await recordDeviceStatusChange(supabase, {
           device_id: existingRepairJob.device_id,
           old_status: DEVICE_STATUS.in_repair,
           new_status: DEVICE_STATUS.awaiting_repair,
           changed_by: user.id,
           notes: `Device status changed to awaiting_repair when canceling repair job`
         })
-
-      if (historyError) {
+      } catch (historyError) {
+        console.error('Error recording device status history:', historyError)
         // Don't fail the entire request if history recording fails
       }
     }

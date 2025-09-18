@@ -3,14 +3,15 @@
 import { ReactNode } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
-    Eye,
-    ClipboardCheck,
-    CheckCircle,
-    Clock,
-    Wrench,
-    Package,
-    AlertCircle
+  Eye,
+  ClipboardCheck,
+  CheckCircle,
+  Clock,
+  Wrench,
+  Package,
+  AlertCircle
 } from 'lucide-react'
 import { DeviceListTable, DeviceTableColumn } from '@/components/common/device-list-table'
 import { RepairJob, Batch, Device } from '@/lib/types/business-types'
@@ -30,7 +31,11 @@ export const repairTypeConfig = {
   'glass_change': { label: 'Glass Change', level: 'L2', icon: AlertCircle },
   'battery_change': { label: 'Battery Change', level: 'L3', icon: Package },
   'software_update': { label: 'Software Update', level: 'L3', icon: CheckCircle },
-  'other': { label: 'Other Repair', level: 'L3', icon: Wrench }
+  'other': { 
+    label: 'Other Repair', 
+    level: 'L3', 
+    icon: Wrench
+  }
 }
 
 // Extended RepairJob type with joined data from API
@@ -223,7 +228,7 @@ export function RepairJobListTable({
       case 'imei':
         // Use imei column to show repair type
         const RepairIcon = repairConfig?.icon || Wrench
-        return (
+        const repairTypeContent = (
           <div className="flex items-center gap-2">
             <RepairIcon className="h-4 w-4 text-gray-600" />
             <span>{repairConfig?.label}</span>
@@ -232,6 +237,25 @@ export function RepairJobListTable({
             </Badge>
           </div>
         )
+        
+        // Add tooltip for "Other Repair" type - show description if available
+        if (repairJob.repair_type === 'other' && repairJob.description) {
+          return (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {repairTypeContent}
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-sm font-medium mb-1">Repair Description:</p>
+                  <p className="text-sm">{repairJob.description}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )
+        }
+        
+        return repairTypeContent
       
 
       

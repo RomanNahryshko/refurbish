@@ -20,6 +20,7 @@ export type UserAccountStatus = ValueOf<typeof USER_STATUS>
 export interface UserProfile {
   id: string
   full_name: string
+  email: string
   role: UserRole
   technician_level?: TechnicianLevel // Only for technicians
   status: UserAccountStatus
@@ -67,7 +68,12 @@ export interface DeviceStatusHistory {
   changed_by?: string
   notes?: string
   created_at: string
-  // Note: changed_by contains the user ID, but we don't join user data in this query
+  // User information from joined user_profiles table
+  user_profile?: {
+    id: string
+    full_name?: string
+    email?: string
+  } | null
 }
 
 // Batch types - matches database schema exactly
@@ -510,6 +516,7 @@ export interface DeviceStatusUpdateData {
   status: DeviceStatus
   updated_at: string
   grade?: DeviceGrade
+  updated_by?: string
 }
 
 // QC check filter fields

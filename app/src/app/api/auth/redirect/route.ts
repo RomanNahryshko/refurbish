@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
+import { getFirstAvailableModule } from '@/lib/config/route-permissions'
 
 export async function POST() {
   
   try {
-    // Return redirect URL
+    // Return redirect URL to first available page
     return NextResponse.json({ 
       success: true, 
-      redirectUrl: '/dashboard',
+      redirectUrl: getFirstAvailableModule('technician'),
       message: 'Redirect granted without auth check (testing mode)'
     })
   } catch (error) {

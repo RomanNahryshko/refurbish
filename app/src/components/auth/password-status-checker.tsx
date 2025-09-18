@@ -24,15 +24,24 @@ export function PasswordStatusChecker() {
           return
         }
 
-        // Get user profile to check password status and role
+        // Get user profile to check password status, role, and status
         const { data: profile, error: profileError } = await supabase
           .from('user_profiles')
-          .select('must_change_password, role')
+          .select('must_change_password, role, status')
           .eq('id', user.id)
           .single()
 
         if (profileError) {
           console.error('Error fetching user profile:', profileError)
+          return
+        }
+
+        // Check if user account is active
+        if (profile?.status !== 'active') {
+          console.log('User account is not active:', profile?.status)
+          // Sign out the user and redirect to login
+          await supabase.auth.signOut()
+          router.replace('/login?error=account_inactive')
           return
         }
 

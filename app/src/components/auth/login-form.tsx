@@ -1,21 +1,37 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useSupabaseStore } from '@/lib/stores/supabase-store'
+import { loginClient } from '@/lib/auth-client'
+
+interface UserProfile {
+  must_change_password: boolean
+  role: string
+  status: string
+}
 
 export function LoginForm() {
   const { push } = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const { setUser } = useSupabaseStore()
+
+  // Check for error parameter in URL
+  useEffect(() => {
+    const errorParam = searchParams.get('error')
+    if (errorParam === 'account_inactive') {
+      setError('Your account is inactive. Please contact an administrator.')
+    }
+  }, [searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,28 +39,19 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
-      const supabase = createSupabaseClient()
-      
-      if (!supabase) {
-        console.error('❌ Login failed: Supabase client is null')
-        setError('Configuration error. Please contact your administrator.')
+      // Use client-side login function (goes through proxy)
+      const result = await loginClient({ email, password })
+
+      if (result.error) {
+        setError(result.error)
         setIsLoading(false)
         return
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (signInError) {
-        setError(signInError.message)
-        setIsLoading(false)
-        return
+      if (result.success) {
+        // Check login status and redirect
+        checkLoginStatus()
       }
-
-      // Check login status and redirect
-      checkLoginStatus()
     } catch (err) {
       console.error('Login error:', err)
       setError('An unexpected error occurred. Please try again.')
@@ -67,7 +74,7 @@ export function LoginForm() {
 
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('must_change_password, role')
+        .select('must_change_password, role, status')
         .eq('id', user.id)
         .single()
 
@@ -76,14 +83,19 @@ export function LoginForm() {
         return
       }
 
+      // Check if user account is active
+      const userProfile = profile as UserProfile | null
+      if (userProfile && userProfile.status !== 'active') {
+        setError('Your account is inactive. Please contact an administrator.')
+        setIsLoading(false)
+        return
+      }
+
       // Check if user must change password
-      if (profile?.must_change_password) {
+      if (userProfile && userProfile.must_change_password) {
         push('/change-password')
       } else {
-        // Check if user has access to specific modules based on role
-        // const userRole = profile?.role || 'technician'
-        
-        // Always redirect to homepage after successful login
+        // Always redirect to homepage after login
         push('/homepage')
       }
     } else {

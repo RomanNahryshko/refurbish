@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabaseUrl, supabaseAnonKey, hasValidSupabaseConfig } from '../supabase'
 
 // Singleton instance to prevent multiple clients
-let browserClient: ReturnType<typeof createBrowserClient> | null = null
+let browserClient: SupabaseClient | null = null
 
 /**
  * Optimized Supabase client singleton for browser
@@ -27,9 +27,8 @@ export function createSupabaseClient() {
   browserClient = createBrowserClient(
     supabaseUrl,
     supabaseAnonKey
-  )
+  ) as unknown as SupabaseClient
   
-  console.log('✅ createSupabaseClient: New client created successfully')
   return browserClient
 }
 

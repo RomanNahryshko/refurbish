@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useSupabaseClient } from '@/lib/stores/supabase-store'
+import { getFirstAvailableModule } from '@/lib/config/route-permissions'
 
 interface PasswordStatus {
   user: {
@@ -69,12 +70,18 @@ export function usePasswordStatus() {
       // Get user profile
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('must_change_password, role')
+        .select('must_change_password, role, status')
         .eq('id', user.id)
         .single()
 
       if (profileError) {
         setError('Failed to fetch user profile')
+        return null
+      }
+
+      // Check if user account is active
+      if (profile?.status !== 'active') {
+        setError('Account is inactive')
         return null
       }
 
@@ -135,7 +142,7 @@ export function useChangePassword() {
 
       // Redirect to appropriate page based on user role
       setTimeout(() => {
-        router.replace(result.redirectPath || '/dashboard')
+        router.replace(result.redirectPath || getFirstAvailableModule('technician'))
       }, 1500)
 
       return true

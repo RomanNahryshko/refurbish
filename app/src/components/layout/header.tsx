@@ -150,18 +150,15 @@ export function Header() {
                       )}
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/change-password" className="cursor-pointer">
-                      Change Password
-                    </Link>
-                  </DropdownMenuItem>
                   {(userRole === 'admin' || userRole === 'general_manager') && (
+                    <>
+                    <DropdownMenuSeparator />  
                     <DropdownMenuItem asChild>
                       <Link href="/admin" className="cursor-pointer">
                         Admin Settings
                       </Link>
-                    </DropdownMenuItem>
+                      </DropdownMenuItem>
+                    </>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">

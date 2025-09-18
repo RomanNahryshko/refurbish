@@ -157,7 +157,7 @@ export function useUpdateUserStatus() {
       performedBy 
     }: { 
       userId: string; 
-      status: 'active' | 'disabled'; 
+      status: 'active' | 'inactive'; 
       performedBy: string 
     }) => {
       const response = await fetch(`/api/admin/users/${userId}/status`, {

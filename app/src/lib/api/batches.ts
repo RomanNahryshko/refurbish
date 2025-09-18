@@ -260,4 +260,4 @@ export function createBatchesAPI(supabase: SupabaseClient): BatchesAPI {
  * @deprecated Use createBatchesAPI() with dependency injection instead
  */
 import { createSupabaseClient } from '@/lib/supabase/client'
-export const batchesApi = new BatchesAPI(createSupabaseClient()!)
+export const batchesApi = new BatchesAPI(createSupabaseClient()! as unknown as SupabaseClient)

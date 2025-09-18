@@ -119,6 +119,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Get current device status
+    const { data: currentDevice, error: deviceFetchError } = await supabase
+      .from('devices')
+      .select('status')
+      .eq('id', device_id)
+      .single()
+
+    if (deviceFetchError) {
+      console.error('Error fetching current device status:', deviceFetchError)
+      return NextResponse.json({ 
+        error: `Failed to fetch device: ${deviceFetchError.message}` 
+      }, { status: 500 })
+    }
+
+    const currentDeviceStatus = currentDevice.status
+
     // Update device status based on QC result
     let newDeviceStatus: DeviceStatus = DEVICE_STATUS.received
     if (check_type === 'initial') {
@@ -222,8 +238,10 @@ export async function POST(request: NextRequest) {
           let description: string | undefined
           if (repairType === 'other') {
             // Extract repair details from notes
+            // Notes format: "Initial QC: Repairs required. Selected repairs: Other [description]"
             const repairDetails = notes?.replace('Initial QC: Repairs required. Selected repairs: ', '') || ''
-            description = repairDetails || 'Other repair required'
+            // Remove "Other " prefix to get just the description
+            description = repairDetails.replace(/^Other\s+/, '') || 'Other repair required'
           }
 
           const { error: repairJobError } = await supabase
@@ -277,17 +295,17 @@ export async function POST(request: NextRequest) {
       : `Initial QC: ${overall_result === 'pass' ? 'Passed' : 'Failed'}`
     )
 
-    const { error: historyError } = await supabase
-      .from('device_status_history')
-      .insert({
+    // Use helper function to record status change with full user information
+    try {
+      const { recordDeviceStatusChange } = await import('@/lib/helpers/device-status-history')
+      await recordDeviceStatusChange(supabase, {
         device_id: device_id,
+        old_status: currentDeviceStatus,
         new_status: newDeviceStatus,
-        notes: historyNotes,
         changed_by: user.id,
-        created_at: new Date().toISOString()
+        notes: historyNotes
       })
-
-    if (historyError) {
+    } catch (historyError) {
       console.error('Error recording device status history:', historyError)
       // Note: We don't fail the entire request if history recording fails
     }

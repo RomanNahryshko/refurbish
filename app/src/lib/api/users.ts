@@ -13,6 +13,7 @@ export interface CreateUserData {
 
 export interface UpdateUserData {
   full_name?: string
+  email?: string
   role?: UserRole
   technician_level?: TechnicianLevel | null
   status?: UserAccountStatus
@@ -27,6 +28,7 @@ export interface UserFilters {
 export interface UserProfile {
   id: string
   full_name: string
+  email: string
   role: UserRole
   status: UserAccountStatus
   technician_level?: TechnicianLevel | null
@@ -34,6 +36,7 @@ export interface UserProfile {
   phone_number?: string
   employee_id?: string
   created_by?: string
+  created_by_email?: string | null
   last_login?: string
   created_at: string
   updated_at: string
@@ -49,6 +52,7 @@ export interface AuthUser {
 
 export interface UserWithAuth extends UserProfile {
   auth_user: AuthUser | null
+  creator_email?: string | null
 }
 
 /**
@@ -70,6 +74,7 @@ export class UsersAPI {
         .select(`
           id,
           full_name,
+          email,
           role,
           status,
           technician_level,
@@ -119,7 +124,7 @@ export class UsersAPI {
         const searchLower = filters.search.toLowerCase()
         return usersWithEmails.filter(user => 
           (user.full_name && String(user.full_name).toLowerCase().includes(searchLower)) ||
-          (user.auth_user?.email && user.auth_user.email.toLowerCase().includes(searchLower))
+          (user.email && user.email.toLowerCase().includes(searchLower))
         )
       }
 
@@ -142,6 +147,7 @@ export class UsersAPI {
         .select(`
           id,
           full_name,
+          email,
           role,
           status,
           technician_level,
@@ -149,6 +155,7 @@ export class UsersAPI {
           phone_number,
           employee_id,
           created_by,
+          created_by_email,
           last_login,
           created_at,
           updated_at
@@ -239,21 +246,30 @@ export class UsersAPI {
         throw new Error('Failed to create user - no user returned')
       }
 
+      // Get creator's email
+      let creatorEmail = null
+      if (performedBy) {
+        const creatorAuthUser = await this.getAuthUserById(performedBy)
+        creatorEmail = creatorAuthUser?.email || null
+      }
+
       // Create user profile
       const profileData: Record<string, unknown> = {
         id: authUser.user.id,
         full_name: userData.full_name,
+        email: userData.email, // Store email in user_profiles
         role: userData.role,
         technician_level: userData.role === 'technician' ? (userData.technician_level || 'L1') : null,
         status: 'active',
         must_change_password: true, // Force password change on first login
         created_by: performedBy,
+        created_by_email: creatorEmail,
         created_at: new Date().toISOString()
       }
 
       const { data: profile, error: profileError } = await adminClient
         .from('user_profiles')
-        .insert(profileData)
+        .insert(profileData as never)
         .select()
         .single()
 
@@ -262,7 +278,7 @@ export class UsersAPI {
       }
 
       return {
-        ...profile,
+        ...profile as UserProfile,
         auth_user: {
           id: authUser.user.id,
           email: authUser.user.email,
@@ -374,7 +390,7 @@ export class UsersAPI {
         .update({ 
           must_change_password: true,
           updated_at: new Date().toISOString()
-        })
+        } as never)
         .eq('id', userId)
 
       return {

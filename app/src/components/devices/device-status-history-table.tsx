@@ -67,6 +67,7 @@ export function DeviceStatusHistoryTable({
     )
   }
 
+  console.log(statusHistory, 'statusHistory')
   return (
     <Card>
       <CardHeader>
@@ -123,13 +124,13 @@ export function DeviceStatusHistoryTable({
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-500" />
                         <div className="text-sm">
-                          {history.changed_by ? (
+                          {history.user_profile ? (
                             <>
                               <div className="font-medium">
-                                User ID: {history.changed_by}
+                                {history.user_profile.full_name || 'Unknown Name'}
                               </div>
-                              <div className="text-xs text-gray-500">
-                                User details not loaded
+                              <div className="text-gray-500 text-xs">
+                                {history.user_profile.email || 'No email'}
                               </div>
                             </>
                           ) : (
@@ -137,8 +138,8 @@ export function DeviceStatusHistoryTable({
                               <div className="font-medium text-gray-500">
                                 Unknown User
                               </div>
-                              <div className="text-xs text-gray-400">
-                                User data not available
+                              <div className="text-gray-400 text-xs">
+                                User not found
                               </div>
                             </>
                           )}

@@ -1,12 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, Minus, X, Wrench, AlertTriangle } from 'lucide-react';
-import { RepairJobListTable } from '@/components/repair-jobs/repair-job-list-table';
+import { Search, Wrench } from 'lucide-react';
+import { RepairJobListTable, CompleteRepairDialog } from '@/components/repair-jobs';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { useRepairJobs } from '@/lib/hooks/use-repair-jobs';
@@ -45,7 +45,7 @@ export default function RepairJobsPage() {
   const [statusFilter, setStatusFilter] = useState('all') // Default to all jobs
   const [currentPage, setCurrentPage] = useState(1)
   const user = useUser()
-  
+  const [loading, setLoading] = useState(false)
   // Fetch real data from API
   const { data: repairJobsData, isPending: repairJobsLoading, error: repairJobsError, refetch: refetchRepairJobs, isFetching: repairJobsFetching } = useRepairJobs()
   const { batches: batchesData, loading: batchesLoading, fetchBatches: refetchBatches } = useBatches()
@@ -310,24 +310,32 @@ export default function RepairJobsPage() {
     })
   }
 
-  const submitCompleteRepair = () => {
+  const submitCompleteRepair = (parts?: Array<{ spare_part_id: string; quantity_used: number; notes?: string }>, notes?: string) => {
     if (!partsRecording.repairId) return
+
+    setLoading(true)
 
     // Complete the repair job and send device to QC
     completeRepairJob.mutate({
       repairJobId: partsRecording.repairId,
-      completionNotes: partsRecording.notes || undefined,
-      partsUsed: partsRecording.parts.map(part => ({
+      completionNotes: notes || partsRecording.notes || undefined,
+      partsUsed: parts || partsRecording.parts.map(part => ({
         spare_part_id: part.partId,
         quantity_used: part.quantity,
         notes: undefined
       }))
-    })
-    
-    setPartsRecording({
-      repairId: null,
-      parts: [],
-      notes: ''
+    }, {
+      onSuccess: () => {
+        setLoading(false)
+        setPartsRecording({
+          repairId: null,
+          parts: [],
+          notes: ''
+        })
+      },
+      onError: () => {
+        setLoading(false)
+      }
     })
   }
 
@@ -484,8 +492,9 @@ export default function RepairJobsPage() {
                   size="sm"
                   onClick={() => handleCompleteRepair(activeRepair)}
                   className="bg-green-600 hover:bg-green-700 text-white"
+                  disabled={loading}
                 >
-                  Complete Repair
+                  {loading ? 'Completing...' : 'Complete Repair'}
                 </Button>
                 <Button
                   variant="ghost"
@@ -542,172 +551,20 @@ export default function RepairJobsPage() {
         onConfirm={confirmDialog.action}
       />
 
-      {/* Parts Recording Dialog */}
-      {partsRecording.repairId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle>Complete Repair</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Add Parts (Optional):</label>
-                <Select value="" onValueChange={(partId) => {
-                  if (partId && !partsRecording.parts.find(p => p.partId === partId)) {
-                    const newParts = [...partsRecording.parts, { partId, quantity: 1 }]
-                    setPartsRecording({ ...partsRecording, parts: newParts })
-                  }
-                }}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select part" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {spareParts
-                      .filter(part => !partsRecording.parts.find(p => p.partId === part.id))
-                      .map(part => (
-                        <SelectItem key={part.id} value={part.id}>
-                          {part.name} (Stock: {part.quantity_in_stock})
-                        </SelectItem>
-                      ))}
-                    {spareParts.filter(part => !partsRecording.parts.find(p => p.partId === part.id)).length === 0 && (
-                      <div className="p-2 text-sm text-gray-500">All parts already added</div>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Parts list will be displayed here */}
-              {partsRecording.parts.length > 0 && (
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Selected Parts:</label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {partsRecording.parts.map((part, index) => {
-                      const sparePart = spareParts.find(p => p.id === part.partId)
-                      const isLowStock = sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock < 10
-                      const willGoNegative = sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock < part.quantity
-                      return (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                          <div className="flex-1">
-                            <span className="text-sm">{sparePart?.name}</span>
-                            <div className="text-xs text-gray-500">
-                              Available: {sparePart?.quantity_in_stock || 0}
-                              {isLowStock && <span className="text-red-500 ml-1">⚠️ Low Stock</span>}
-                              {willGoNegative && <span className="text-red-600 ml-1">❌ Insufficient Stock</span>}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                const newParts = [...partsRecording.parts]
-                                if (newParts[index].quantity > 1) {
-                                  newParts[index].quantity--
-                                  setPartsRecording({ ...partsRecording, parts: newParts })
-                                }
-                              }}
-                              disabled={part.quantity <= 1}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-8 text-center text-sm font-medium">{part.quantity}</span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                const newParts = [...partsRecording.parts]
-                                const maxStock = sparePart?.quantity_in_stock || 0
-                                if (newParts[index].quantity < maxStock) {
-                                  newParts[index].quantity++
-                                  setPartsRecording({ ...partsRecording, parts: newParts })
-                                }
-                              }}
-                              disabled={part.quantity >= (sparePart?.quantity_in_stock || 0)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              const newParts = partsRecording.parts.filter((_, i) => i !== index)
-                              setPartsRecording({ ...partsRecording, parts: newParts })
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-2">
-                    Total parts: {partsRecording.parts.reduce((sum, p) => sum + p.quantity, 0)}
-                  </div>
-                </div>
-              )}
-              
-              <div>
-                <label className="text-sm font-medium">Notes (Optional)</label>
-                <Input
-                  placeholder="Completion notes..."
-                  value={partsRecording.notes}
-                  onChange={(e) => setPartsRecording({ 
-                    ...partsRecording, 
-                    notes: e.target.value 
-                  })}
-                  className="mt-1"
-                />
-              </div>
-              
-              {/* Warning for insufficient parts */}
-              {(() => {
-                const hasInsufficientParts = partsRecording.parts.some(part => {
-                  const sparePart = spareParts.find(p => p.id === part.partId)
-                  return sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock < part.quantity
-                })
-                return hasInsufficientParts && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
-                    <span className="text-sm text-red-700">
-                      Cannot complete repair: insufficient stock for selected parts
-                    </span>
-                  </div>
-                )
-              })()}
-              
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setPartsRecording({ 
-                    repairId: null, 
-                    parts: [], 
-                    notes: '' 
-                  })}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={() => {
-                    submitCompleteRepair()
-                  }} 
-                  className="flex-1"
-                  disabled={(() => {
-                    const hasInsufficientParts = partsRecording.parts.some(part => {
-                      const sparePart = spareParts.find(p => p.id === part.partId)
-                      return sparePart?.quantity_in_stock !== undefined && sparePart.quantity_in_stock < part.quantity
-                    })
-                    return hasInsufficientParts || completeRepairJob.isPending
-                  })()}
-                >
-                  {completeRepairJob.isPending ? 'Completing...' : `Complete Repair${partsRecording.parts.length > 0 ? ` (${partsRecording.parts.length} part${partsRecording.parts.length > 1 ? 's' : ''})` : ''}`}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Complete Repair Dialog */}
+      <CompleteRepairDialog
+        isOpen={!!partsRecording.repairId}
+        onClose={() => setPartsRecording({ 
+          repairId: null, 
+          parts: [], 
+          notes: '' 
+        })}
+        onComplete={(parts, notes) => {
+          submitCompleteRepair(parts, notes)
+        }}
+        spareParts={spareParts}
+        isLoading={completeRepairJob.isPending || loading}
+      />
     </div>
   )
 } 

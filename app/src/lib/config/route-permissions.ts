@@ -19,6 +19,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
   
   ops_manager: [
     '/',
+    '/homepage',
     '/batch-intake',
     '/batch-intake/*',
     '/devices',
@@ -32,6 +33,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
   
   qc_controller: [
     '/',
+    '/homepage',
     '/qc',
     '/qc/*',
     '/devices',
@@ -41,6 +43,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
   
   technician: [
     '/',
+    '/homepage',
     '/devices',
     '/devices/*',
     '/repair-jobs',
@@ -114,9 +117,25 @@ export function hasDashboardAccess(userRole: UserRole): boolean {
 /**
  * Get the first available module for a user based on their role
  */
-export function getFirstAvailableModule(_userRole: UserRole): string {
-  // All authenticated users should land on homepage first
-  // Homepage provides access to all allowed modules for their role
+export function getFirstAvailableModule(userRole: UserRole): string {
+  // Define navigation items in order of priority
+  const navigationItems = [
+    { href: '/dashboard', roles: ['admin', 'general_manager'] },
+    { href: '/batch-intake', roles: ['admin', 'general_manager', 'ops_manager'] },
+    { href: '/devices', roles: ['admin', 'general_manager', 'ops_manager', 'qc_controller', 'technician'] },
+    { href: '/repair-jobs', roles: ['admin', 'general_manager', 'ops_manager', 'technician'] },
+    { href: '/qc', roles: ['admin', 'general_manager', 'qc_controller'] },
+    { href: '/inventory', roles: ['admin', 'general_manager'] },
+  ]
+
+  // Find the first navigation item that the user has access to
+  for (const item of navigationItems) {
+    if (item.roles.includes(userRole)) {
+      return item.href
+    }
+  }
+
+  // Fallback to homepage if no specific module is available
   return '/homepage'
 }
 
@@ -151,24 +170,21 @@ export function isBlockedForTechnician(pathname: string): boolean {
  * Get redirect path for unauthorized access
  */
 export function getRedirectPath(userRole: UserRole, pathname: string): string {
-  // For ops_manager accessing blocked routes, redirect to home
+  // For ops_manager accessing blocked routes, redirect to first available page
   if (userRole === 'ops_manager' && isBlockedForOpsManager(pathname)) {
-    return '/'
+    return getFirstAvailableModule(userRole)
   }
   
-  // For qc_controller accessing blocked routes, redirect to dashboard
+  // For qc_controller accessing blocked routes, redirect to first available page
   if (userRole === 'qc_controller' && isBlockedForQCController(pathname)) {
-    return '/'
+    return getFirstAvailableModule(userRole)
   }
   
-  // For technician accessing blocked routes, redirect to home
+  // For technician accessing blocked routes, redirect to first available page
   if (userRole === 'technician' && isBlockedForTechnician(pathname)) {
-    return '/'
+    return getFirstAvailableModule(userRole)
   }
   
-  // For other unauthorized access, redirect based on role
-  if (userRole === 'technician') {
-    return '/'
-  }
-  return '/'
+  // For other unauthorized access, redirect to first available page
+  return getFirstAvailableModule(userRole)
 }

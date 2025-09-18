@@ -1,10 +1,7 @@
-'use client'
-
-import Link from 'next/link'
-import { use } from 'react'
-import { Button } from '@/components/ui/button'
-import { EditUserForm } from '@/modules/admin/components/edit-user-form'
-import { useUser } from '@/lib/hooks/use-user'
+'use client';
+import { use } from 'react';
+import { EditUserForm } from '@/modules/admin/components/edit-user-form';
+import { useUser } from '@/lib/hooks/use-user';
 
 interface EditUserPageProps {
   params: Promise<{
@@ -36,15 +33,6 @@ export default function EditUserPage({ params }: EditUserPageProps) {
           currentUserRole={currentUserRole || undefined}
         />
 
-        {/* Navigation */}
-        <div className="flex gap-4">
-          <Link href="/admin/users">
-            <Button variant="outline">← Back to Users</Button>
-          </Link>
-          <Link href="/admin">
-            <Button variant="ghost">Admin Dashboard</Button>
-          </Link>
-        </div>
       </div>
     </div>
   )

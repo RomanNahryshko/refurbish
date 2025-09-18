@@ -1,8 +1,6 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { CreateUserForm } from '@/modules/admin/components/create-user-form'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { useSupabaseClient } from '@/lib/stores/supabase-store'
@@ -65,15 +63,6 @@ export default function CreateUserPage() {
           currentUserRole={currentUserRole || undefined}
         />
 
-        {/* Navigation */}
-        <div className="flex gap-4">
-          <Link href="/admin/users">
-            <Button variant="outline">← Back to Users</Button>
-          </Link>
-          <Link href="/admin">
-            <Button variant="ghost">Admin Dashboard</Button>
-          </Link>
-        </div>
       </div>
     </div>
   )

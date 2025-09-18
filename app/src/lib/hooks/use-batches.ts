@@ -156,10 +156,10 @@ export function useCreateBatch() {
       const result = await response.json()
       return result.data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['batches'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['batches'] })
       // Also invalidate dashboard metrics
-      queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] })
+      await queryClient.invalidateQueries({ queryKey: ['dashboard-metrics'] })
     },
   })
 }
@@ -174,8 +174,8 @@ export function useUpdateBatch() {
       const batchesApi = createBatchesAPI(client)
       return batchesApi.update(id, updates)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['batches'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['batches'] })
     },
   })
 }
@@ -190,8 +190,8 @@ export function useDeleteBatch() {
       const batchesApi = createBatchesAPI(client)
       return batchesApi.delete(id)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['batches'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['batches'] })
     },
   })
 }

@@ -367,7 +367,7 @@ export class DashboardService {
     let query = this.supabase
       .from('repair_jobs')
       .select('device_id')
-      .in('status', ['pending', 'in_progress'])
+      .in('status', ['in_progress'])
       .is('deleted_at', null);
     if (range) query = query.gte('updated_at', range.startISO).lte('updated_at', range.endISO);
     const { data, error } = await query;

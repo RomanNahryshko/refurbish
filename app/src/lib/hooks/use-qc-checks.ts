@@ -46,10 +46,11 @@ export function useCreateQCCheck() {
       const qcResult = await qcChecksApi.create(qcData, testResults)
       return qcResult
     },
-    onSuccess: (data, { qcData }) => {
-      queryClient.invalidateQueries({ queryKey: ['qc-checks', 'device', qcData.device_id] })
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
-      queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
+    onSuccess: async (data, { qcData }) => {
+      // Invalidate queries sequentially to ensure proper order
+      await queryClient.invalidateQueries({ queryKey: ['qc-checks', 'device', qcData.device_id] })
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
     },
     onError: (error, { qcData }) => {
       console.error('❌ useCreateQCCheck onError called with:', { error, qcData })
@@ -68,9 +69,9 @@ export function useUpdateQCCheck() {
       const qcChecksApi = createQCChecksAPI(client)
       return qcChecksApi.update(id, qcData)
     },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['qc-checks', id] })
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
+    onSuccess: async (_, { id }) => {
+      await queryClient.invalidateQueries({ queryKey: ['qc-checks', id] })
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
     },
   })
 }
@@ -85,9 +86,9 @@ export function useDeleteQCCheck() {
       const qcChecksApi = createQCChecksAPI(client)
       return qcChecksApi.delete(id)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['qc-checks'] })
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['qc-checks'] })
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
     },
   })
 }
