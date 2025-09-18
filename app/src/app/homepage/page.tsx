@@ -109,7 +109,7 @@ export default function HomePage() {
     <RouteGuard requireAuth={true}>
       <div className="container mx-auto p-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Welcome to ReMobile Refurbish</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome to ReMobile Refurbish!</h1>
           <p className="text-muted-foreground">
             Select a module to get started
           </p>
