@@ -132,27 +132,30 @@ export async function POST(request: NextRequest) {
       .select('id, status')
       .eq('device_id', repairJob.device_id)
       .in('status', ['pending', 'in_progress'])
+      .is('deleted_at', null) // Exclude deleted repair jobs
 
     if (pendingError) {
       console.error('Error checking pending repairs:', pendingError)
       // Don't fail the entire request if this check fails
     } else {
       // Log all repair jobs for this device to debug the issue
-      await supabase
+      const { data: allDeviceRepairs, error: allDeviceRepairsError } = await supabase
         .from('repair_jobs')
         .select('id, status, repair_type, created_at')
         .eq('device_id', repairJob.device_id)
         .is('deleted_at', null)
 
+      if (allDeviceRepairsError) {
+        console.error('Error fetching all device repairs for debugging:', allDeviceRepairsError)
+      } else {
+        console.log('All repair jobs for device:', allDeviceRepairs)
+        console.log('Pending repairs found:', pendingRepairs)
+      }
+
       // If all repairs are completed, send device to final QC
       if (!pendingRepairs || pendingRepairs.length === 0) {
+        console.log(`All repairs completed for device ${repairJob.device_id}, sending to final QC`)
         // Additional safety check: verify that all repair jobs are actually completed
-        const { data: allDeviceRepairs, error: allDeviceRepairsError } = await supabase
-          .from('repair_jobs')
-          .select('id, status, repair_type')
-          .eq('device_id', repairJob.device_id)
-          .is('deleted_at', null)
-
         if (allDeviceRepairsError) {
           console.error('Error fetching all device repairs for safety check:', allDeviceRepairsError)
         } else if (allDeviceRepairs && allDeviceRepairs.some(job => job.status !== 'completed')) {
@@ -166,6 +169,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Update device status to final_qc
+        console.log(`Updating device ${repairJob.device_id} status to final_qc`)
         const { error: deviceUpdateError } = await supabase
           .from('devices')
           .update({ 
@@ -178,6 +182,8 @@ export async function POST(request: NextRequest) {
         if (deviceUpdateError) {
           console.error('Error updating device status to final_qc:', deviceUpdateError)
           // Don't fail the entire request if device update fails
+        } else {
+          console.log(`Successfully updated device ${repairJob.device_id} status to final_qc`)
         }
 
         // Create QC check record for final quality control
@@ -210,6 +216,8 @@ export async function POST(request: NextRequest) {
           console.error('Error recording device status history:', historyError)
           // Don't fail the entire request if history recording fails
         }
+      } else {
+        console.log(`Device ${repairJob.device_id} still has pending repairs, not sending to QC yet`)
       }
     }
 
