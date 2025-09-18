@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { useCreateQCCheck } from '@/lib/hooks/use-qc-checks';
 import { toast } from 'sonner';
-import { RepairType, DrPhoneData } from '@/lib/types/business-types';
+import { RepairType, DrPhoneData, QCCheck } from '@/lib/types/business-types';
 import { TEST_RESULT, DEVICE_GRADES } from '@/lib/constants';
 import DeviceInfo from '../dashboard/device-info';
 import DeviceFaults from '../dashboard/device-faults';
@@ -42,14 +42,14 @@ interface InitialQCDeviceCardProps {
     deviceData: DrPhoneData,
     deviceIndex: number
   ) => Promise<string | null>;
-  onSaveToTable?: (data: any) => void;
+  onSaveToTable?: (data: { data: QCCheck; message: string; repair_jobs_created: number }) => void;
 }
 
 export function InitialQCDeviceCard(props: InitialQCDeviceCardProps) {
   const {
     device,
     deviceIndex,
-    deviceId,
+    deviceId: _deviceId, // Not used - always create new device
     selectedRepairs,
     otherDescription,
     selectedGrade = '',
@@ -64,15 +64,18 @@ export function InitialQCDeviceCard(props: InitialQCDeviceCardProps) {
     onSaveToTable,
   } = props;
 
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [localDeviceId, setLocalDeviceId] = useState<string | undefined>(undefined);
+
 
   const createQCCheck = useCreateQCCheck();
 
   const prepareQCData = useCallback(() => {
     return {
-      device_id: deviceId!,
+      device_id: localDeviceId!,
       check_type: 'initial' as const,
       overall_result: qcApproach === 'repairs' ? TEST_RESULT.fail : TEST_RESULT.pass,
       grade_assigned:
@@ -90,39 +93,41 @@ export function InitialQCDeviceCard(props: InitialQCDeviceCardProps) {
           ? (selectedRepairs as RepairType[])
           : undefined,
     };
-  }, [deviceId, qcApproach, selectedGrade, selectedRepairs, otherDescription]);
+  }, [localDeviceId, qcApproach, selectedGrade, selectedRepairs, otherDescription]);
 
   const saveQCData = useCallback(async () => {
     try {
       setIsSubmitting(true);
 
-      let currentDeviceId = deviceId;
-
-      if (!currentDeviceId) {
-        if (!onCompleteQCWithDevice) {
-          toast.error('Device ID missing');
-          setIsSubmitting(false);
-          return;
-        }
-        const deviceId = await onCompleteQCWithDevice(device, deviceIndex);
-        if (!deviceId) {
-          toast.error('Failed to create device');
-          setIsSubmitting(false);
-          return;
-        }
-        currentDeviceId = deviceId;
+      // Always create a new device and clear states before creating
+      // Clear all states first
+      onQcApproachChange?.('');
+      onGradeChange?.('');
+      selectedRepairs.forEach((repair) => onRepairToggle(repair));
+      onOtherDescriptionChange('');
+      setLocalDeviceId(undefined);
+      
+      if (!onCompleteQCWithDevice) {
+        toast.error('Device ID missing');
+        setIsSubmitting(false);
+        return;
       }
+      
+      const newDeviceId = await onCompleteQCWithDevice(device, deviceIndex);
+      if (!newDeviceId) {
+        toast.error('Failed to create device');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const currentDeviceId = newDeviceId;
+      setLocalDeviceId(newDeviceId);
 
       const qcData = { ...prepareQCData(), device_id: currentDeviceId };
 
       const result = await createQCCheck.mutateAsync({ qcData });
 
       onSaveToTable?.(result);
-
-      onQcApproachChange?.('');
-      onGradeChange?.('');
-      selectedRepairs.forEach((repair) => onRepairToggle(repair));
-      onOtherDescriptionChange('');
 
       setIsCompleted(true);
       toast.success('QC completed successfully');
@@ -134,7 +139,6 @@ export function InitialQCDeviceCard(props: InitialQCDeviceCardProps) {
       setIsSubmitting(false);
     }
   }, [
-    deviceId,
     device,
     deviceIndex,
     createQCCheck,
