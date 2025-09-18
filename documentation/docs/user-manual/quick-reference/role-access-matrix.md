@@ -18,6 +18,6 @@ This page shows which modules each user role can access. Use it as a quick refer
 | General Manager | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | Operations Manager |  | Yes | Yes | Yes | Yes |  |  |
 | Technicians |  |  | Yes | Yes |  |  |  |
-| Quality Control |  |  |  |  | Yes |  |  |
+| Quality Control |  |  | Yes |  | Yes |  |  |
 
 
