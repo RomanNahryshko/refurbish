@@ -21,7 +21,7 @@ pipeline {
                 DOCKER_HUB_PWD=credentials('attract-docker-hub-pwd')
                 //############################################# BUILD & DEPLOY SETTINGS
                 BUILD_FILE="./compose-files/docker-composer.proxy.build.yml"
-                COMPOSE_FILE_DEPLOY="./compose-files/docker-compose.proxy.swarm.yml"
+                COMPOSE_FILE_DEPLOY="./compose-files/docker-composer.proxy.swarm.yml"
                 COMPOSE_PROJECT_NAME="${PROJECT_NAME_PREFIX}-proxy"
                 REPLICAS_COUNT=1
                 SWARM_NODE_LABEL="proxy"
@@ -108,5 +108,6 @@ changeString=currentBuild.changeSets.collect { cs ->
   return changeString
 
 }
+
 
 
