@@ -1,6 +1,6 @@
 // Supabase environment configuration
-// Use proxy URL if available, otherwise fallback to direct Supabase URL
-export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+// Use direct Supabase URL if available, otherwise fallback to proxy URL
+export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || ''
 export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 
@@ -33,6 +33,7 @@ const debugInfo = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? `${process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 20)}...` : 'MISSING',
   NEXT_PUBLIC_SUPABASE_PROXY_URL: process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL ? `${process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL.substring(0, 30)}...` : 'MISSING',
   selectedUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
+  urlSource: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'direct' : process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL ? 'proxy' : 'none',
   hasValidConfig: hasValidSupabaseConfig,
   isClient: typeof window !== 'undefined',
   nodeEnv: process.env.NODE_ENV

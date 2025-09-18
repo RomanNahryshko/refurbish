@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Admin client using service role key for privileged operations
-// Use proxy URL if available, otherwise fallback to direct Supabase URL
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+// Use direct Supabase URL if available, otherwise fallback to proxy URL
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
 let adminClient: ReturnType<typeof createClient> | null = null
@@ -24,6 +24,8 @@ export function createSupabaseAdminClient() {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 20)}...` : 'MISSING',
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? `${process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 20)}...` : 'MISSING',
     NEXT_PUBLIC_SUPABASE_PROXY_URL: process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL ? `${process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL.substring(0, 30)}...` : 'MISSING',
+    selectedUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
+    urlSource: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'direct' : process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL ? 'proxy' : 'none',
     nodeEnv: process.env.NODE_ENV
   }
 
