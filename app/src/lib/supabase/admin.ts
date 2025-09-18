@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Admin client using service role key for privileged operations
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+// Use proxy URL if available, otherwise fallback to direct Supabase URL
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
 let adminClient: ReturnType<typeof createClient> | null = null
