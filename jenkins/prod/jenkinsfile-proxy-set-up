@@ -20,7 +20,7 @@ pipeline {
                 HUB_REPOSITORY_DOMAIN='docker.attractgroup.com/'
                 DOCKER_HUB_PWD=credentials('attract-docker-hub-pwd')
                 //############################################# BUILD & DEPLOY SETTINGS
-                BUILD_FILE="./compose-files/docker-compose.proxy.build.yml"
+                BUILD_FILE="./compose-files/docker-composer.proxy.build.yml"
                 COMPOSE_FILE_DEPLOY="./compose-files/docker-compose.proxy.swarm.yml"
                 COMPOSE_PROJECT_NAME="${PROJECT_NAME_PREFIX}-proxy"
                 REPLICAS_COUNT=1
@@ -50,8 +50,6 @@ pipeline {
                 echo "=================================================="
                 sh '''#!/bin/bash
                 cd ./docker/${DOCKER_ENV_TYPE}/
-                ls -la 
-                ls -la compose-files
                 chmod u+x ./build.sh
                 ./build.sh  $DOCKER_HUB_PWD $BUILD_FILE $BUILD_CACHE_ENABLED
                 if [ "$?" -ne "0" ]; then echo "WARNING: Problem building images!"; exit 1; fi
@@ -62,8 +60,6 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                 cd ./docker/${DOCKER_ENV_TYPE}/
-                ls -la 
-                ls -la compose-files
                 chmod u+x ./stack_workaround.sh
                 chmod u+x ./network.sh
                 export TRUSTED_PROXY_IP=$(./network.sh $NETWORK_NAME $DOCKER_PROXY_CONTAINER_NAME $NETWORK_SUBNET)
@@ -112,4 +108,5 @@ changeString=currentBuild.changeSets.collect { cs ->
   return changeString
 
 }
+
 
