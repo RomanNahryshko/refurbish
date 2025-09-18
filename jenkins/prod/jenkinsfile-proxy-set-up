@@ -14,7 +14,7 @@ pipeline {
                 DOCKER_CERT_PATH="/certs/price-tracker"
                 COMPOSE_HTTP_TIMEOUT=300
                 //############################################# NETWORKS SETTINGS
-                NETWORK_NAME="${PROJECT_NAME_PREFIX}-network"
+                NETWORK_NAME="ag-remobile-refurbish-prod-network"
                 NETWORK_SUBNET="10.10.151.0/24"
                 //############################################# DOCKER REGISTRY SETTINGS
                 HUB_REPOSITORY_DOMAIN='docker.attractgroup.com/'
@@ -108,6 +108,7 @@ changeString=currentBuild.changeSets.collect { cs ->
   return changeString
 
 }
+
 
 
 
