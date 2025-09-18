@@ -50,6 +50,8 @@ pipeline {
                 echo "=================================================="
                 sh '''#!/bin/bash
                 cd ./docker/${DOCKER_ENV_TYPE}/
+                ls -la 
+                ls -la compose-files
                 chmod u+x ./build.sh
                 ./build.sh  $DOCKER_HUB_PWD $BUILD_FILE $BUILD_CACHE_ENABLED
                 if [ "$?" -ne "0" ]; then echo "WARNING: Problem building images!"; exit 1; fi
@@ -110,3 +112,4 @@ changeString=currentBuild.changeSets.collect { cs ->
   return changeString
 
 }
+
