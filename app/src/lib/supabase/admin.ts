@@ -19,12 +19,18 @@ export function createSupabaseAdminClient() {
   })
 
   // Debug all Supabase environment variables
-  console.log('🔧 Supabase Environment Variables:', {
+  const envDebugInfo = {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.substring(0, 30)}...` : 'MISSING',
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 20)}...` : 'MISSING',
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? `${process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 20)}...` : 'MISSING',
-    NEXT_PUBLIC_SUPABASE_PROXY_URL: process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL ? `${process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL.substring(0, 30)}...` : 'MISSING'
-  })
+    NEXT_PUBLIC_SUPABASE_PROXY_URL: process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL ? `${process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL.substring(0, 30)}...` : 'MISSING',
+    nodeEnv: process.env.NODE_ENV
+  }
+
+  // Multiple logging methods for production visibility
+  console.log('🔧 Admin Supabase Environment Variables:', envDebugInfo)
+  console.error('🔧 ADMIN_SUPABASE_DEBUG:', JSON.stringify(envDebugInfo, null, 2))
+  console.warn('🔧 ADMIN_SUPABASE_CONFIG:', envDebugInfo)
 
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error('❌ Admin Client: Missing required environment variables')
