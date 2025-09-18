@@ -60,6 +60,8 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                 cd ./docker/${DOCKER_ENV_TYPE}/
+                ls -la 
+                ls -la compose-files
                 chmod u+x ./stack_workaround.sh
                 chmod u+x ./network.sh
                 export TRUSTED_PROXY_IP=$(./network.sh $NETWORK_NAME $DOCKER_PROXY_CONTAINER_NAME $NETWORK_SUBNET)
@@ -106,4 +108,5 @@ changeString=currentBuild.changeSets.collect { cs ->
  changeString = " - No new changes"
  }
   return changeString
+
 }
