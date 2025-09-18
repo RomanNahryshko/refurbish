@@ -1,0 +1,21 @@
+version: "3.8"
+######################################### Global Environment Variables
+x-build: &build-variables
+  {
+    NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    SUPABASE_SERVICE_ROLE_KEY,
+  }
+
+##############################################################################
+#                           SERVICES                                         #
+##############################################################################
+
+services:
+######################################### Required Services
+  supabase-proxy:
+    build:
+      context: ../../..
+      dockerfile: ./docker/${DOCKER_ENV_TYPE}/proxy/Dockerfile
+      args: *build-variables
+    image: ${HUB_REPOSITORY_DOMAIN}${COMPOSE_PROJECT_NAME}-proxy:${BUILD_NUMBER:-latest}

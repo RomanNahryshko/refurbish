@@ -1,0 +1,55 @@
+version: "3.8"
+######################################### Networks and global extensions
+x-replicated: &replicated-service
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "4"
+  deploy:
+    replicas: ${REPLICAS_COUNT}
+    mode: replicated
+    endpoint_mode: dnsrr
+    update_config:
+      parallelism: 1
+      delay: 7s
+      order: start-first
+    restart_policy:
+      condition: any
+      delay: 5s
+      max_attempts: 3
+      window: 120s
+networks:
+  default:
+    external:
+      name: ${NETWORK_NAME}
+##############################################################################
+#                           SERVICES                                         #
+##############################################################################
+services:
+######################################### Required Services
+  supabase-proxy:
+    image: ${HUB_REPOSITORY_DOMAIN}${COMPOSE_PROJECT_NAME}-proxy:${BUILD_NUMBER:-latest}
+    environment:
+      VIRTUAL_HOST: ${VIRTUAL_HOST}
+      LETSENCRYPT_HOST: ${VIRTUAL_HOST}
+      LETSENCRYPT_EMAIL: shtalinberg@attractgroup.com
+      TASK_SLOT: "{{.Task.Slot}}"
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "4"
+    deploy:
+      replicas: ${REPLICAS_COUNT}
+      mode: replicated
+      endpoint_mode: dnsrr
+      update_config:
+        parallelism: 1
+        delay: 7s
+        order: start-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s

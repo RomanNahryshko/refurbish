@@ -1,6 +1,10 @@
 # Stage 1: Build the application
 FROM node:20-alpine AS builder
 
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG SUPABASE_SERVICE_ROLE_KEY
+
 WORKDIR /app
 
 # Accept build arguments for NEXT_PUBLIC_* variables
@@ -35,9 +39,9 @@ ENV HOST=0.0.0.0
 
 # Supabase environment variables (will be overridden by docker-compose)
 # These are set as empty defaults and will be overridden by the compose file
-ENV NEXT_PUBLIC_SUPABASE_URL=""
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=""
-ENV SUPABASE_SERVICE_ROLE_KEY=""
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG SUPABASE_SERVICE_ROLE_KEY
 
 # Copy package.json + lockfile to install production deps
 COPY --from=builder /app/package.json /app/package-lock.json ./

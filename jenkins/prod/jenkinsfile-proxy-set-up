@@ -1,0 +1,109 @@
+pipeline {
+  agent any
+      environment {
+                //############################################# GENERAL SETTINGS
+                ENVIRONMENT="prod"
+                PROJECT_NAME="remobile-refurbish-proxy"
+                DOCKER_ENV_TYPE="prod"
+                DOCKER_PROXY_CONTAINER_NAME="ag-docker-proxy"
+                DOCKER_ENV_TYPE_ALIAS="prod"
+                PROJECT_NAME_PREFIX="ag-${PROJECT_NAME}-${DOCKER_ENV_TYPE_ALIAS}"
+                PROJECT_TYPE="proxy"
+                //############################################# DOCKER SETTINGS
+                DOCKER_HOST="tcp://46.252.195.145:2376"
+                DOCKER_CERT_PATH="/certs/price-tracker"
+                COMPOSE_HTTP_TIMEOUT=300
+                //############################################# NETWORKS SETTINGS
+                NETWORK_NAME="${PROJECT_NAME_PREFIX}-network"
+                NETWORK_SUBNET="10.10.151.0/24"
+                //############################################# DOCKER REGISTRY SETTINGS
+                HUB_REPOSITORY_DOMAIN='docker.attractgroup.com/'
+                DOCKER_HUB_PWD=credentials('attract-docker-hub-pwd')
+                //############################################# BUILD & DEPLOY SETTINGS
+                BUILD_FILE="./compose-files/docker-compose.proxy.build.yml"
+                COMPOSE_FILE_DEPLOY="./compose-files/docker-compose.proxy.swarm.yml"
+                COMPOSE_PROJECT_NAME="${PROJECT_NAME_PREFIX}-proxy"
+                REPLICAS_COUNT=1
+                SWARM_NODE_LABEL="proxy"
+                //############## HOSTS
+                VIRTUAL_HOST="proxy.remobile.eu"
+                //############################################# SLACK SETTINGS
+                SLACK_NOTIFICATION_STATUS="false"
+                CHANNEL_NAME="devops-testing"
+                SLACK_TOKEN="22cf1c73-9aa3-43af-9ebf-385c20e0b993"
+                SLACK_BOT_TOCKEN=credentials('056fb4f9-3ba4-4182-ae38-cda2ccde2ff2')
+                CHANGED_LIST=getChangeSet()
+      }
+  stages {
+        stage('Start CREATE PROJECT') {
+            when {
+                environment name: 'SLACK_NOTIFICATION_STATUS', value: 'true' 
+            }
+            steps {
+                slackSend channel: "${CHANNEL_NAME}", color: '#0a8031', message: "*${env.JOB_NAME}* - #${env.BUILD_ID} \n Started by - ${currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause').userName} \n Branch ${env.GIT_BRANCH} \n Link - (<${env.BUILD_URL}|Open>)", tokenCredentialId: "${SLACK_TOKEN}"
+            }  
+        }
+        stage('Start BUILD') {
+            steps {
+                echo "=================================================="
+                echo "BUILD"
+                echo "=================================================="
+                sh '''#!/bin/bash
+                cd ./docker/${DOCKER_ENV_TYPE}/
+                chmod u+x ./build.sh
+                ./build.sh  $DOCKER_HUB_PWD $BUILD_FILE $BUILD_CACHE_ENABLED
+                if [ "$?" -ne "0" ]; then echo "WARNING: Problem building images!"; exit 1; fi
+                '''
+            }
+  }
+          stage('Start DEPLOY') {
+            steps {
+                sh '''#!/bin/bash
+                cd ./docker/${DOCKER_ENV_TYPE}/
+                chmod u+x ./stack_workaround.sh
+                chmod u+x ./network.sh
+                export TRUSTED_PROXY_IP=$(./network.sh $NETWORK_NAME $DOCKER_PROXY_CONTAINER_NAME $NETWORK_SUBNET)
+                chmod u+x ./deploy.sh
+                ./deploy.sh $DOCKER_HUB_PWD $COMPOSE_FILE_DEPLOY $BUILD_FILE
+                if [ "$?" -ne "0" ]; then echo "WARNING: Problem deploying images!"; exit 1; fi
+                chmod u+x ./check_service_update_status.sh
+                ./check_service_update_status.sh ${COMPOSE_PROJECT_NAME}_app
+                '''
+            }
+  }
+}
+ post {
+    success {
+        script {
+            if ("$SLACK_NOTIFICATION_STATUS" == "true"){
+                        slackSend channel: "${CHANNEL_NAME}", color: '#0a8031', message: "*${env.JOB_NAME}* - #${env.BUILD_ID} Success after ${currentBuild.durationString.replace(' and counting', '')} (<${env.BUILD_URL}|Open>)", tokenCredentialId: "${SLACK_TOKEN}"
+                        slackSend channel: "${CHANNEL_NAME}", color: '#0a8031', message: "*${env.JOB_NAME}* - #${env.BUILD_ID} Changes: \n $CHANGED_LIST", tokenCredentialId: "${SLACK_TOKEN}"
+            }
+        }
+    }
+    failure {
+        script {
+            if ("$SLACK_NOTIFICATION_STATUS" == "true"){       
+                slackSend channel: "${CHANNEL_NAME}",failOnError: true, color: '#FF0000', message: "*${env.JOB_NAME}* - #${env.BUILD_ID} Failure after ${currentBuild.durationString.replace(' and counting', '')}, (<${env.BUILD_URL}|Open>)", tokenCredentialId: "${SLACK_TOKEN}"
+                slackSend channel: "${CHANNEL_NAME}",failOnError: true, color: '#FF0000', message: "*${env.JOB_NAME}* - #${env.BUILD_ID} Changes: \n $CHANGED_LIST", tokenCredentialId: "${SLACK_TOKEN}"
+            }
+        }
+    }
+ }
+}
+
+@NonCPS
+// Fetching change set from Git
+def getChangeSet() {
+def changeString = ""
+changeString=currentBuild.changeSets.collect { cs ->
+    cs.collect { entry ->
+        "- *${entry.msg} [${entry.author.fullName}]*"
+    }.join("\n")
+  }.join("\n")
+
+ if (!changeString) {
+ changeString = " - No new changes"
+ }
+  return changeString
+}
