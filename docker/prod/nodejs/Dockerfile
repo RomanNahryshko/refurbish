@@ -4,16 +4,19 @@ FROM node:20-alpine AS builder
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG SUPABASE_SERVICE_ROLE_KEY
+ARG NEXT_PUBLIC_SUPABASE_PROXY_URL
 
 WORKDIR /app
 
 # Accept build arguments for NEXT_PUBLIC_* variables
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_SUPABASE_PROXY_URL
 
 # Set environment variables for build time
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SUPABASE_PROXY_URL=$NEXT_PUBLIC_SUPABASE_PROXY_URL
 
 # Install dependencies (only production + dev for build)
 COPY app/package.json app/package-lock.json ./
@@ -36,12 +39,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
-
 # Supabase environment variables (will be overridden by docker-compose)
 # These are set as empty defaults and will be overridden by the compose file
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG SUPABASE_SERVICE_ROLE_KEY
+ARG NEXT_PUBLIC_SUPABASE_PROXY_URL
 
 # Copy package.json + lockfile to install production deps
 COPY --from=builder /app/package.json /app/package-lock.json ./
