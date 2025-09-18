@@ -26,6 +26,7 @@ pipeline {
                 REPLICAS_COUNT=1
                 SWARM_NODE_LABEL="react"
                 //############## HOSTS
+                NEXT_PUBLIC_SUPABASE_PROXY_URL="https://proxy.remobile.eu"
                 VIRTUAL_HOST="workflow.remobile.eu"
                 VIRTUAL_PORT=3000
                 //############################################# SUPABASE SETTINGS
@@ -123,4 +124,5 @@ changeString=currentBuild.changeSets.collect { cs ->
  changeString = " - No new changes"
  }
   return changeString
+
 }
