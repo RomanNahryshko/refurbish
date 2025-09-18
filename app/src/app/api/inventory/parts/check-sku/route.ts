@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { inventoryApi } from '@/lib/api/inventory'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { requirePermission } from '@/lib/services/auth-helpers'
 
 // GET /api/inventory/parts/check-sku - Check if SKU is unique
@@ -20,7 +20,36 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const isUnique = await inventoryApi.isSkuUnique(sku, excludeId || undefined)
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      )
+    }
+
+    // Check if SKU is unique
+    let query = supabase
+      .from('spare_parts')
+      .select('id')
+      .eq('sku', sku)
+      .is('deleted_at', null)
+
+    if (excludeId) {
+      query = query.neq('id', excludeId)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Database error checking SKU:', error)
+      return NextResponse.json(
+        { error: 'Database error' },
+        { status: 500 }
+      )
+    }
+
+    const isUnique = data.length === 0
     
     return NextResponse.json({ isUnique })
   } catch (error) {

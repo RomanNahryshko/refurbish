@@ -13,6 +13,7 @@ export interface PartsFilters {
 }
 
 export interface CreateSparePartData {
+  sku?: string
   name: string
   description?: string
   category?: string
@@ -23,6 +24,7 @@ export interface CreateSparePartData {
 }
 
 export interface UpdateSparePartData {
+  sku?: string
   name?: string
   description?: string
   category?: string

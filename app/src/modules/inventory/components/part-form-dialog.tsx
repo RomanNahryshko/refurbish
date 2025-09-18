@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { CompatibleModelsInput } from './compatible-models-input'
 import { useCreatePartMutation, useUpdatePartMutation, useNextSkuQuery } from '@/modules/inventory/hooks/use-inventory'
+import { isSkuUnique } from '@/lib/api/inventory-client'
 import { usePartsSuppliers } from '@/modules/suppliers/hooks/use-suppliers'
 import { PART_CATEGORY_LABELS } from '@/lib/constants'
 import { SparePart } from '@/lib/types/business-types'
@@ -48,6 +49,7 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isAddSupplierOpen, setIsAddSupplierOpen] = useState(false)
+  const [skuInitialized, setSkuInitialized] = useState(false)
   // Hooks for data fetching and mutations
   const { data: nextSku, isLoading: skuLoading } = useNextSkuQuery()
   const { data: suppliers, isLoading: suppliersLoading, error: _suppliersError } = usePartsSuppliers()
@@ -73,26 +75,24 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
         primary_supplier_id: editingPart.primary_supplier_id || '',
       })
     } else if (open && !isEditing) {
-      // New part - reset form and will be populated with SKU when available
-      setFormData(prev => ({
-        ...prev,
-        compatible_models: [], // Ensure this is explicitly set
-      }))
+      // New part - reset form completely
+      resetForm()
     } else if (!open) {
       // Reset form when dialog closes
       resetForm()
     }
   }, [open, isEditing, editingPart])
 
-  // Update SKU when nextSku becomes available for new parts
+  // Update SKU when nextSku becomes available for new parts (only once when dialog opens)
   useEffect(() => {
-    if (open && !isEditing && nextSku && !formData.sku) {
+    if (open && !isEditing && nextSku && !skuInitialized) {
       setFormData(prev => ({
         ...prev,
         sku: nextSku,
       }))
+      setSkuInitialized(true)
     }
-  }, [open, isEditing, nextSku, formData.sku])
+  }, [open, isEditing, nextSku, skuInitialized])
 
   const resetForm = () => {
     setFormData({
@@ -105,6 +105,7 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
       unit_cost: '',
       primary_supplier_id: '',
     })
+    setSkuInitialized(false)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,6 +116,22 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
       return
     }
 
+    // Validate SKU if provided
+    if (formData.sku.trim()) {
+      try {
+        const isUnique = await isSkuUnique(
+          formData.sku.trim(), 
+          isEditing ? editingPart?.id : undefined
+        )
+        if (!isUnique) {
+          toast.error('SKU already exists. Please choose a different SKU.')
+          return
+        }
+      } catch {
+        toast.error('Failed to validate SKU. Please try again.')
+        return
+      }
+    }
 
     setIsSubmitting(true)
 
@@ -135,6 +152,7 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
         : []
       
       const partData = {
+        ...(formData.sku.trim() && { sku: formData.sku.trim() }),
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
         category: formData.category || undefined,
@@ -198,17 +216,20 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
             <div className="grid gap-4 py-4">
               {/* SKU */}
               <div className="grid gap-2">
-                <Label htmlFor="sku">SKU</Label>
+                <Label htmlFor="sku">SKU (Optional)</Label>
                 <div className="relative">
                   <Input
                     id="sku"
                     value={formData.sku}
-                    onChange={(e) => setFormData({...formData, sku: e.target.value})}
-                    placeholder={isEditing ? "Optional SKU" : skuLoading ? "Generating SKU..." : "Optional SKU"}
+                    onChange={(e) => {
+                      setFormData({...formData, sku: e.target.value})
+                      setSkuInitialized(true) // Mark that user has interacted with SKU field
+                    }}
+                    placeholder={isEditing ? "Enter custom SKU" : skuLoading ? "Generating SKU..." : "Enter custom SKU or leave empty for auto-generation"}
                     className="font-mono"
-                    disabled={!isEditing && skuLoading}
+                    disabled={skuLoading}
                   />
-                  {!isEditing && skuLoading && (
+                  {skuLoading && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                     </div>
@@ -216,10 +237,10 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {isEditing 
-                    ? 'Edit the SKU if needed (optional)' 
+                    ? 'Leave empty to keep current SKU, or enter a new custom SKU' 
                     : skuLoading 
                       ? 'Generating auto SKU...' 
-                      : 'Auto-generated SKU - you can edit it if needed'
+                      : 'Leave empty for auto-generation, or enter a custom SKU'
                   }
                 </p>
               </div>
@@ -380,7 +401,7 @@ export function PartFormDialog({ open, onOpenChange, editingPart }: PartFormDial
               </Button>
               <Button 
                 type="submit" 
-                disabled={isSubmitting || !formData.name.trim() || !formData.sku.trim()}
+                disabled={isSubmitting || !formData.name.trim()}
               >
                 {isSubmitting && <LoadingSpinner size="sm" className="mr-2" />}
                 {isEditing ? 'Update Part' : 'Create Part'}
