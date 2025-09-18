@@ -278,7 +278,7 @@ export class UsersAPI {
       }
 
       return {
-        ...profile as UserProfile,
+        ...(profile as unknown as UserProfile),
         auth_user: {
           id: authUser.user.id,
           email: authUser.user.email,
