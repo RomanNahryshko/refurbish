@@ -3,6 +3,7 @@ import { SparePart } from '@/lib/types/business-types'
 
 // Enhanced types for better type safety and validation
 export interface CreateSparePartData {
+  sku?: string
   name: string
   description?: string
   category?: string
@@ -13,6 +14,7 @@ export interface CreateSparePartData {
 }
 
 export interface UpdateSparePartData {
+  sku?: string
   name?: string
   description?: string
   category?: string
@@ -168,8 +170,8 @@ export class InventoryAPI {
    * Create a new spare part
    */
   async createPart(partData: CreateSparePartData) {
-    // Generate next SKU
-    const sku = await this.getNextSku()
+    // Use provided SKU or generate next SKU if not provided
+    const sku = partData.sku || await this.getNextSku()
 
     const { data, error } = await this.supabase
       .from('spare_parts')
