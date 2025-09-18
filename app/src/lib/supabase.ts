@@ -1,6 +1,6 @@
 // Supabase environment configuration
-// Use direct Supabase URL if available, otherwise fallback to proxy URL
-export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || ''
+// Use proxy URL if available, otherwise fallback to direct Supabase URL
+export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 
@@ -10,7 +10,7 @@ const isValidSupabaseUrl = (url: string): boolean => {
     const parsed = new URL(url)
     // Allow both https (direct Supabase) and http (local proxy)
     const isValidProtocol = parsed.protocol === 'https:' || parsed.protocol === 'http:'
-    const isValidDomain = url.includes('supabase.co') || url.includes('localhost') || url.includes('127.0.0.1') || url.includes('backend-proxy.attractgroup.com')
+    const isValidDomain = url.includes('supabase.co') || url.includes('localhost') || url.includes('127.0.0.1') || url.includes('backend-proxy.attractgroup.com') || url.includes('proxy.remobile.eu')
     const isValid = isValidProtocol && isValidDomain
     
     
@@ -26,23 +26,6 @@ export const hasValidSupabaseConfig =
   supabaseAnonKey.length > 0 &&
   !supabaseUrl.includes('your-project-ref')
 
-// Debug Supabase environment variables
-const debugInfo = {
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.substring(0, 30)}...` : 'MISSING',
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.substring(0, 20)}...` : 'MISSING',
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? `${process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 20)}...` : 'MISSING',
-  NEXT_PUBLIC_SUPABASE_PROXY_URL: process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL ? `${process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL.substring(0, 30)}...` : 'MISSING',
-  selectedUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
-  urlSource: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'direct' : process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL ? 'proxy' : 'none',
-  hasValidConfig: hasValidSupabaseConfig,
-  isClient: typeof window !== 'undefined',
-  nodeEnv: process.env.NODE_ENV
-}
-
-// Multiple logging methods for production visibility
-console.log('🔧 Supabase Environment Variables:', debugInfo)
-console.error('🔧 SUPABASE_DEBUG:', JSON.stringify(debugInfo, null, 2))
-console.warn('🔧 SUPABASE_CONFIG:', debugInfo)
 
 
 

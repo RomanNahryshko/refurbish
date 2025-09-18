@@ -21,14 +21,12 @@ export const useSupabaseStore = create<SupabaseStore>((set, get) => ({
 
   initialize: () => {
     const supabaseClient = createSupabaseClient()
-    console.log(supabaseClient, 'supabaseClient')
 
     if (supabaseClient) {
       set({ client: supabaseClient, isReady: true })
 
       // Get initial session
       supabaseClient.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
-        console.log(session, 'session')
         set({ user: session?.user ?? null })
       })
 

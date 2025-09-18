@@ -29,8 +29,8 @@ export async function middleware(request: NextRequest) {
   if (isProtectedPath) {
     
     try {
-      // Simple Supabase auth check - use direct URL if available, otherwise proxy
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL!
+      // Simple Supabase auth check - use proxy URL if available
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_PROXY_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       
       const supabaseResponse = NextResponse.next()

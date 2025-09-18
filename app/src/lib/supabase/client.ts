@@ -13,7 +13,8 @@ let browserClient: SupabaseClient | null = null
  */
 export function createSupabaseClient() {
   
-  if (!hasValidSupabaseConfig) {
+  // Only check config on client side
+  if (typeof window !== 'undefined' && !hasValidSupabaseConfig) {
     // Return a mock client that won't crash the app
     return null
   }
