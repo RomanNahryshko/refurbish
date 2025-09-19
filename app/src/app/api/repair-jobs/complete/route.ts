@@ -47,13 +47,6 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
 
-
-    if (!repairJob) {
-      return NextResponse.json({ 
-        error: 'Repair job not found' 
-      }, { status: 404 })
-    }
-
     if (repairJob.status !== 'in_progress') {
       console.error(`Repair job ${repair_job_id} has invalid status: ${repairJob.status}. Expected: in_progress`)
       return NextResponse.json({ 
@@ -137,88 +130,92 @@ export async function POST(request: NextRequest) {
     if (pendingError) {
       console.error('Error checking pending repairs:', pendingError)
       // Don't fail the entire request if this check fails
+      return NextResponse.json({ 
+        data: updatedRepairJob,
+        message: 'Repair job completed successfully, but could not check device status',
+        device_sent_to_qc: false
+      })
+    }
+
+    // Log all repair jobs for this device to debug the issue
+    const { data: allDeviceRepairs, error: allDeviceRepairsError } = await supabase
+      .from('repair_jobs')
+      .select('id, status, repair_type, created_at')
+      .eq('device_id', repairJob.device_id)
+      .is('deleted_at', null)
+
+    if (allDeviceRepairsError) {
+      console.error('Error fetching all device repairs for debugging:', allDeviceRepairsError)
     } else {
-      // Log all repair jobs for this device to debug the issue
-      const { data: allDeviceRepairs, error: allDeviceRepairsError } = await supabase
-        .from('repair_jobs')
-        .select('id, status, repair_type, created_at')
-        .eq('device_id', repairJob.device_id)
-        .is('deleted_at', null)
+      console.log('All repair jobs for device:', allDeviceRepairs)
+      console.log('Pending repairs found:', pendingRepairs)
+    }
 
-      if (allDeviceRepairsError) {
-        console.error('Error fetching all device repairs for debugging:', allDeviceRepairsError)
-      } else {
-        console.log('All repair jobs for device:', allDeviceRepairs)
-        console.log('Pending repairs found:', pendingRepairs)
+    // If all repairs are completed, send device to final QC
+    if (!pendingRepairs || pendingRepairs.length === 0) {
+      console.log(`All repairs completed for device ${repairJob.device_id}, sending to final QC`)
+      
+      // Additional safety check: verify that all repair jobs are actually completed
+      if (allDeviceRepairs && allDeviceRepairs.some(job => job.status !== 'completed')) {
+        console.error('Safety check failed: Not all repair jobs are completed. Jobs:', allDeviceRepairs)
+        // Don't proceed with sending to QC if safety check fails
+        return NextResponse.json({ 
+          data: updatedRepairJob,
+          message: 'Repair job completed successfully, but device has incomplete repairs',
+          device_sent_to_qc: false
+        })
       }
 
-      // If all repairs are completed, send device to final QC
-      if (!pendingRepairs || pendingRepairs.length === 0) {
-        console.log(`All repairs completed for device ${repairJob.device_id}, sending to final QC`)
-        // Additional safety check: verify that all repair jobs are actually completed
-        if (allDeviceRepairsError) {
-          console.error('Error fetching all device repairs for safety check:', allDeviceRepairsError)
-        } else if (allDeviceRepairs && allDeviceRepairs.some(job => job.status !== 'completed')) {
-          console.error('Safety check failed: Not all repair jobs are completed. Jobs:', allDeviceRepairs)
-          // Don't proceed with sending to QC if safety check fails
-          return NextResponse.json({ 
-            data: updatedRepairJob,
-            message: 'Repair job completed successfully, but device has incomplete repairs',
-            device_sent_to_qc: false
-          })
-        }
+      // Update device status to final_qc
+      console.log(`Updating device ${repairJob.device_id} status to final_qc`)
+      const { error: deviceUpdateError } = await supabase
+        .from('devices')
+        .update({ 
+          status: DEVICE_STATUS.final_qc,
+          updated_by: user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', repairJob.device_id)
 
-        // Update device status to final_qc
-        console.log(`Updating device ${repairJob.device_id} status to final_qc`)
-        const { error: deviceUpdateError } = await supabase
-          .from('devices')
-          .update({ 
-            status: DEVICE_STATUS.final_qc,
-            updated_by: user.id,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', repairJob.device_id)
-
-        if (deviceUpdateError) {
-          console.error('Error updating device status to final_qc:', deviceUpdateError)
-          // Don't fail the entire request if device update fails
-        } else {
-          console.log(`Successfully updated device ${repairJob.device_id} status to final_qc`)
-        }
-
-        // Create QC check record for final quality control
-        const { error: qcCheckError } = await supabase
-          .from('qc_checks')
-          .insert({
-            device_id: repairJob.device_id,
-            check_type: 'final',
-            overall_result: 'not_tested',
-            performed_by: user.id,
-            notes: `Device sent to final QC after completing ${repairJob.repair_type} repair`
-          })
-
-        if (qcCheckError) {
-          console.error('Error creating QC check record:', qcCheckError)
-          // Don't fail the entire request if QC check creation fails
-        }
-
-        // Record device status change in history with full user information
-        try {
-          const { recordDeviceStatusChange } = await import('@/lib/helpers/device-status-history')
-          await recordDeviceStatusChange(supabase, {
-            device_id: repairJob.device_id,
-            old_status: DEVICE_STATUS.in_repair,
-            new_status: DEVICE_STATUS.final_qc,
-            changed_by: user.id,
-            notes: `Device sent to final QC after completing ${repairJob.repair_type} repair`
-          })
-        } catch (historyError) {
-          console.error('Error recording device status history:', historyError)
-          // Don't fail the entire request if history recording fails
-        }
+      if (deviceUpdateError) {
+        console.error('Error updating device status to final_qc:', deviceUpdateError)
+        // Don't fail the entire request if device update fails
       } else {
-        console.log(`Device ${repairJob.device_id} still has pending repairs, not sending to QC yet`)
+        console.log(`Successfully updated device ${repairJob.device_id} status to final_qc`)
       }
+
+      // Create QC check record for final quality control
+      const { error: qcCheckError } = await supabase
+        .from('qc_checks')
+        .insert({
+          device_id: repairJob.device_id,
+          check_type: 'final',
+          overall_result: 'not_tested',
+          performed_by: user.id,
+          notes: `Device sent to final QC after completing ${repairJob.repair_type} repair`
+        })
+
+      if (qcCheckError) {
+        console.error('Error creating QC check record:', qcCheckError)
+        // Don't fail the entire request if QC check creation fails
+      }
+
+      // Record device status change in history with full user information
+      try {
+        const { recordDeviceStatusChange } = await import('@/lib/helpers/device-status-history')
+        await recordDeviceStatusChange(supabase, {
+          device_id: repairJob.device_id,
+          old_status: DEVICE_STATUS.in_repair,
+          new_status: DEVICE_STATUS.final_qc,
+          changed_by: user.id,
+          notes: `Device sent to final QC after completing ${repairJob.repair_type} repair`
+        })
+      } catch (historyError) {
+        console.error('Error recording device status history:', historyError)
+        // Don't fail the entire request if history recording fails
+      }
+    } else {
+      console.log(`Device ${repairJob.device_id} still has pending repairs, not sending to QC yet`)
     }
 
     return NextResponse.json({ 
