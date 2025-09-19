@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if all repairs for this device are completed
+    console.log(`🔍 Checking for pending repairs for device ${repairJob.device_id}`)
     const { data: pendingRepairs, error: pendingError } = await supabase
       .from('repair_jobs')
       .select('id, status')
@@ -127,8 +128,14 @@ export async function POST(request: NextRequest) {
       .in('status', ['pending', 'in_progress'])
       .is('deleted_at', null) // Exclude deleted repair jobs
 
+    console.log(`📊 Pending repairs query result:`, {
+      pendingRepairs,
+      pendingRepairsCount: pendingRepairs?.length || 0,
+      error: pendingError
+    })
+
     if (pendingError) {
-      console.error('Error checking pending repairs:', pendingError)
+      console.error('❌ Error checking pending repairs:', pendingError)
       // Don't fail the entire request if this check fails
       return NextResponse.json({ 
         data: updatedRepairJob,
@@ -152,6 +159,10 @@ export async function POST(request: NextRequest) {
     }
 
     // If all repairs are completed, send device to final QC
+    console.log(`🤔 Decision point: Should device ${repairJob.device_id} go to final QC?`)
+    console.log(`📋 Pending repairs count: ${pendingRepairs?.length || 0}`)
+    console.log(`📋 All device repairs count: ${allDeviceRepairs?.length || 0}`)
+    
     if (!pendingRepairs || pendingRepairs.length === 0) {
       console.log(`🎯 All repairs completed for device ${repairJob.device_id}, sending to final QC`)
       console.log(`📊 Device repair jobs summary:`, allDeviceRepairs?.map(job => ({ 
@@ -161,8 +172,11 @@ export async function POST(request: NextRequest) {
       })))
       
       // Additional safety check: verify that all repair jobs are actually completed
-      if (allDeviceRepairs && allDeviceRepairs.some(job => job.status !== 'completed')) {
-        console.error('❌ Safety check failed: Not all repair jobs are completed. Jobs:', allDeviceRepairs)
+      const incompleteJobs = allDeviceRepairs?.filter(job => job.status !== 'completed') || []
+      console.log(`🔍 Safety check: Incomplete jobs found: ${incompleteJobs.length}`)
+      
+      if (incompleteJobs.length > 0) {
+        console.error('❌ Safety check failed: Not all repair jobs are completed. Incomplete jobs:', incompleteJobs)
         // Don't proceed with sending to QC if safety check fails
         return NextResponse.json({ 
           data: updatedRepairJob,
@@ -225,13 +239,21 @@ export async function POST(request: NextRequest) {
         id: repair.id, 
         status: repair.status 
       })))
+      console.log(`📊 All device repairs for context:`, allDeviceRepairs?.map(job => ({ 
+        id: job.id, 
+        status: job.status, 
+        repair_type: job.repair_type 
+      })))
     }
 
     const deviceSentToQC = !pendingRepairs || pendingRepairs.length === 0
     console.log(`🏁 Repair job completion finished. Device sent to QC: ${deviceSentToQC}`)
     
     return NextResponse.json({ 
-      data: updatedRepairJob,
+      data: {
+        ...updatedRepairJob,
+        device_id: repairJob.device_id // Include device_id in response
+      },
       message: 'Repair job completed successfully',
       device_sent_to_qc: deviceSentToQC
     })

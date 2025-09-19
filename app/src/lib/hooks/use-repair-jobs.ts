@@ -250,8 +250,39 @@ export function useCompleteRepairJob() {
           device_sent_to_qc: result.device_sent_to_qc,
           message: result.message,
           data: result.data,
+          fullResponse: result,
           timestamp: new Date().toISOString()
         })
+        
+        if (result.device_sent_to_qc) {
+          console.log('🎯 [CLIENT] Device was sent to final QC!')
+          
+          // Make a client-side request to update device status to final_qc
+          console.log('🔄 [CLIENT] Making client-side request to update device status to final_qc')
+          try {
+            const deviceUpdateResponse = await fetch('/api/devices/update-status', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                device_id: result.data?.device_id, // Use device_id from response
+                status: 'final_qc'
+              })
+            })
+            
+            if (deviceUpdateResponse.ok) {
+              const deviceUpdateResult = await deviceUpdateResponse.json()
+              console.log('✅ [CLIENT] Device status updated successfully:', deviceUpdateResult)
+            } else {
+              console.error('❌ [CLIENT] Failed to update device status:', await deviceUpdateResponse.text())
+            }
+          } catch (deviceUpdateError) {
+            console.error('❌ [CLIENT] Error updating device status:', deviceUpdateError)
+          }
+        } else {
+          console.log('⏳ [CLIENT] Device was NOT sent to final QC - still has pending repairs')
+        }
         
         return result.data
       } catch (error) {
