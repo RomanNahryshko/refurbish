@@ -188,19 +188,9 @@ export function useCompleteRepairJob() {
         notes?: string
       }>
     }) => {
-      console.log('🚀 [CLIENT] useCompleteRepairJob mutationFn called')
-      
       if (!client) {
-        console.error('❌ [CLIENT] Supabase client not available')
         throw new Error('Supabase client not available')
       }
-      
-      console.log('🔧 [CLIENT] Starting repair job completion:', {
-        repairJobId,
-        hasCompletionNotes: !!completionNotes,
-        partsCount: partsUsed?.length || 0,
-        timestamp: new Date().toISOString()
-      })
       
       const requestBody = {
         repair_job_id: repairJobId,
@@ -212,12 +202,6 @@ export function useCompleteRepairJob() {
         }))
       }
       
-      console.log('📤 [CLIENT] Sending request to API:', {
-        url: '/api/repair-jobs/complete',
-        method: 'POST',
-        body: requestBody
-      })
-      
       try {
         // Use the server API endpoint instead of client API to ensure proper logic
         const response = await fetch('/api/repair-jobs/complete', {
@@ -228,37 +212,15 @@ export function useCompleteRepairJob() {
           body: JSON.stringify(requestBody)
         })
 
-        console.log('📡 [CLIENT] API response received:', {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok,
-          headers: Object.fromEntries(response.headers.entries())
-        })
-
         if (!response.ok) {
           const errorData = await response.json()
-          console.error('❌ [CLIENT] API error response:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData
-          })
           throw new Error(errorData.error || 'Failed to complete repair job')
         }
 
         const result = await response.json()
-        console.log('✅ [CLIENT] API success response:', {
-          device_sent_to_qc: result.device_sent_to_qc,
-          message: result.message,
-          data: result.data,
-          fullResponse: result,
-          timestamp: new Date().toISOString()
-        })
         
         if (result.device_sent_to_qc) {
-          console.log('🎯 [CLIENT] Device was sent to final QC!')
-          
           // Make a client-side request to update device status to final_qc
-          console.log('🔄 [CLIENT] Making client-side request to update device status to final_qc')
           try {
             const deviceUpdateResponse = await fetch('/api/devices/update-status', {
               method: 'POST',
@@ -271,60 +233,34 @@ export function useCompleteRepairJob() {
               })
             })
             
-            if (deviceUpdateResponse.ok) {
-              const deviceUpdateResult = await deviceUpdateResponse.json()
-              console.log('✅ [CLIENT] Device status updated successfully:', deviceUpdateResult)
-            } else {
-              console.error('❌ [CLIENT] Failed to update device status:', await deviceUpdateResponse.text())
+            if (!deviceUpdateResponse.ok) {
+              // Silently fail - don't throw error for device status update
             }
           } catch (deviceUpdateError) {
-            console.error('❌ [CLIENT] Error updating device status:', deviceUpdateError)
+            // Silently fail - don't throw error for device status update
           }
-        } else {
-          console.log('⏳ [CLIENT] Device was NOT sent to final QC - still has pending repairs')
         }
         
         return result.data
       } catch (error) {
-        console.error('💥 [CLIENT] Error in API call:', {
-          error: error,
-          message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined
-        })
         throw error
       }
     },
     onSuccess: async (data, { repairJobId, partsUsed }) => {
-      console.log('🎉 [CLIENT] onSuccess called with data:', {
-        data,
-        repairJobId,
-        partsUsedCount: partsUsed?.length || 0,
-        timestamp: new Date().toISOString()
-      })
-      
       try {
-        console.log('🔄 [CLIENT] Starting query invalidation process')
-        
         // Invalidate repair jobs queries
-        console.log('📋 [CLIENT] Invalidating repair jobs queries...')
         await queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
         await queryClient.invalidateQueries({ queryKey: ['repair-jobs', repairJobId] })
-        console.log('✅ [CLIENT] Repair jobs queries invalidated')
         
         // Also invalidate devices queries since device status changes to final_qc
-        console.log('📱 [CLIENT] Invalidating devices queries...')
         await queryClient.invalidateQueries({ queryKey: ['devices'] })
         await queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
-        console.log('✅ [CLIENT] Devices queries invalidated')
         
         // Also invalidate QC checks queries since a new QC check is created
-        console.log('🔍 [CLIENT] Invalidating QC checks queries...')
         await queryClient.invalidateQueries({ queryKey: ['qc-checks'] })
-        console.log('✅ [CLIENT] QC checks queries invalidated')
         
         // Invalidate inventory queries if parts were used (stock levels changed)
         if (partsUsed && partsUsed.length > 0) {
-          console.log('🔧 [CLIENT] Invalidating inventory queries due to parts usage...')
           // Invalidate all spare parts queries (used by repair jobs page)
           await queryClient.invalidateQueries({ queryKey: ['spare-parts'] })
           
@@ -339,22 +275,12 @@ export function useCompleteRepairJob() {
           partsUsed.forEach(part => {
             queryClient.invalidateQueries({ queryKey: ['parts', part.spare_part_id] })
           })
-          console.log('✅ [CLIENT] Inventory queries invalidated')
         }
-        
-        console.log('🏁 [CLIENT] All queries invalidated successfully')
       } catch (error) {
-        console.error('❌ [CLIENT] Error during query invalidation:', error)
+        // Silently fail - don't throw error for query invalidation
       }
     },
     onError: (error, { repairJobId }) => {
-      console.error('❌ [CLIENT] onError called:', {
-        error: error,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        repairJobId,
-        timestamp: new Date().toISOString()
-      })
       // Error handled by toast
     }
   })

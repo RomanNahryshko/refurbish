@@ -32,13 +32,6 @@ export function CompleteRepairDialog({
   spareParts,
   isLoading = false
 }: CompleteRepairDialogProps) {
-  console.log('🔧 [DIALOG] CompleteRepairDialog rendered with props:', {
-    isOpen,
-    isLoading,
-    sparePartsCount: spareParts?.length || 0,
-    timestamp: new Date().toISOString()
-  })
-
   const [partsRecording, setPartsRecording] = useState<PartsRecording>({
     repairId: null,
     parts: [],
@@ -46,37 +39,22 @@ export function CompleteRepairDialog({
   })
 
   const handleClose = () => {
-    console.log('🔄 [DIALOG] handleClose called, resetting partsRecording')
     setPartsRecording({
       repairId: null,
       parts: [],
       notes: ''
     })
-    console.log('📞 [DIALOG] Calling onClose')
     onClose()
   }
 
   const handleComplete = () => {
-    console.log('🔧 [DIALOG] handleComplete called with partsRecording:', {
-      parts: partsRecording.parts,
-      notes: partsRecording.notes,
-      timestamp: new Date().toISOString()
-    })
-
     const partsToSubmit = partsRecording.parts.map(part => ({
       spare_part_id: part.partId,
       quantity_used: part.quantity,
       notes: undefined // Could be enhanced to allow per-part notes
     }))
     
-    console.log('📤 [DIALOG] Calling onComplete with:', {
-      partsToSubmit,
-      notes: partsRecording.notes
-    })
-    
     onComplete(partsToSubmit, partsRecording.notes)
-    
-    console.log('🔄 [DIALOG] Calling handleClose')
     handleClose()
   }
 
