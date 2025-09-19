@@ -77,7 +77,7 @@ export default function QCPage() {
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Final Quality Control</h1>
-          <p className="text-gray-600 mt-1">Devices ready for final QC after repairs</p>
+          <p className="text-gray-600 mt-1">Devices ready for final QC after repairs!</p>
           <div className="mt-8 p-8 bg-gray-50 rounded-lg">
             <p className="text-lg text-gray-500">No devices are currently ready for final QC.</p>
             <p className="text-sm text-gray-400 mt-2">

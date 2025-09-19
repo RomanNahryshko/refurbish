@@ -85,13 +85,24 @@ export default function RepairJobsPage() {
   
   // Handle complete repair success/error
   useEffect(() => {
+    console.log('🔄 [PAGE] completeRepairJob state changed:', {
+      isSuccess: completeRepairJob.isSuccess,
+      isError: completeRepairJob.isError,
+      isPending: completeRepairJob.isPending,
+      error: completeRepairJob.error,
+      data: completeRepairJob.data,
+      timestamp: new Date().toISOString()
+    })
+
     if (completeRepairJob.isSuccess) {
+      console.log('✅ [PAGE] completeRepairJob.isSuccess is true')
       // The hook will automatically invalidate queries
     }
     if (completeRepairJob.isError) {
+      console.log('❌ [PAGE] completeRepairJob.isError is true')
       // You could show a toast notification here
     }
-  }, [completeRepairJob.isSuccess, completeRepairJob.isError, completeRepairJob.error])
+  }, [completeRepairJob.isSuccess, completeRepairJob.isError, completeRepairJob.error, completeRepairJob.isPending, completeRepairJob.data])
   
   // Reset page when filters change
   const handleFilterChange = (setter: (value: string) => void) => (value: string) => {
@@ -281,7 +292,21 @@ export default function RepairJobsPage() {
   }
 
   const handleCompleteRepair = (repair: RepairJob) => {
+    console.log('🔧 [PAGE] handleCompleteRepair called with repair:', {
+      id: repair.id,
+      device_id: repair.device_id,
+      repair_type: repair.repair_type,
+      status: repair.status,
+      timestamp: new Date().toISOString()
+    })
+    
     setPartsRecording({
+      repairId: repair.id,
+      parts: [],
+      notes: ''
+    })
+    
+    console.log('🔄 [PAGE] partsRecording state updated:', {
       repairId: repair.id,
       parts: [],
       notes: ''
@@ -311,6 +336,17 @@ export default function RepairJobsPage() {
   }
 
   const submitCompleteRepair = (parts?: Array<{ spare_part_id: string; quantity_used: number; notes?: string }>, notes?: string) => {
+    console.log('🚀 [PAGE] submitCompleteRepair called with:', {
+      parts: parts?.length || 0,
+      notes: !!notes,
+      partsRecording: {
+        repairId: partsRecording.repairId,
+        partsCount: partsRecording.parts.length,
+        hasNotes: !!partsRecording.notes
+      },
+      timestamp: new Date().toISOString()
+    })
+
     if (!partsRecording.repairId) {
       console.log('❌ [PAGE] No repair ID in partsRecording')
       return
@@ -323,9 +359,9 @@ export default function RepairJobsPage() {
     })
 
     setLoading(true)
+    console.log('🔄 [PAGE] Loading state set to true')
 
-    // Complete the repair job and send device to QC
-    completeRepairJob.mutate({
+    const mutationData = {
       repairJobId: partsRecording.repairId,
       completionNotes: notes || partsRecording.notes || undefined,
       partsUsed: parts || partsRecording.parts.map(part => ({
@@ -333,19 +369,26 @@ export default function RepairJobsPage() {
         quantity_used: part.quantity,
         notes: undefined
       }))
-    }, {
+    }
+
+    console.log('📤 [PAGE] Calling completeRepairJob.mutate with data:', mutationData)
+
+    // Complete the repair job and send device to QC
+    completeRepairJob.mutate(mutationData, {
       onSuccess: (data) => {
-        console.log('✅ [PAGE] Repair completion successful:', data)
+        console.log('✅ [PAGE] onSuccess callback called with data:', data)
         setLoading(false)
         setPartsRecording({
           repairId: null,
           parts: [],
           notes: ''
         })
+        console.log('🔄 [PAGE] Loading state set to false, partsRecording cleared')
       },
       onError: (error) => {
-        console.error('❌ [PAGE] Repair completion failed:', error)
+        console.error('❌ [PAGE] onError callback called with error:', error)
         setLoading(false)
+        console.log('🔄 [PAGE] Loading state set to false due to error')
       }
     })
   }
