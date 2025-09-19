@@ -190,6 +190,12 @@ export function useCompleteRepairJob() {
     }) => {
       if (!client) throw new Error('Supabase client not available')
       
+      console.log('🔧 [CLIENT] Starting repair job completion:', {
+        repairJobId,
+        hasCompletionNotes: !!completionNotes,
+        partsCount: partsUsed?.length || 0
+      })
+      
       // Use the server API endpoint instead of client API to ensure proper logic
       const response = await fetch('/api/repair-jobs/complete', {
         method: 'POST',
@@ -207,29 +213,42 @@ export function useCompleteRepairJob() {
         })
       })
 
+      console.log('📡 [CLIENT] API response status:', response.status)
+
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('❌ [CLIENT] API error response:', errorData)
         throw new Error(errorData.error || 'Failed to complete repair job')
       }
 
       const result = await response.json()
+      console.log('✅ [CLIENT] API success response:', {
+        device_sent_to_qc: result.device_sent_to_qc,
+        message: result.message
+      })
+      
       return result.data
     },
     onSuccess: async (data, { repairJobId, partsUsed }) => {
+      console.log('🎉 [CLIENT] Repair job completion successful, invalidating queries')
       
       // Invalidate repair jobs queries
       await queryClient.invalidateQueries({ queryKey: ['repair-jobs'] })
       await queryClient.invalidateQueries({ queryKey: ['repair-jobs', repairJobId] })
+      console.log('✅ [CLIENT] Repair jobs queries invalidated')
       
       // Also invalidate devices queries since device status changes to final_qc
       await queryClient.invalidateQueries({ queryKey: ['devices'] })
       await queryClient.invalidateQueries({ queryKey: ['devices', 'final-qc'] })
+      console.log('✅ [CLIENT] Devices queries invalidated')
       
       // Also invalidate QC checks queries since a new QC check is created
       await queryClient.invalidateQueries({ queryKey: ['qc-checks'] })
+      console.log('✅ [CLIENT] QC checks queries invalidated')
       
       // Invalidate inventory queries if parts were used (stock levels changed)
       if (partsUsed && partsUsed.length > 0) {
+        console.log('🔧 [CLIENT] Invalidating inventory queries due to parts usage')
         // Invalidate all spare parts queries (used by repair jobs page)
         await queryClient.invalidateQueries({ queryKey: ['spare-parts'] })
         
@@ -244,11 +263,13 @@ export function useCompleteRepairJob() {
         partsUsed.forEach(part => {
           queryClient.invalidateQueries({ queryKey: ['parts', part.spare_part_id] })
         })
+        console.log('✅ [CLIENT] Inventory queries invalidated')
       }
       
+      console.log('🏁 [CLIENT] All queries invalidated successfully')
     },
     onError: (error, { repairJobId }) => {
-      console.error('useCompleteRepairJob onError', { error, repairJobId })
+      console.error('❌ [CLIENT] Repair job completion failed:', { error, repairJobId })
       // Error handled by toast
     }
   })

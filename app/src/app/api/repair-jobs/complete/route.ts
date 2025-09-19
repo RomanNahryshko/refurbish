@@ -153,11 +153,16 @@ export async function POST(request: NextRequest) {
 
     // If all repairs are completed, send device to final QC
     if (!pendingRepairs || pendingRepairs.length === 0) {
-      console.log(`All repairs completed for device ${repairJob.device_id}, sending to final QC`)
+      console.log(`🎯 All repairs completed for device ${repairJob.device_id}, sending to final QC`)
+      console.log(`📊 Device repair jobs summary:`, allDeviceRepairs?.map(job => ({ 
+        id: job.id, 
+        status: job.status, 
+        repair_type: job.repair_type 
+      })))
       
       // Additional safety check: verify that all repair jobs are actually completed
       if (allDeviceRepairs && allDeviceRepairs.some(job => job.status !== 'completed')) {
-        console.error('Safety check failed: Not all repair jobs are completed. Jobs:', allDeviceRepairs)
+        console.error('❌ Safety check failed: Not all repair jobs are completed. Jobs:', allDeviceRepairs)
         // Don't proceed with sending to QC if safety check fails
         return NextResponse.json({ 
           data: updatedRepairJob,
@@ -167,7 +172,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Update device status to final_qc
-      console.log(`Updating device ${repairJob.device_id} status to final_qc`)
+      console.log(`🔄 Updating device ${repairJob.device_id} status to final_qc`)
       const { error: deviceUpdateError } = await supabase
         .from('devices')
         .update({ 
@@ -178,10 +183,10 @@ export async function POST(request: NextRequest) {
         .eq('id', repairJob.device_id)
 
       if (deviceUpdateError) {
-        console.error('Error updating device status to final_qc:', deviceUpdateError)
+        console.error('❌ Error updating device status to final_qc:', deviceUpdateError)
         // Don't fail the entire request if device update fails
       } else {
-        console.log(`Successfully updated device ${repairJob.device_id} status to final_qc`)
+        console.log(`✅ Successfully updated device ${repairJob.device_id} status to final_qc`)
       }
 
       // Create QC check record for final quality control
@@ -215,13 +220,20 @@ export async function POST(request: NextRequest) {
         // Don't fail the entire request if history recording fails
       }
     } else {
-      console.log(`Device ${repairJob.device_id} still has pending repairs, not sending to QC yet`)
+      console.log(`⏳ Device ${repairJob.device_id} still has pending repairs, not sending to QC yet`)
+      console.log(`📋 Pending repairs:`, pendingRepairs?.map(repair => ({ 
+        id: repair.id, 
+        status: repair.status 
+      })))
     }
 
+    const deviceSentToQC = !pendingRepairs || pendingRepairs.length === 0
+    console.log(`🏁 Repair job completion finished. Device sent to QC: ${deviceSentToQC}`)
+    
     return NextResponse.json({ 
       data: updatedRepairJob,
       message: 'Repair job completed successfully',
-      device_sent_to_qc: !pendingRepairs || pendingRepairs.length === 0
+      device_sent_to_qc: deviceSentToQC
     })
 
   } catch (error) {

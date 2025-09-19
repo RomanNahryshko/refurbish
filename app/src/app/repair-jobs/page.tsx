@@ -311,7 +311,16 @@ export default function RepairJobsPage() {
   }
 
   const submitCompleteRepair = (parts?: Array<{ spare_part_id: string; quantity_used: number; notes?: string }>, notes?: string) => {
-    if (!partsRecording.repairId) return
+    if (!partsRecording.repairId) {
+      console.log('❌ [PAGE] No repair ID in partsRecording')
+      return
+    }
+
+    console.log('🚀 [PAGE] Starting repair completion process:', {
+      repairId: partsRecording.repairId,
+      hasNotes: !!(notes || partsRecording.notes),
+      partsCount: (parts || partsRecording.parts).length
+    })
 
     setLoading(true)
 
@@ -325,7 +334,8 @@ export default function RepairJobsPage() {
         notes: undefined
       }))
     }, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log('✅ [PAGE] Repair completion successful:', data)
         setLoading(false)
         setPartsRecording({
           repairId: null,
@@ -333,7 +343,8 @@ export default function RepairJobsPage() {
           notes: ''
         })
       },
-      onError: () => {
+      onError: (error) => {
+        console.error('❌ [PAGE] Repair completion failed:', error)
         setLoading(false)
       }
     })
