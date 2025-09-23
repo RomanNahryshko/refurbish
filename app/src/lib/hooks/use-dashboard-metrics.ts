@@ -1,64 +1,53 @@
-import { useState, useEffect } from 'react'
-import { DashboardService, DashboardMetrics } from '@/lib/services/dashboard-service'
-import { createSupabaseClient } from '@/lib/supabase/client'
-import { DateRange } from 'react-day-picker'
+'use client'
 
-interface UseDashboardMetricsReturn {
-  data: DashboardMetrics | null;
-  loading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
+import { useQuery } from '@tanstack/react-query'
+import { DashboardMetrics } from '@/lib/services/dashboard-service'
+
+interface DateRange {
+  from?: Date
+  to?: Date
 }
 
-export function useDashboardMetrics(dateRange?: DateRange): UseDashboardMetricsReturn {
-  const [data, setData] = useState<DashboardMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export const dashboardKeys = {
+  all: ['dashboard'] as const,
+  metrics: () => [...dashboardKeys.all, 'metrics'] as const,
+  metricsWithRange: (dateRange?: DateRange) => [...dashboardKeys.metrics(), { dateRange }] as const,
+}
 
-  const fetchMetrics = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const supabase = createSupabaseClient();
-      if (!supabase) {
-        throw new Error('Failed to initialize Supabase client');
-      }
-
-      const dashboardService = new DashboardService(supabase);
+/**
+ * Hook to fetch dashboard metrics with optional date range
+ */
+export function useDashboardMetrics(dateRange?: DateRange) {
+  return useQuery<DashboardMetrics>({
+    queryKey: dashboardKeys.metricsWithRange(dateRange),
+    queryFn: async () => {
+      const params = new URLSearchParams()
       
-      // Convert DateRange to the format expected by the service
-      let serviceDateRange: { from: Date; to: Date } | undefined;
-      if (dateRange?.from && dateRange?.to) {
-        serviceDateRange = {
-          from: dateRange.from,
-          to: dateRange.to
-        };
+      if (dateRange?.from) {
+        params.append('from', dateRange.from.toISOString())
+      }
+      if (dateRange?.to) {
+        params.append('to', dateRange.to.toISOString())
       }
       
-      const metrics = await dashboardService.getDashboardMetrics(serviceDateRange);
+      const response = await fetch(`/api/dashboard/metrics?${params}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
       
-      setData(metrics);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch dashboard metrics';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchMetrics();
-  }, [dateRange?.from, dateRange?.to]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const refetch = async () => {
-    await fetchMetrics();
-  };
-
-  return {
-    data,
-    loading,
-    error,
-    refetch,
-  };
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch dashboard metrics')
+      }
+      
+      const { data } = await response.json()
+      return data
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes - dashboard data changes frequently
+    gcTime: 5 * 60 * 1000, // 5 minutes in cache
+    refetchOnMount: true,
+    retry: 2,
+  })
 }

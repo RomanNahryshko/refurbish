@@ -10,11 +10,11 @@ import { toast } from 'sonner';
 import { InitialQCDeviceCard } from '@/components/batch-intake/initial-qc-device-card';
 import { useExcelParser } from '@/lib/hooks/use-excel-parser';
 import { useBatch } from '@/lib/hooks/use-batches';
-import { useCreateDevicesFromImport, useCreateDevicesFromImportWithoutInvalidation } from '@/lib/hooks/use-devices';
+import { useBulkCreateDevices } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 // Removed: Direct Supabase import - using hooks instead
 // Removed: useCreateRepairJob - repair jobs are now created by QC checks API
-import { DrPhoneData } from '@/lib/types/business-types';
+import { DrPhoneData, DeviceGrade } from '@/lib/types/business-types';
 import {
   useFilterDevicesByExisting,
   useCompletedQCByDevices,
@@ -72,8 +72,7 @@ export default function ImportDrPhonePage() {
   // Store device IDs for each device index
   const [deviceIds, setDeviceIds] = useState<Record<number, string>>({})
   
-  const _createDevicesFromImport = useCreateDevicesFromImport()
-  const createDevicesFromImportWithoutInvalidation = useCreateDevicesFromImportWithoutInvalidation()
+  const bulkCreateDevices = useBulkCreateDevices()
   const findExistingDevice = useFindExistingDevice()
   const supabase = useSupabaseClient()
 
@@ -149,11 +148,11 @@ export default function ImportDrPhonePage() {
           required_repairs: selectedRepairs,
           other_repair_description: otherDescription
         },
-        grade: selectedGrade || 'ungraded', // Use selected grade or default to 'ungraded'
+        grade: (selectedGrade as DeviceGrade) || 'ungraded', // Use selected grade or default to 'ungraded'
         notes: `Imported from Dr. Phone Excel file`
       }
       
-      const result = await createDevicesFromImportWithoutInvalidation.mutateAsync([deviceToCreate])
+      const result = await bulkCreateDevices.mutateAsync([deviceToCreate])
 
       if (result && result.length > 0) {
         const createdDevice = result[0]

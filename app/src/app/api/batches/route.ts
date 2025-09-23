@@ -217,3 +217,174 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// PUT /api/batches - Update a batch
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      )
+    }
+
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Check permission
+    const hasPermission = await checkPermission(user.id, 'batches', 'update')
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    // Parse request body
+    const body = await request.json()
+    const { id, ...updates } = body
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Missing required field: id' },
+        { status: 400 }
+      )
+    }
+
+    // Process numeric fields
+    if (updates.invoice_amount) {
+      updates.invoice_amount = parseFloat(updates.invoice_amount)
+    }
+    if (updates.device_count) {
+      updates.device_count = parseInt(updates.device_count)
+    }
+
+    // Update batch
+    const { data, error } = await supabase
+      .from('batches')
+      .update({
+        ...updates,
+        updated_by: user.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .is('deleted_at', null)
+      .select(`
+        *,
+        supplier:suppliers(name)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error updating batch:', error)
+      return NextResponse.json(
+        { error: 'Failed to update batch' },
+        { status: 500 }
+      )
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: 'Batch not found' },
+        { status: 404 }
+      )
+    }
+
+    // Transform data to include supplier_name
+    const batch = {
+      ...data,
+      supplier_name: data.supplier?.name
+    }
+
+    return NextResponse.json({ data: batch })
+  } catch (error) {
+    console.error('Update batch API error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/batches - Delete a batch (soft delete)
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      )
+    }
+
+    // Check authentication
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Check permission
+    const hasPermission = await checkPermission(user.id, 'batches', 'delete')
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Missing required parameter: id' },
+        { status: 400 }
+      )
+    }
+
+    // Soft delete batch
+    const { data, error } = await supabase
+      .from('batches')
+      .update({
+        deleted_at: new Date().toISOString(),
+        updated_by: user.id
+      })
+      .eq('id', id)
+      .is('deleted_at', null)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error deleting batch:', error)
+      return NextResponse.json(
+        { error: 'Failed to delete batch' },
+        { status: 500 }
+      )
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: 'Batch not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ message: 'Batch deleted successfully' })
+  } catch (error) {
+    console.error('Delete batch API error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+

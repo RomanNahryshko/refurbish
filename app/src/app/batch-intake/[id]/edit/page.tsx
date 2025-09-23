@@ -78,7 +78,7 @@ export default function EditBatchPage() {
       // Call the update batch mutation
               await updateBatch.mutateAsync({
           id: batchId,
-          updates: {
+          data: {
             supplier_id: formData.supplier_id,
             invoice_number: formData.invoice_number || undefined,
             invoice_date: formData.invoice_date || undefined,

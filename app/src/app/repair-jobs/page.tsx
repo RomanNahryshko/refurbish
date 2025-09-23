@@ -48,7 +48,7 @@ export default function RepairJobsPage() {
   const [loading, setLoading] = useState(false)
   // Fetch real data from API
   const { data: repairJobsData, isPending: repairJobsLoading, error: repairJobsError, refetch: refetchRepairJobs, isFetching: repairJobsFetching } = useRepairJobs()
-  const { batches: batchesData, loading: batchesLoading, fetchBatches: refetchBatches } = useBatches()
+  const { data: batchesData, isPending: batchesLoading, refetch: refetchBatches } = useBatches()
   const { data: sparePartsData, isPending: sparePartsLoading, refetch: refetchSpareParts, isFetching: sparePartsFetching } = useSpareParts()
   const { data: profile } = useProfile(!!user)
 
@@ -329,7 +329,7 @@ export default function RepairJobsPage() {
 
     // Complete the repair job and send device to QC
     completeRepairJob.mutate(mutationData, {
-      onSuccess: (data) => {
+      onSuccess: (_data) => {
         setLoading(false)
         setPartsRecording({
           repairId: null,
@@ -337,7 +337,7 @@ export default function RepairJobsPage() {
           notes: ''
         })
       },
-      onError: (error) => {
+      onError: (_error) => {
         setLoading(false)
       }
     })

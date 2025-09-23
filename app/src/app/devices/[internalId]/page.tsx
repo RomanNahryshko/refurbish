@@ -13,7 +13,8 @@ import {
   Smartphone,
   Hash
 } from 'lucide-react';
-import { useDeviceByInternalId, useDeviceStatusHistory } from '@/lib/hooks/use-devices';
+import { useDeviceByInternalId } from '@/lib/hooks/use-devices';
+import { useQuery } from '@tanstack/react-query';
 import { statusConfig } from '@/components/common/device-list-table';
 import { DeviceStatusHistoryTable } from '@/components/devices/device-status-history-table';
 import { useUser } from '@/lib/hooks/use-user';
@@ -34,7 +35,20 @@ export default function DeviceJobSheetPage() {
   const { data: device, isLoading: deviceLoading, error: deviceError } = useDeviceByInternalId(internalId)
   
   // Fetch device status history
-  const { data: statusHistory, isLoading: statusHistoryLoading, error: statusHistoryError, refetch: refetchStatusHistory, isFetching: statusHistoryFetching } = useDeviceStatusHistory(device?.id || '')
+  const { data: statusHistory, isLoading: statusHistoryLoading, error: statusHistoryError, refetch: refetchStatusHistory, isFetching: statusHistoryFetching } = useQuery({
+    queryKey: ['device-status-history', device?.id],
+    queryFn: async () => {
+      if (!device?.id) return []
+      const response = await fetch(`/api/devices/${device.id}/status-history`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      if (!response.ok) throw new Error('Failed to fetch status history')
+      const { data } = await response.json()
+      return data
+    },
+    enabled: !!device?.id
+  })
   
   // Refetch data every time the component mounts (page visit)
   useEffect(() => {
@@ -112,7 +126,7 @@ export default function DeviceJobSheetPage() {
   }
   
   // Extract batch data from device response
-  const batch = device.batch
+  const _batch = null // Will be fetched separately if needed
 
   const status = statusConfig[device.status as keyof typeof statusConfig]
   const StatusIcon = status.icon
@@ -245,24 +259,16 @@ export default function DeviceJobSheetPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <span className="text-gray-600 text-sm">Batch</span>
+              <span className="text-gray-600 text-sm">Batch ID</span>
               <div className="mt-1">
-                <Link href={`/batch-intake/${batch?.id}`}>
-                  <Badge variant="outline" className="cursor-pointer">
-                    {batch?.batch_number || 'N/A'}
-                  </Badge>
-                </Link>
+                <Badge variant="outline">
+                  {device.batch_id || 'N/A'}
+                </Badge>
               </div>
             </div>
-            {batch?.supplier?.name && (
-              <div>
-                <span className="text-gray-600 text-sm">Supplier</span>
-                <p className="text-sm font-medium">{batch.supplier.name}</p>
-              </div>
-            )}
             <div>
               <span className="text-gray-600 text-sm">Received Date</span>
-              <p className="text-sm">{batch?.received_date ? new Date(batch.received_date).toLocaleDateString() : new Date(device.created_at).toLocaleDateString()}</p>
+              <p className="text-sm">{new Date(device.created_at).toLocaleDateString()}</p>
             </div>
           </CardContent>
         </Card>

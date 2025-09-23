@@ -7,12 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-    Search,
-    Eye,
-    Calendar,
-    FileText,
-    DollarSign,
-    Package
+  Search,
+  Eye,
+  Calendar,
+  FileText,
+  DollarSign,
+  Package
 } from 'lucide-react';
 import { useBatches } from '@/lib/hooks/use-batches';
 import { DeviceListTable } from '@/components/common/device-list-table';
@@ -41,10 +41,10 @@ function DevicesPageContent() {
   const { data: batchDevices, isLoading: devicesLoading, error: devicesError, refetch: refetchBatchDevices, isFetching: devicesFetching } = useDevicesByBatch(batchFromUrl || '');
   
   // Fetch all devices if no batch parameter is present
-  const { devices: allDevicesData, loading: allDevicesLoading, error: allDevicesError, fetchDevices: refetchAllDevices } = useDevices();
+  const { data: allDevicesData, isPending: allDevicesLoading, error: allDevicesError, refetch: refetchAllDevices } = useDevices();
   
   // Fetch all batches for filter options
-  const { batches} = useBatches();
+  const { data: batches } = useBatches();
   
   // Update batch filter when URL changes
   useEffect(() => {

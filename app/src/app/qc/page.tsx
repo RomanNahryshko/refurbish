@@ -29,10 +29,10 @@ export default function QCPage() {
   const { data: devicesForQC, isLoading: devicesLoading, error: devicesError, refetch: refetchDevicesForQC } = useDevicesForFinalQC()
   
   // Fetch batches for device information
-  const { batches, loading: batchesLoading, error: batchesError, fetchBatches: refetchBatches } = useBatches()
+  const { data: batches, isPending: batchesLoading, error: batchesError, refetch: refetchBatches } = useBatches()
   
   // Fetch all devices for metrics calculation
-  const { devices: allDevices, fetchDevices: refetchAllDevices } = useDevices()
+  const { data: allDevices, refetch: refetchAllDevices } = useDevices()
   
   // Refetch data every time the component mounts (page visit)
   useEffect(() => { 

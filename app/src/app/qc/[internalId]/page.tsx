@@ -4,8 +4,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
-    ArrowLeft,
-    ClipboardCheck
+  ArrowLeft,
+  ClipboardCheck
 } from 'lucide-react';
 import { useDeviceByInternalId } from '@/lib/hooks/use-devices';
 import { useBatches } from '@/lib/hooks/use-batches';
@@ -39,7 +39,7 @@ export default function FinalQCPage() {
   const { data: device, isLoading: deviceLoading, error: deviceError } = useDeviceByInternalId(internalId)
   
   // Fetch batches for device information
-  const { batches, error: batchesError } = useBatches()
+  const { data: batches, error: batchesError } = useBatches()
   
   // Fetch repair jobs for this device
   const { data: repairJobs, error: repairJobsError } = useRepairJobs()

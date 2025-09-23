@@ -20,10 +20,10 @@ import Link from 'next/link'
 import { useBatch } from '@/lib/hooks/use-batches'
 import { useDevicesByBatch } from '@/lib/hooks/use-devices'
 import { useRepairJobs } from '@/lib/hooks/use-repair-jobs'
-import { useQCChecks } from '@/lib/hooks/use-devices'
 import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { QCCheck } from '@/lib/types/business-types'
 import { DEVICE_STATUS, REPAIR_STATUS, DEVICE_GRADES } from '@/lib/constants'
+import { useQCChecksByDevice } from '@/lib/hooks/use-qc-checks'
 
 export default function BatchDevicesPage() {
   const params = useParams()
@@ -33,9 +33,8 @@ export default function BatchDevicesPage() {
   const { data: batch, isLoading: batchLoading } = useBatch(batchId)
   const { data: batchDevices, isLoading: devicesLoading } = useDevicesByBatch(batchId)
   const { data: repairJobs } = useRepairJobs()
-  const { data: qcChecks } = useQCChecks(
-    batchDevices ? batchDevices.map(d => d.id) : undefined,
-    { enabled: !!batchDevices }
+  const { data: qcChecks } = useQCChecksByDevice(
+    batchDevices ? batchDevices.map(d => d.id).join(',') : '',
   )
   
   const [searchTerm, setSearchTerm] = useState('')

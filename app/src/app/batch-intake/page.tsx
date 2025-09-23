@@ -9,14 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
 import { Plus, Search, Download, FileText, Package, Edit } from 'lucide-react';
-import { useBatchesWithDeviceCounts } from '@/lib/hooks/use-batches';
+import { useBatches } from '@/lib/hooks/use-batches';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { Batch } from '@/lib/types/business-types';
 
 export default function BatchIntakePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 300) // 300ms delay
-  const { data: batches, isLoading, error, refetch, isFetching } = useBatchesWithDeviceCounts()
+  const { data: batches, isPending: isLoading, error, refetch, isFetching } = useBatches()
   
   // Refetch data every time the component mounts (page visit)
   useEffect(() => {
@@ -24,10 +24,9 @@ export default function BatchIntakePage() {
   }, [refetch])
   
   const filteredBatches = useMemo(() => {
-    return batches?.filter((batch: Batch & { supplier_name?: string; completed_qc_count?: number }) =>
+    return batches?.filter((batch: Batch) =>
       batch.batch_number.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      batch.invoice_number?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      batch.supplier_name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      batch.invoice_number?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     ) || []
   }, [batches, debouncedSearchTerm])
 
@@ -129,9 +128,9 @@ export default function BatchIntakePage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredBatches.map((batch: Batch & { supplier_name?: string; completed_qc_count?: number }, index) => {
+                {filteredBatches.map((batch: Batch, index) => {
                   const expectedCount = batch.device_count
-                  const completedQCCount = batch.completed_qc_count || 0
+                  const completedQCCount = 0 // Will be updated when device counts are available
                   return (
                     <tr 
                       key={batch.id} 
@@ -144,7 +143,7 @@ export default function BatchIntakePage() {
                           {batch.batch_number}
                         </Link>
                       </td>
-                      <td className="p-3 text-sm">{batch.supplier_name || 'Unknown'}</td>
+                      <td className="p-3 text-sm">Unknown</td>
                       <td className="p-3">
                         <Badge variant="outline">{expectedCount}</Badge>
                       </td>

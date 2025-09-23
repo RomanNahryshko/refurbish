@@ -138,4 +138,130 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// PUT /api/suppliers - Update a supplier
+export async function PUT(request: NextRequest) {
+  try {
+    // Complete auth and permission check with database connection
+    const authResult = await getAuthorizedClient('suppliers', 'update')
+    if ('error' in authResult) {
+      return authResult.error
+    }
+    
+    const { client: supabase, user } = authResult
+
+    // Parse request body
+    const body = await request.json()
+    const { id, ...updates } = body
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Missing required field: id' },
+        { status: 400 }
+      )
+    }
+
+    // Validate supplier_type if provided
+    if (updates.supplier_type && !['devices', 'parts', 'both'].includes(updates.supplier_type)) {
+      return NextResponse.json(
+        { error: 'Invalid supplier_type. Must be one of: devices, parts, both' },
+        { status: 400 }
+      )
+    }
+
+    // Update supplier
+    const { data, error } = await supabase
+      .from('suppliers')
+      .update({
+        ...updates,
+        updated_by: user.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .is('deleted_at', null)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating supplier:', error)
+      return NextResponse.json(
+        { error: 'Failed to update supplier' },
+        { status: 500 }
+      )
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: 'Supplier not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ data })
+  } catch (error) {
+    console.error('Update supplier API error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/suppliers - Delete a supplier (soft delete)
+export async function DELETE(request: NextRequest) {
+  try {
+    // Complete auth and permission check with database connection
+    const authResult = await getAuthorizedClient('suppliers', 'delete')
+    if ('error' in authResult) {
+      return authResult.error
+    }
+    
+    const { client: supabase, user } = authResult
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Missing required parameter: id' },
+        { status: 400 }
+      )
+    }
+
+    // Soft delete supplier
+    const { data, error } = await supabase
+      .from('suppliers')
+      .update({
+        deleted_at: new Date().toISOString(),
+        updated_by: user.id
+      })
+      .eq('id', id)
+      .is('deleted_at', null)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error deleting supplier:', error)
+      return NextResponse.json(
+        { error: 'Failed to delete supplier' },
+        { status: 500 }
+      )
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: 'Supplier not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ message: 'Supplier deleted successfully' })
+  } catch (error) {
+    console.error('Delete supplier API error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
 

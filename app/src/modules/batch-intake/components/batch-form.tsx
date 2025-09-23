@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Plus } from 'lucide-react'
 import { AddSupplierDialog } from '@/modules/suppliers/components/add-supplier-dialog'
 import { toast } from 'sonner'
-import { useDeviceSuppliers } from '@/lib/hooks/use-suppliers'
+import { useSuppliers } from '@/lib/hooks/use-suppliers'
 import { Supplier } from '@/lib/api/suppliers-client'
 
 interface BatchFormData {
@@ -51,7 +51,7 @@ export function BatchForm({
   const [isAddSupplierOpen, setIsAddSupplierOpen] = useState(false)
 
   // Get device suppliers from API
-  const { data: suppliers = [], isLoading: suppliersLoading } = useDeviceSuppliers()
+  const { data: suppliers = [], isLoading: suppliersLoading } = useSuppliers()
 
   const handleSupplierAdded = (newSupplier: Supplier) => {
     // Auto-select the newly added supplier if it's a device supplier

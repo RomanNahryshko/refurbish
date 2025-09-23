@@ -219,27 +219,8 @@ export function useCompleteRepairJob() {
 
         const result = await response.json()
         
-        if (result.device_sent_to_qc) {
-          // Make a client-side request to update device status to final_qc
-          try {
-            const deviceUpdateResponse = await fetch('/api/devices/update-status', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                device_id: result.data?.device_id, // Use device_id from response
-                status: 'final_qc'
-              })
-            })
-            
-            if (!deviceUpdateResponse.ok) {
-              // Silently fail - don't throw error for device status update
-            }
-          } catch (deviceUpdateError) {
-            // Silently fail - don't throw error for device status update
-          }
-        }
+        // Server already handles device status update to final_qc when all repairs are completed
+        // No need for additional client-side status update
         
         return result.data
       } catch (error) {
@@ -276,11 +257,11 @@ export function useCompleteRepairJob() {
             queryClient.invalidateQueries({ queryKey: ['parts', part.spare_part_id] })
           })
         }
-      } catch (error) {
+      } catch {
         // Silently fail - don't throw error for query invalidation
       }
     },
-    onError: (error, { repairJobId }) => {
+    onError: (_error, { }) => {
       // Error handled by toast
     }
   })

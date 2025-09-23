@@ -1,544 +1,447 @@
-import { useState, useCallback } from 'react'
+'use client'
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Device, DeviceStatus, DeviceGrade } from '@/lib/types/business-types'
-import { useSupabaseClient, useSupabaseIsReady } from '@/lib/stores/supabase-store'
-import { CreateDeviceData, createDevicesAPI } from '@/lib/api/devices'
+import { useToast } from '@/lib/hooks/use-toast'
 
-export function useDevices() {
-  const [devices, setDevices] = useState<Device[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  
-  const client = useSupabaseClient()
-  const isReady = useSupabaseIsReady()
-
-  const fetchDevices = useCallback(async () => {
-    if (!client || !isReady) return
-    
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const { data, error: fetchError } = await client
-        .from('devices')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
-      if (fetchError) throw fetchError
-      setDevices(data || [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch devices')
-    } finally {
-      setLoading(false)
-    }
-  }, [client, isReady])
-
-  const createDevice = useCallback(async (device: Omit<Device, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!client || !isReady) return null
-    
-    try {
-      const { data, error: createError } = await client
-        .from('devices')
-        .insert(device)
-        .select()
-        .single()
-      
-      if (createError) throw createError
-      return data
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create device')
-      return null
-    }
-  }, [client, isReady])
-
-  const updateDevice = useCallback(async (id: string, updates: Partial<Device>) => {
-    if (!client) return null
-    
-    try {
-      const { data, error: updateError } = await client
-        .from('devices')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
-      
-      if (updateError) throw updateError
-      return data
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update device')
-      return null
-    }
-  }, [client])
-
-  const deleteDevice = useCallback(async (id: string) => {
-    if (!client) return false
-    
-    try {
-      const { error: deleteError } = await client
-        .from('devices')
-        .delete()
-        .eq('id', id)
-      
-      if (deleteError) throw deleteError
-      return true
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete device')
-      return false
-    }
-  }, [client])
-
-  const getDeviceById = useCallback(async (id: string) => {
-    if (!client) return null
-    
-    try {
-      const { data, error: fetchError } = await client
-        .from('devices')
-        .select('*')
-        .eq('id', id)
-        .single()
-      
-      if (fetchError) throw fetchError
-      return data
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch device')
-      return null
-    }
-  }, [client])
-
-  const getDevicesByBatch = useCallback(async (batchId: string) => {
-    if (!client || !isReady) return []
-    
-    try {
-      const { data, error: fetchError } = await client
-        .from('devices')
-        .select('*')
-        .eq('batch_id', batchId)
-        .order('created_at', { ascending: false })
-      
-      if (fetchError) throw fetchError
-      return data || []
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch batch devices')
-      return []
-    }
-  }, [client, isReady])
-
-  const getDevicesByStatus = useCallback(async (status: string) => {
-    if (!client || !isReady) return []
-    
-    try {
-      const { data, error: fetchError } = await client
-        .from('devices')
-        .select('*')
-        .eq('status', status)
-        .order('created_at', { ascending: false })
-      
-      if (fetchError) throw fetchError
-      return data || []
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch devices by status')
-      return []
-    }
-  }, [client, isReady])
-
-  const getDevicesByType = useCallback(async (type: string) => {
-    if (!client || !isReady) return []
-    
-    try {
-      const { data, error: fetchError } = await client
-        .from('devices')
-        .select('*')
-        .eq('type', type)
-        .order('created_at', { ascending: false })
-      
-      if (fetchError) throw fetchError
-      return data || []
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch devices by type')
-      return []
-    }
-  }, [client, isReady])
-
-  const getDevicesByBrand = useCallback(async (brand: string) => {
-    if (!client || !isReady) return []
-    
-    try {
-      const { data, error: fetchError } = await client
-        .from('devices')
-        .select('*')
-        .eq('brand', brand)
-        .order('created_at', { ascending: false })
-      
-      if (fetchError) throw fetchError
-      return data || []
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch devices by brand')
-      return []
-    }
-  }, [client, isReady])
-
-  const getDevicesByModel = useCallback(async (model: string) => {
-    if (!client || !isReady) return []
-    
-    try {
-      const { data, error: fetchError } = await client
-        .from('devices')
-        .select('*')
-        .eq('model', model)
-        .order('created_at', { ascending: false })
-      
-      if (fetchError) throw fetchError
-      return data || []
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch devices by model')
-      return []
-    }
-  }, [client, isReady])
-
-  const getDevicesByGrade = useCallback(async (grade: string) => {
-    if (!client || !isReady) return []
-    
-    try {
-      const { data, error: fetchError } = await client
-        .from('devices')
-        .select('*')
-        .eq('grade', grade)
-        .order('created_at', { ascending: false })
-      
-      if (fetchError) throw fetchError
-      return data || []
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch devices by grade')
-      return []
-    }
-  }, [client, isReady])
-
-  const getDevicesByDateRange = useCallback(async (startDate: string, endDate: string) => {
-    if (!client || !isReady) return []
-    
-    try {
-      const { data, error: fetchError } = await client
-        .from('devices')
-        .select('*')
-        .gte('created_at', startDate)
-        .lte('created_at', endDate)
-        .order('created_at', { ascending: false })
-      
-      if (fetchError) throw fetchError
-      return data || []
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch devices by date range')
-      return []
-    }
-  }, [client, isReady])
-
-  const searchDevices = useCallback(async (query: string) => {
-    if (!client) return []
-    
-    try {
-      const { data, error: fetchError } = await client
-        .from('devices')
-        .select('*')
-        .or(`brand.ilike.%${query}%,model.ilike.%${query}%,serial_number.ilike.%${query}%`)
-        .order('created_at', { ascending: false })
-      
-      if (fetchError) throw fetchError
-      return data || []
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to search devices')
-      return []
-    }
-  }, [client])
-
-  return {
-    devices,
-    loading,
-    error,
-    fetchDevices,
-    createDevice,
-    updateDevice,
-    deleteDevice,
-    getDeviceById,
-    getDevicesByBatch,
-    getDevicesByStatus,
-    getDevicesByType,
-    getDevicesByBrand,
-    getDevicesByModel,
-    getDevicesByGrade,
-    getDevicesByDateRange,
-    searchDevices,
-  }
+interface DeviceFilters {
+  status?: string
+  type?: string
+  brand?: string
+  model?: string
+  grade?: string
+  batchId?: string
+  search?: string
 }
 
+interface CreateDeviceData {
+  imei: string
+  brand: string
+  model: string
+  batch_id: string
+  status?: DeviceStatus
+  grade?: DeviceGrade
+  notes?: string
+}
+
+export const deviceKeys = {
+  all: ['devices'] as const,
+  lists: () => [...deviceKeys.all, 'list'] as const,
+  list: (filters: DeviceFilters) => [...deviceKeys.lists(), { filters }] as const,
+  details: () => [...deviceKeys.all, 'detail'] as const,
+  detail: (id: string) => [...deviceKeys.details(), id] as const,
+  batch: (batchId: string) => [...deviceKeys.all, 'batch', batchId] as const,
+  finalQC: () => [...deviceKeys.all, 'final-qc'] as const,
+  count: (type: string, value: string) => [...deviceKeys.all, 'count', type, value] as const,
+  history: (deviceId: string) => [...deviceKeys.all, 'history', deviceId] as const,
+}
+
+/**
+ * Hook to fetch all devices with optional filters
+ */
+export function useDevices(filters?: DeviceFilters) {
+  return useQuery<Device[]>({
+    queryKey: deviceKeys.list(filters || {}),
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (filters?.status) params.append('status', filters.status)
+      if (filters?.type) params.append('type', filters.type)
+      if (filters?.brand) params.append('brand', filters.brand)
+      if (filters?.model) params.append('model', filters.model)
+      if (filters?.grade) params.append('grade', filters.grade)
+      if (filters?.batchId) params.append('batchId', filters.batchId)
+      if (filters?.search) params.append('search', filters.search)
+      
+      const response = await fetch(`/api/devices?${params}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch devices')
+      }
+      
+      const { data } = await response.json()
+      return data
+    },
+  })
+}
+
+/**
+ * Hook to fetch a single device
+ */
 export function useDevice(id: string) {
-  const client = useSupabaseClient()
-  const isReady = useSupabaseIsReady()
-  
-  return useQuery({
-    queryKey: ['devices', id],
+  return useQuery<Device>({
+    queryKey: deviceKeys.detail(id),
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.getById(id)
+      const response = await fetch(`/api/devices/${id}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch device')
+      }
+      
+      const { data } = await response.json()
+      return data
     },
-    enabled: isReady && !!client && !!id,
+    enabled: !!id,
   })
 }
 
+/**
+ * Hook to fetch device by internal ID
+ */
 export function useDeviceByInternalId(internalId: string) {
-  const client = useSupabaseClient()
-  const isReady = useSupabaseIsReady()
-  
-  return useQuery({
-    queryKey: ['devices', 'internal', internalId],
+  return useQuery<Device>({
+    queryKey: [...deviceKeys.all, 'internal', internalId],
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.getByInternalId(internalId)
+      const response = await fetch(`/api/devices/internal/${internalId}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch device')
+      }
+      
+      const { data } = await response.json()
+      return data
     },
-    enabled: isReady && !!client && !!internalId,
+    enabled: !!internalId,
   })
 }
 
+/**
+ * Hook to fetch devices by batch
+ */
 export function useDevicesByBatch(batchId: string) {
-  const client = useSupabaseClient()
-  const isReady = useSupabaseIsReady()
-  
-  return useQuery({
-    queryKey: ['devices', 'batch', batchId],
+  return useQuery<Device[]>({
+    queryKey: deviceKeys.batch(batchId),
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.getByBatchId(batchId)
+      const response = await fetch(`/api/devices?batchId=${batchId}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch batch devices')
+      }
+      
+      const { data } = await response.json()
+      return data
     },
-    enabled: isReady && !!client && !!batchId,
-    staleTime: 0, // Always consider data stale - refetch on every mount
-    gcTime: 5 * 60 * 1000, // 5 minutes in cache
-    refetchOnMount: true, // Always refetch when component mounts
+    enabled: !!batchId,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: true,
     retry: 2,
   })
 }
 
+/**
+ * Hook to fetch devices for final QC (devices with status 'final_qc')
+ */
 export function useDevicesForFinalQC() {
-  const client = useSupabaseClient()
-  const isReady = useSupabaseIsReady()
-  return useQuery({
-    queryKey: ['devices', 'final-qc'],
+  return useQuery<Device[]>({
+    queryKey: deviceKeys.finalQC(),
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.getDevicesForFinalQC()
+      const response = await fetch('/api/devices?status=final_qc', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch devices for final QC')
+      }
+      
+      const { data } = await response.json()
+      return data
     },
-    enabled: isReady && !!client,
-    staleTime: 0, // Always consider data stale - refetch on every mount
-    gcTime: 5 * 60 * 1000, // 5 minutes in cache
-    refetchOnMount: true, // Always refetch when component mounts
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: true,
     retry: 2,
   })
 }
 
-export function useQCChecks(deviceIds?: string[], options?: { enabled?: boolean }) {
-  const enabled = options?.enabled ?? true
-  const client = useSupabaseClient()
-  const isReady = useSupabaseIsReady()
-  
-  // Only enable query if we have device IDs and they're not empty
-  const shouldEnable = enabled && !!deviceIds && deviceIds.length > 0 && isReady && !!client
-  
-  return useQuery({
-    queryKey: ['qc-checks', deviceIds],
-    queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.getQCChecks(deviceIds || [])
-    },
-    enabled: shouldEnable,
-    staleTime: 5 * 60 * 1000, // 5 minutes - QC checks don't change often
-    gcTime: 10 * 60 * 1000, // 10 minutes in cache
-    refetchOnMount: false,
-    retry: 2,
-  })
-}
-
+/**
+ * Hook to create a new device
+ */
 export function useCreateDevice() {
   const queryClient = useQueryClient()
-  const client = useSupabaseClient()
+  const toast = useToast()
   
   return useMutation({
     mutationFn: async (deviceData: CreateDeviceData) => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.create(deviceData)
+      const response = await fetch('/api/devices', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(deviceData),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to create device')
+      }
+      
+      const { data } = await response.json()
+      return data
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: deviceKeys.all })
+      toast.success({
+        title: 'Success',
+        description: 'Device created successfully',
+      })
+    },
+    onError: (error) => {
+      toast.error({
+        title: 'Error',
+        description: error.message,
+      })
     },
   })
 }
 
+/**
+ * Hook to update a device
+ */
 export function useUpdateDevice() {
   const queryClient = useQueryClient()
-  const client = useSupabaseClient()
+  const toast = useToast()
   
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Device> }) => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.update(id, data)
+      const response = await fetch('/api/devices', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, ...data }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to update device')
+      }
+      
+      const { data: updatedDevice } = await response.json()
+      return updatedDevice
     },
     onSuccess: async (_, { id }) => {
-      await queryClient.invalidateQueries({ queryKey: ['devices'] })
-      await queryClient.invalidateQueries({ queryKey: ['devices', id] })
+      await queryClient.invalidateQueries({ queryKey: deviceKeys.all })
+      await queryClient.invalidateQueries({ queryKey: deviceKeys.detail(id) })
+      toast.success({
+        title: 'Success',
+        description: 'Device updated successfully',
+      })
+    },
+    onError: (error) => {
+      toast.error({
+        title: 'Error',
+        description: error.message,
+      })
     },
   })
 }
 
+/**
+ * Hook to delete a device
+ */
 export function useDeleteDevice() {
   const queryClient = useQueryClient()
-  const client = useSupabaseClient()
+  const toast = useToast()
   
   return useMutation({
     mutationFn: async (id: string) => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.delete(id)
+      const response = await fetch(`/api/devices?id=${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to delete device')
+      }
+      
+      return response.json()
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: deviceKeys.all })
+      toast.success({
+        title: 'Success',
+        description: 'Device deleted successfully',
+      })
+    },
+    onError: (error) => {
+      toast.error({
+        title: 'Error',
+        description: error.message,
+      })
     },
   })
 }
 
+/**
+ * Hook to update device status
+ */
 export function useUpdateDeviceStatus() {
   const queryClient = useQueryClient()
-  const client = useSupabaseClient()
+  const toast = useToast()
   
   return useMutation({
     mutationFn: async ({ id, status, grade }: { id: string; status: DeviceStatus; grade?: DeviceGrade }) => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.updateStatus(id, status, grade)
+      const response = await fetch('/api/devices/update-status', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ device_id: id, status, grade }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to update device status')
+      }
+      
+      const { data } = await response.json()
+      return data
     },
     onSuccess: async (_, { id }) => {
-      await queryClient.invalidateQueries({ queryKey: ['devices'] })
-      await queryClient.invalidateQueries({ queryKey: ['devices', id] })
+      await queryClient.invalidateQueries({ queryKey: deviceKeys.all })
+      await queryClient.invalidateQueries({ queryKey: deviceKeys.detail(id) })
+      toast.success({
+        title: 'Success',
+        description: 'Device status updated successfully',
+      })
+    },
+    onError: (error) => {
+      toast.error({
+        title: 'Error',
+        description: error.message,
+      })
     },
   })
 }
 
+/**
+ * Hook to bulk create devices
+ */
 export function useBulkCreateDevices() {
   const queryClient = useQueryClient()
-  const client = useSupabaseClient()
+  const toast = useToast()
   
   return useMutation({
     mutationFn: async (devicesData: CreateDeviceData[]) => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.bulkCreate(devicesData)
+      const response = await fetch('/api/devices', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ devices: devicesData }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to create devices')
+      }
+      
+      const { data } = await response.json()
+      return data
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+      await queryClient.invalidateQueries({ queryKey: deviceKeys.all })
+      toast.success({
+        title: 'Success',
+        description: 'Devices created successfully',
+      })
+    },
+    onError: (error) => {
+      toast.error({
+        title: 'Error',
+        description: error.message,
+      })
     },
   })
 }
 
-export function useBulkUpdateDevices() {
-  const queryClient = useQueryClient()
-  const client = useSupabaseClient()
-  
-  return useMutation({
-    mutationFn: async (updates: { id: string; data: Partial<Device> }[]) => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.bulkUpdate(updates)
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['devices'] })
-    },
-  })
-}
-
+/**
+ * Hook to get device count by status
+ */
 export function useDeviceCountByStatus(status: DeviceStatus) {
-  const client = useSupabaseClient()
-  const isReady = useSupabaseIsReady()
-  
-  return useQuery({
-    queryKey: ['devices', 'count', 'status', status],
+  return useQuery<number>({
+    queryKey: deviceKeys.count('status', status),
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.getCountByStatus(status)
+      const response = await fetch(`/api/devices/count?status=${status}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch device count')
+      }
+      
+      const { data } = await response.json()
+      return data.count
     },
-    enabled: isReady && !!client,
-    staleTime: 2 * 60 * 1000, // 2 minutes - counts change frequently
-    gcTime: 5 * 60 * 1000, // 5 minutes in cache
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   })
 }
 
+/**
+ * Hook to get device count by batch
+ */
 export function useDeviceCountByBatch(batchId: string) {
-  const client = useSupabaseClient()
-  const isReady = useSupabaseIsReady()
-  
-  return useQuery({
-    queryKey: ['devices', 'count', 'batch', batchId],
+  return useQuery<number>({
+    queryKey: deviceKeys.count('batch', batchId),
     queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.getCountByBatch(batchId)
+      const response = await fetch(`/api/devices/count?batchId=${batchId}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch device count')
+      }
+      
+      const { data } = await response.json()
+      return data.count
     },
-    enabled: isReady && !!client && !!batchId,
-    staleTime: 2 * 60 * 1000, // 2 minutes - counts change frequently
-    gcTime: 5 * 60 * 1000, // 5 minutes in cache
+    enabled: !!batchId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   })
 }
-
-export function useDeviceStatusHistory(deviceId: string) {
-  const client = useSupabaseClient()
-  const isReady = useSupabaseIsReady()
-  
-  return useQuery({
-    queryKey: ['device-status-history', deviceId],
-    queryFn: async () => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.getDeviceStatusHistory(deviceId)
-    },
-    enabled: isReady && !!client && !!deviceId,
-    staleTime: 0, // Always consider data stale - refetch on every mount
-    gcTime: 5 * 60 * 1000, // 5 minutes in cache
-    refetchOnMount: true, // Always refetch when component mounts
-    retry: 2,
-  })
-}
-
-export function useCreateDevicesFromImport() {
-  const queryClient = useQueryClient()
-  const client = useSupabaseClient()
-  
-  return useMutation({
-    mutationFn: async (devicesData: CreateDeviceData[]) => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.bulkCreate(devicesData)
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['devices'] })
-      await queryClient.invalidateQueries({ queryKey: ['batches'] })
-    },
-  })
-}
-
-export function useCreateDevicesFromImportWithoutInvalidation() {
-  const client = useSupabaseClient()
-  
-  return useMutation({
-    mutationFn: async (devicesData: CreateDeviceData[]) => {
-      if (!client) throw new Error('Supabase client not available')
-      const devicesApi = createDevicesAPI(client)
-      return devicesApi.bulkCreate(devicesData)
-    },
-    // No onSuccess - no cache invalidation
-  })
-}
-
-

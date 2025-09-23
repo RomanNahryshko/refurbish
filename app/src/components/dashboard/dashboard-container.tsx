@@ -15,7 +15,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({
   onDateRangeChange 
 }) => {
   // Fetch real data from Supabase
-  const { data: realData, loading, refetch } = useDashboardMetrics(selectedDateRange);
+  const { data: realData, isPending: loading, refetch } = useDashboardMetrics(selectedDateRange);
 
   // Refetch data every time the component mounts (page visit)
   useEffect(() => {

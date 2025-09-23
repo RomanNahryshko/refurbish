@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
@@ -8,26 +8,12 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { BatchForm } from '@/modules/batch-intake/components/batch-form'
 import { useCreateBatch } from '@/lib/hooks/use-batches'
-import { useSupabaseClient } from '@/lib/stores/supabase-store'
 import { BatchFormInputData } from '@/lib/types/business-types'
 
 export default function CreateBatchPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const createBatch = useCreateBatch()
-  const supabase = useSupabaseClient()
-
-  // Get current user ID on component mount
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      if (supabase) {
-        const { data: { user } } = await supabase.auth.getUser()
-        setCurrentUserId(user?.id || null)
-      }
-    }
-    getCurrentUser()
-  }, [supabase])
 
   const handleSubmit = async (formData: BatchFormInputData) => {
     setIsLoading(true)
@@ -39,10 +25,6 @@ export default function CreateBatchPage() {
         return
       }
 
-      if (!currentUserId) {
-        toast.error('User not authenticated')
-        return
-      }
 
       // Call the create batch mutation
       await createBatch.mutateAsync({
@@ -52,8 +34,7 @@ export default function CreateBatchPage() {
         invoice_amount: formData.invoice_amount ? parseFloat(formData.invoice_amount) : undefined,
         device_count: parseInt(formData.device_count),
         received_date: formData.received_date,
-        notes: formData.notes || undefined,
-        created_by: currentUserId
+        notes: formData.notes || undefined
       })
 
       toast.success('Batch created successfully!')
