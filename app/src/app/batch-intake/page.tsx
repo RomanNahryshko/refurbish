@@ -10,8 +10,24 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import Link from 'next/link';
 import { Plus, Search, Download, FileText, Package, Edit } from 'lucide-react';
 import { useBatches } from '@/lib/hooks/use-batches';
+import { useDeviceCountByBatch } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { Batch } from '@/lib/types/business-types';
+
+// Component to display device count for a specific batch
+function BatchDeviceCount({ batchId }: { batchId: string }) {
+  const { data: deviceCount, isLoading } = useDeviceCountByBatch(batchId)
+  
+  if (isLoading) {
+    return <Badge variant="outline">...</Badge>
+  }
+  
+  return (
+    <Badge variant="outline">
+      {deviceCount || 0}
+    </Badge>
+  )
+}
 
 export default function BatchIntakePage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -130,7 +146,6 @@ export default function BatchIntakePage() {
               <tbody>
                 {filteredBatches.map((batch: Batch, index) => {
                   const expectedCount = batch.device_count
-                  const completedQCCount = 0 // Will be updated when device counts are available
                   return (
                     <tr 
                       key={batch.id} 
@@ -148,9 +163,7 @@ export default function BatchIntakePage() {
                         <Badge variant="outline">{expectedCount}</Badge>
                       </td>
                       <td className="p-3">
-                        <Badge variant="outline">
-                          {completedQCCount}
-                        </Badge>
+                        <BatchDeviceCount batchId={batch.id} />
                       </td>
                       <td className="p-3 text-sm font-mono">{batch.invoice_number || '-'}</td>
                       <td className="p-3 text-sm">
