@@ -231,8 +231,8 @@ export default function RepairJobsPage() {
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   })
 
-  // Find current user's active repair for banner - this should come from auth context
-  const activeRepair = transformedRepairJobs.find(repair => 
+  // Find current user's active repairs for banner - technicians can now have multiple active repairs
+  const activeRepairs = transformedRepairJobs.filter(repair => 
     repair.assigned_to === user?.user?.id && repair.status === 'in_progress'
   )
 
@@ -475,40 +475,46 @@ export default function RepairJobsPage() {
         {/* Remove TechnicianSimulator as it was using mock data */}
       </div>
 
-      {/* Active Job Banner */}
-      {activeRepair && (
+      {/* Active Jobs Banner */}
+      {activeRepairs.length > 0 && (
         <Card className="border-l-4 border-l-blue-500 bg-blue-50">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {/* <Info className="h-5 w-5 text-blue-600" /> */}
-                <div>
-                  <h3 className="font-medium text-blue-900">
-                    Currently working on: Device {activeRepair.device_internal_id} - {repairTypeConfig[activeRepair.repair_type as keyof typeof repairTypeConfig]?.label}
-                  </h3>
-                  <p className="text-sm text-blue-700">
-                    Started {activeRepair.assigned_at ? new Date(activeRepair.assigned_at).toLocaleString() : 'recently'}
-                  </p>
+            <div className="space-y-3">
+              <h3 className="font-medium text-blue-900">
+                Currently working on {activeRepairs.length} repair{activeRepairs.length > 1 ? 's' : ''}:
+              </h3>
+              {activeRepairs.map((repair) => (
+                <div key={repair.id} className="flex items-center justify-between bg-white/50 rounded p-3">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <p className="font-medium text-blue-900">
+                        Device {repair.device_internal_id} - {repairTypeConfig[repair.repair_type as keyof typeof repairTypeConfig]?.label}
+                      </p>
+                      <p className="text-sm text-blue-700">
+                        Started {repair.assigned_at ? new Date(repair.assigned_at).toLocaleString() : 'recently'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => handleCompleteRepair(repair)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      disabled={loading}
+                    >
+                      {loading ? 'Completing...' : 'Complete'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCancelRepair(repair.id)}
+                      className="text-gray-600 hover:bg-gray-100 text-xs px-2"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => handleCompleteRepair(activeRepair)}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                  disabled={loading}
-                >
-                  {loading ? 'Completing...' : 'Complete Repair'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCancelRepair(activeRepair.id)}
-                  className="text-gray-600 hover:bg-gray-100 text-xs px-2"
-                >
-                  Cancel
-                </Button>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>

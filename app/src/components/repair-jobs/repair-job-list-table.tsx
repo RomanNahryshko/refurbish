@@ -5,13 +5,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
-  Eye,
-  ClipboardCheck,
-  CheckCircle,
-  Clock,
-  Wrench,
-  Package,
-  AlertCircle
+    Eye,
+    ClipboardCheck,
+    CheckCircle,
+    Clock,
+    Wrench,
+    Package,
+    AlertCircle
 } from 'lucide-react'
 import { DeviceListTable, DeviceTableColumn } from '@/components/common/device-list-table'
 import { RepairJob, Batch, Device } from '@/lib/types/business-types'
@@ -139,11 +139,6 @@ export function RepairJobListTable({
 
   const renderActions = (device: ExtendedDevice) => {
     const repairJob = device._repairJobData
-    
-    // Check if user already has an active repair
-    const hasActiveRepair = repairJobs.some(r => 
-      r.assigned_to === currentUser?.id && r.status === 'in_progress'
-    )
 
     // Check if technician can perform this repair type
     const canPerformRepair = currentUser?.technician_level 
@@ -163,8 +158,8 @@ export function RepairJobListTable({
           <Button 
             size="sm"
             onClick={() => onStartRepair(repairJob)}
-            disabled={hasActiveRepair || (typeof isStartingRepair === 'function' ? isStartingRepair(repairJob.id) : isStartingRepair)}
-            title={hasActiveRepair || (typeof isStartingRepair === 'function' ? isStartingRepair(repairJob.id) : isStartingRepair) ? "Complete or cancel current repair first" : "Start this repair"}
+            disabled={typeof isStartingRepair === 'function' ? isStartingRepair(repairJob.id) : isStartingRepair}
+            title={(typeof isStartingRepair === 'function' ? isStartingRepair(repairJob.id) : isStartingRepair) ? "Starting repair..." : "Start this repair"}
           >
             <ClipboardCheck className="h-4 w-4 mr-1" />
             {(typeof isStartingRepair === 'function' ? isStartingRepair(repairJob.id) : isStartingRepair) ? 'Starting...' : 'Start Repair'}
