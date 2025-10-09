@@ -365,14 +365,14 @@ export class DashboardService {
   private async getInRepairCount(dateRange?: { from: Date; to: Date }) {
     const range = normalizeDateRange(dateRange);
     let query = this.supabase
-      .from('repair_jobs')
-      .select('device_id')
-      .in('status', ['in_progress'])
+      .from('devices')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'in_repair')
       .is('deleted_at', null);
     if (range) query = query.gte('updated_at', range.startISO).lte('updated_at', range.endISO);
-    const { data, error } = await query;
-    if (error) throw error;
-    return data ? new Set(data.map((r: any) => r.device_id)).size : 0;
+    const res = await query;
+    if (res.error) throw res.error;
+    return Number(res.count || 0);
   }
 
   private async getAwaitingRepairCount(dateRange?: { from: Date; to: Date }) {
