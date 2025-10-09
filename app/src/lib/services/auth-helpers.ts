@@ -38,7 +38,11 @@ export async function requirePermission(
   const hasPermission = await checkPermission(user.id, tableName, action)
   
   if (!hasPermission) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    console.error(`❌ Permission denied for user ${user.id}: ${tableName}:${action}`)
+    return NextResponse.json({ 
+      error: 'Forbidden',
+      details: `Missing permission: ${tableName}:${action}`
+    }, { status: 403 })
   }
   
   return null // User is authorized
@@ -113,8 +117,12 @@ export async function getAuthorizedClient(
   // Check permission
   const hasPermission = await checkPermission(user.id, tableName, action)
   if (!hasPermission) {
+    console.error(`❌ Permission denied for user ${user.id}: ${tableName}:${action}`)
     return {
-      error: NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      error: NextResponse.json({ 
+        error: 'Forbidden',
+        details: `Missing permission: ${tableName}:${action}`
+      }, { status: 403 })
     }
   }
   

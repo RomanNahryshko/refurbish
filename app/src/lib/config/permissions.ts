@@ -4,15 +4,15 @@
  */
 
 import {
-    type PermissionString,
-    type RolePermissions,
-    type TechnicianLevelPermissions,
-    type UserRole,
-    type RepairType
+  type PermissionString,
+  type RolePermissions,
+  type TechnicianLevelPermissions,
+  type UserRole,
+  type RepairType
 } from '@/lib/types/business-types'
 import {
-    USER_ROLES,
-    TECHNICIAN_LEVELS
+  USER_ROLES,
+  TECHNICIAN_LEVELS
 } from '@/lib/constants'
 
 // Define permissions for each role according to requirements
@@ -46,6 +46,16 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     'stock_adjustments:create',
     'production_metrics:create',
     'production_metrics:update',
+    
+    // QC permissions - General Manager can perform both initial and final QC
+    'qc_checks:create',
+    'qc_checks:update',
+    'qc_test_results:create',
+    'qc_test_results:update',
+    
+    // Repair job management
+    'repair_jobs:create',
+    'repair_jobs:update',
     
     // User management
     'user_profiles:create',

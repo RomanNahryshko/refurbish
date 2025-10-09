@@ -21,6 +21,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get user profile for debugging
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    console.log(`🔍 QC Check initiated by user ${user.id} with role: ${userProfile?.role || 'unknown'}`)
+
     const rawBody = await request.text()
     
     // Parse JSON from raw body
@@ -141,22 +150,29 @@ export async function POST(request: NextRequest) {
       if (overall_result === 'pass' && grade_assigned) {
         // If initial QC passes with a grade assigned, device is graded
         newDeviceStatus = DEVICE_STATUS.graded
+        console.log(`📋 Initial QC: Device ${device_id} passed with grade ${grade_assigned} → status: graded`)
       } else if (overall_result === 'pass') {
         // If initial QC passes without grade, device awaits repair
         newDeviceStatus = DEVICE_STATUS.awaiting_repair
+        console.log(`📋 Initial QC: Device ${device_id} passed without grade → status: awaiting_repair`)
       } else if (overall_result === 'fail') {
         // Failed devices go to repair
         newDeviceStatus = DEVICE_STATUS.awaiting_repair
+        console.log(`📋 Initial QC: Device ${device_id} failed → status: awaiting_repair`)
       }
     } else if (check_type === 'final') {
       if (overall_result === 'pass') {
         newDeviceStatus = DEVICE_STATUS.graded // Passed final QC devices are graded (will be removed from QC queue)
+        console.log(`📋 Final QC: Device ${device_id} passed → status: graded`)
       } else if (overall_result === 'fail') {
         newDeviceStatus = DEVICE_STATUS.awaiting_repair // Failed final QC goes back to repair
+        console.log(`📋 Final QC: Device ${device_id} failed → status: awaiting_repair`)
       }
     }
 
-    // Update device status
+    console.log(`🔄 Attempting to update device ${device_id} status from current to ${newDeviceStatus} (user: ${userProfile?.role || 'unknown'})`)
+
+    // Update device status - this is critical and must succeed
     const { error: deviceUpdateError } = await supabase
       .from('devices')
       .update({ 
@@ -167,9 +183,13 @@ export async function POST(request: NextRequest) {
       .eq('id', device_id)
 
     if (deviceUpdateError) {
-      console.error('Error updating device status:', deviceUpdateError)
-      // Note: We don't fail the entire request if device update fails
+      console.error('❌ Critical error updating device status:', deviceUpdateError)
+      return NextResponse.json({ 
+        error: `Failed to update device status: ${deviceUpdateError.message}. QC check aborted.` 
+      }, { status: 500 })
     }
+
+    console.log(`✅ Successfully updated device ${device_id} status to ${newDeviceStatus}`)
 
 
     // Update production metrics for initial QC
