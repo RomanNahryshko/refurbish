@@ -62,11 +62,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData, selectedDateR
       { status: 'Graded', count: devicesStats.graded, color: '#06B6D4' },
     ];
 
-    const totalCount = stats.reduce((sum, item) => sum + item.count, 0);
-    return stats.map((item) => ({
+    // Calculate total count excluding "Expected Devices" for percentage calculation
+    const actualDevicesStats = stats.filter(item => item.status !== 'Expected Devices');
+    const totalActualDevices = actualDevicesStats.reduce((sum, item) => sum + item.count, 0);
+    
+    // Calculate percentages with one decimal place
+    const statsWithPercentages = stats.map((item) => ({
       ...item,
-      percentage: totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0,
+      percentage: item.status === 'Expected Devices' 
+        ? 0 // Expected devices don't get a percentage
+        : totalActualDevices > 0 
+          ? parseFloat(((item.count / totalActualDevices) * 100).toFixed(1))
+          : 0,
     }));
+
+    // Ensure percentages sum to 100% by adjusting the largest non-zero percentage
+    const actualStats = statsWithPercentages.filter(item => item.status !== 'Expected Devices' && item.count > 0);
+    const currentSum = actualStats.reduce((sum, item) => sum + item.percentage, 0);
+    
+    if (actualStats.length > 0 && currentSum !== 100 && totalActualDevices > 0) {
+      const difference = parseFloat((100 - currentSum).toFixed(1));
+      // Find the item with the largest count to adjust
+      const largestItem = actualStats.reduce((max, item) => 
+        item.count > max.count ? item : max
+      );
+      
+      // Adjust the percentage of the largest item
+      const adjustedStats = statsWithPercentages.map(item => 
+        item.status === largestItem.status 
+          ? { ...item, percentage: parseFloat((item.percentage + difference).toFixed(1)) }
+          : item
+      );
+      
+      return adjustedStats;
+    }
+    
+    return statsWithPercentages;
   };
 
   /**
@@ -87,7 +118,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData, selectedDateR
   const devicesStatsWithPercentages = getDevicesStatsWithPercentages(realData.devicesStats);
 
   console.log(realData);
-  const totalDevices = realData.devicesStats.awaitingRepair + realData.devicesStats.inRepair + realData.devicesStats.finalQC + realData.devicesStats.graded + realData.devicesStats.importedDevices + realData.devicesStats.expectedDevices;
+  const totalDevices = realData.devicesStats.awaitingRepair + realData.devicesStats.inRepair + realData.devicesStats.finalQC + realData.devicesStats.graded + realData.devicesStats.importedDevices;
   return (
     <div className="space-y-6">
       {/* 1. Batch Intake Stats */}
@@ -196,7 +227,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData, selectedDateR
                     <TableRow key={item.status}>
                       <TableCell className="font-medium">{item.status}</TableCell>
                       <TableCell>{item.count}</TableCell>
-                      <TableCell>{item.percentage}%</TableCell>
+                      <TableCell>{item.percentage.toFixed(1)}%</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -214,11 +245,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ realData, selectedDateR
                 <div className="relative w-64 h-64">
                   <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                     {(() => {
-                      const totalCount = devicesStatsWithPercentages.reduce((sum, d) => sum + d.count, 0);
-                      return devicesStatsWithPercentages.map((item, index) => {
+                      const actualDevicesStats = devicesStatsWithPercentages.filter(item => item.status !== 'Expected Devices');
+                      const totalCount = actualDevicesStats.reduce((sum, d) => sum + d.count, 0);
+                      return actualDevicesStats.map((item, index) => {
                         if (item.count === 0) return null;
 
-                        const startAngle = devicesStatsWithPercentages
+                        const startAngle = actualDevicesStats
                           .slice(0, index)
                           .reduce((sum, d) => sum + (d.count / totalCount) * 360, 0);
                         const endAngle = startAngle + (item.count / totalCount) * 360;
