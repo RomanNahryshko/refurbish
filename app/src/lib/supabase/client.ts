@@ -24,10 +24,18 @@ export function createSupabaseClient() {
     return browserClient
   }
   
-  // Create new client only once
+  // Create new client only once with proper auth configuration
   browserClient = createBrowserClient(
     supabaseUrl,
-    supabaseAnonKey
+    supabaseAnonKey,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      }
+    }
   ) as unknown as SupabaseClient
   
   return browserClient

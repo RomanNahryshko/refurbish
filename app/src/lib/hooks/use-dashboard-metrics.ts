@@ -23,11 +23,18 @@ export function useDashboardMetrics(dateRange?: DateRange) {
     queryFn: async () => {
       const params = new URLSearchParams()
       
+      // Helper function to format date as YYYY-MM-DD
+      const formatDateForAPI = (date: Date): string => {
+        return date.getFullYear() + '-' + 
+          String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(date.getDate()).padStart(2, '0');
+      };
+
       if (dateRange?.from) {
-        params.append('from', dateRange.from.toISOString())
+        params.append('from', formatDateForAPI(new Date(dateRange.from)))
       }
       if (dateRange?.to) {
-        params.append('to', dateRange.to.toISOString())
+        params.append('to', formatDateForAPI(new Date(dateRange.to)))
       }
       
       const response = await fetch(`/api/dashboard/metrics?${params}`, {
@@ -45,9 +52,12 @@ export function useDashboardMetrics(dateRange?: DateRange) {
       const { data } = await response.json()
       return data
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes - dashboard data changes frequently
-    gcTime: 5 * 60 * 1000, // 5 minutes in cache
+    staleTime: 0, // Always consider data stale to ensure fresh requests
+    gcTime: 1 * 60 * 1000, // 1 minute in cache
     refetchOnMount: true,
+    refetchOnWindowFocus: false, // Don't refetch on window focus
     retry: 2,
+    // Ensure loading states are properly handled
+    notifyOnChangeProps: ['data', 'error', 'isPending', 'isFetching'],
   })
 }

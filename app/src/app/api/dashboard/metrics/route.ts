@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const fromDate = searchParams.get('from')
     const toDate = searchParams.get('to')
+    
+    // Log the request for debugging
+    console.log('Dashboard metrics API called with date range:', { fromDate, toDate })
 
     // Create dashboard service instance
     const dashboardService = new DashboardService(supabase)
@@ -29,9 +32,13 @@ export async function GET(request: NextRequest) {
     // Convert date parameters to the format expected by the service
     let dateRange: { from: Date; to: Date } | undefined
     if (fromDate && toDate) {
+      // Parse dates in YYYY-MM-DD format and create Date objects in local timezone
+      const fromParts = fromDate.split('-');
+      const toParts = toDate.split('-');
+      
       dateRange = {
-        from: new Date(fromDate),
-        to: new Date(toDate)
+        from: new Date(parseInt(fromParts[0]), parseInt(fromParts[1]) - 1, parseInt(fromParts[2]), 0, 0, 0, 0),
+        to: new Date(parseInt(toParts[0]), parseInt(toParts[1]) - 1, parseInt(toParts[2]), 23, 59, 59, 999)
       }
     }
     

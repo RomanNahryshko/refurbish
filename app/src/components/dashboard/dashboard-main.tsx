@@ -2,22 +2,26 @@
 
 import { useState, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
-import dayjs from 'dayjs';
 import DashboardContainer from './dashboard-container';
 import { DateRangePicker } from './date-range-picker';
 
 const DashboardMain = () => {
   
   // Initialize with today's date as both start and end
-  // Use dayjs for reliable date handling
+  // Use native Date to avoid timezone issues
   const today = useMemo(() => {
-    return dayjs().startOf('day').toDate();
-  }, []); // Empty dependency array means it will recalculate on every render
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }, []); // Calculated once on mount
   
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange | undefined>({
     from: today,
     to: today
   });
+
+  // Note: React Query automatically handles refetching when dateRange changes
+  // so we don't need manual refetch logic here
 
   return (
     <div className="space-y-6">
@@ -34,14 +38,14 @@ const DashboardMain = () => {
         
         <DateRangePicker 
           selectedRange={selectedDateRange} 
-          onRangeChange={setSelectedDateRange} 
+          onRangeChange={setSelectedDateRange}
         />
       </div>
 
       {/* Dashboard Content */}
       <DashboardContainer 
         selectedDateRange={selectedDateRange} 
-        onDateRangeChange={setSelectedDateRange} 
+        onDateRangeChange={setSelectedDateRange}
       />
     </div>
   );

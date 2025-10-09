@@ -48,7 +48,12 @@ export async function middleware(request: NextRequest) {
         },
       })
 
-      const { data: { user }, error: _userError } = await supabase.auth.getUser()
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      // Log auth check for debugging
+      if (userError) {
+        console.log('Middleware auth error:', userError.message)
+      }
       
       if (!user) {
         // Clear any existing auth cookies when redirecting to login

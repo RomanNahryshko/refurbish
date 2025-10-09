@@ -3,7 +3,6 @@
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
-import dayjs from 'dayjs';
 import "react-day-picker/dist/style.css";
 
 import { cn } from "@/lib/utils";
@@ -29,40 +28,57 @@ export function DateRangePicker({
   // Use selectedRange directly instead of local state to avoid infinite loops
   const handleSelect = (range: DateRange | undefined) => {
     onRangeChange(range);
+    // React Query will automatically refetch when dateRange changes
   };
 
-  // Quick preset functions using dayjs
+  // Quick preset functions using dayjs with proper timezone handling
   const setToday = () => {
-    const today = dayjs().startOf('day').toDate();
+    // Create date at start of day in local timezone, then adjust to avoid UTC conversion issues
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     handleSelect({ from: today, to: today });
   };
 
   const setYesterday = () => {
-    const yesterday = dayjs().subtract(1, 'day').startOf('day').toDate();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
     handleSelect({ from: yesterday, to: yesterday });
   };
 
   const setLast7Days = () => {
-    const end = dayjs().endOf('day').toDate();
-    const start = dayjs().subtract(6, 'day').startOf('day').toDate();
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    const start = new Date();
+    start.setDate(start.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
     handleSelect({ from: start, to: end });
   };
 
   const setLast30Days = () => {
-    const end = dayjs().endOf('day').toDate();
-    const start = dayjs().subtract(29, 'day').startOf('day').toDate();
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    const start = new Date();
+    start.setDate(start.getDate() - 29);
+    start.setHours(0, 0, 0, 0);
     handleSelect({ from: start, to: end });
   };
 
   const setThisMonth = () => {
-    const start = dayjs().startOf('month').toDate();
-    const end = dayjs().endOf('month').toDate();
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    end.setHours(23, 59, 59, 999);
     handleSelect({ from: start, to: end });
   };
 
   const setLastMonth = () => {
-    const start = dayjs().subtract(1, 'month').startOf('month').toDate();
-    const end = dayjs().subtract(1, 'month').endOf('month').toDate();
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(now.getFullYear(), now.getMonth(), 0);
+    end.setHours(23, 59, 59, 999);
     handleSelect({ from: start, to: end });
   };
 

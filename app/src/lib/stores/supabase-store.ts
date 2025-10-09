@@ -33,8 +33,15 @@ export const useSupabaseStore = create<SupabaseStore>((set, get) => ({
       // Listen for auth changes
       const {
         data: { subscription },
-      } = supabaseClient.auth.onAuthStateChange((_event: string, session: Session | null) => {
+      } = supabaseClient.auth.onAuthStateChange((event: string, session: Session | null) => {
+        console.log('Auth state change:', event, session?.user?.id)
         set({ user: session?.user ?? null })
+        
+        // Handle sign out event
+        if (event === 'SIGNED_OUT') {
+          // Clear any cached data or perform cleanup
+          console.log('User signed out, clearing state')
+        }
       })
 
       // Store subscription for cleanup
@@ -68,10 +75,7 @@ export const useSupabaseStore = create<SupabaseStore>((set, get) => ({
   }
 }))
 
-// Initialize the store when imported
-if (typeof window !== 'undefined') {
-  useSupabaseStore.getState().initialize()
-}
+// Store will be initialized by the provider
 
 // Export convenience hooks
 export const useSupabaseClient = () => useSupabaseStore((state) => state.client)

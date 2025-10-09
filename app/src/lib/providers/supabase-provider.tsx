@@ -17,11 +17,14 @@ interface SupabaseProviderProps {
 export function SupabaseProvider({ children }: SupabaseProviderProps) {
   // Initialize the store when the provider mounts
   const initialize = useSupabaseStore((state) => state.initialize)
+  const isReady = useSupabaseStore((state) => state.isReady)
   
-  // Call initialize when component mounts
+  // Call initialize when component mounts, but only if not already initialized
   React.useEffect(() => {
-    initialize()
-  }, [initialize])
+    if (!isReady) {
+      initialize()
+    }
+  }, [initialize, isReady])
   
   return <>{children}</>
 }

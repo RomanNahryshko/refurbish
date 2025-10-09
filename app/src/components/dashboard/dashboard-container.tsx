@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { DateRange } from 'react-day-picker';
 import AdminDashboard from './admin-dashboard';
 import { useDashboardMetrics } from '@/lib/hooks/use-dashboard-metrics';
@@ -12,18 +12,13 @@ interface DashboardContainerProps {
 
 const DashboardContainer: React.FC<DashboardContainerProps> = ({ 
   selectedDateRange, 
-  onDateRangeChange 
+  onDateRangeChange
 }) => {
   // Fetch real data from Supabase
-  const { data: realData, isPending: loading, refetch } = useDashboardMetrics(selectedDateRange);
-
-  // Refetch data every time the component mounts (page visit)
-  useEffect(() => {
-    refetch();
-  }, []);
+  const { data: realData, isPending: loading, isFetching } = useDashboardMetrics(selectedDateRange);
 
   // Show loading state
-  if (loading) {
+  if (loading || isFetching) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
