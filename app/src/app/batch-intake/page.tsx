@@ -158,7 +158,7 @@ export default function BatchIntakePage() {
                           {batch.batch_number}
                         </Link>
                       </td>
-                      <td className="p-3 text-sm">Unknown</td>
+                      <td className="p-3 text-sm">{batch.supplier_name || 'Unknown'}</td>
                       <td className="p-3">
                         <Badge variant="outline">{expectedCount}</Badge>
                       </td>
