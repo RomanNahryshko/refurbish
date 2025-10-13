@@ -48,7 +48,12 @@ export function Header() {
   const userFullName = profile?.full_name || user?.user_metadata?.full_name || 'Unknown User'
   const userEmail = user?.email || 'No email'
   const userRole = profile?.role
-  const userInitials = userFullName.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U'
+  const userInitials = (() => {
+    const words = userFullName.split(' ').filter((word: string) => word.length > 0)
+    if (words.length === 0) return 'U'
+    if (words.length === 1) return words[0].substring(0, 2).toUpperCase()
+    return (words[0][0] + words[1][0]).toUpperCase()
+  })()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
