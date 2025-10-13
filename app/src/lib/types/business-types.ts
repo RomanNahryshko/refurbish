@@ -273,6 +273,7 @@ export type TableName =
   | 'spare_parts'
   | 'stock_adjustments'
   | 'production_metrics'
+  | 'dashboard'
 
 // Permission string in format 'table:action'
 export type PermissionString = `${TableName}:${PermissionAction}`

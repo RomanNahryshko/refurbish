@@ -32,6 +32,7 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     'spare_parts:read',
     'stock_adjustments:read',
     'production_metrics:read',
+    'dashboard:read',
     
     // Create/Update permissions for operational data
     'suppliers:create',
@@ -56,6 +57,10 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     // Repair job management
     'repair_jobs:create',
     'repair_jobs:update',
+    
+    // Repair parts usage tracking
+    'repair_parts_used:create',
+    'repair_parts_used:update',
     
     // User management
     'user_profiles:create',

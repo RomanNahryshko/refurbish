@@ -25,7 +25,7 @@ export default function InventoryPage() {
   const deletePartMutation = useDeletePartMutation()
 
   // Only ops_manager and admin can modify inventory
-  const canModify = profile?.role === 'ops_manager' || profile?.role === 'admin'
+  const canModify = profile?.role === 'ops_manager' || profile?.role === 'admin' || profile?.role === 'general_manager'
 
   // Show loading state while checking authentication and permissions
   if (userLoading || profileLoading) {
