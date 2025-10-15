@@ -93,6 +93,12 @@ INSERT INTO permissions (table_name, action, description) VALUES
 ON CONFLICT (table_name, action) 
 DO UPDATE SET description = EXCLUDED.description;
 
+-- Dashboard permissions
+INSERT INTO permissions (table_name, action, description) VALUES
+  ('dashboard', 'read', 'View dashboard')
+ON CONFLICT (table_name, action) DO UPDATE SET 
+  description = EXCLUDED.description;
+
 -- =====================================================
 -- 2. CLEAR EXISTING ROLE PERMISSIONS
 -- =====================================================
@@ -125,7 +131,7 @@ ON CONFLICT (role, permission_id) DO NOTHING;
 INSERT INTO role_permissions (role, permission_id)
 SELECT 'ops_manager', id FROM permissions 
 WHERE table_name IN ('batches', 'devices', 'device_status_history', 'repair_jobs', 
-                     'suppliers', 'spare_parts', 'stock_adjustments')
+                     'suppliers', 'spare_parts', 'stock_adjustments', 'dashboard', 'production_metrics')
   AND action IN ('read', 'create', 'update')
 ON CONFLICT (role, permission_id) DO NOTHING;
 

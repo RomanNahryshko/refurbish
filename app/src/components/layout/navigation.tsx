@@ -4,11 +4,11 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  navigationMenuTriggerStyle,
+    NavigationMenu,
+    NavigationMenuItem,
+    NavigationMenuLink,
+    NavigationMenuList,
+    navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu'
 import { cn } from '@/lib/utils'
 import { type UserProfile, type PermissionString, type TableName, type PermissionAction } from '@/lib/types/business-types'
@@ -29,7 +29,7 @@ const navigationItems: NavigationItem[] = [
     title: 'Dashboard',
     href: '/dashboard',
     description: 'Overview of operations',
-    showIf: (perms) => perms.isAdmin || perms.isGeneralManager 
+    showIf: (perms) => perms.isAdmin || perms.isGeneralManager || perms.isOpsManager
   },
   {
     title: 'Batch Intake',
@@ -61,8 +61,8 @@ const navigationItems: NavigationItem[] = [
     title: 'Inventory',
     href: '/inventory',
     description: 'Spare parts management',
-    //super admin + general manager
-    showIf: (perms) => perms.canViewInventory && !perms.isOpsManager && !perms.isTechnician
+    //super admin + general manager + ops manager
+    showIf: (perms) => perms.canViewInventory && !perms.isTechnician
   },
 ]
 

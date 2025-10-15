@@ -4,15 +4,15 @@
  */
 
 import {
-  type PermissionString,
-  type RolePermissions,
-  type TechnicianLevelPermissions,
-  type UserRole,
-  type RepairType
+    type PermissionString,
+    type RolePermissions,
+    type TechnicianLevelPermissions,
+    type UserRole,
+    type RepairType
 } from '@/lib/types/business-types'
 import {
-  USER_ROLES,
-  TECHNICIAN_LEVELS
+    USER_ROLES,
+    TECHNICIAN_LEVELS
 } from '@/lib/constants'
 
 // Define permissions for each role according to requirements
@@ -67,7 +67,7 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     'user_profiles:update'
   ],
 
-  // Operations Manager: Batch intake, initial QC, repair job creation
+  // Operations Manager: Batch intake, initial QC, repair job creation, inventory management, dashboard access
   ops_manager: [
     // Batch management
     'batches:create',
@@ -90,13 +90,19 @@ export const ROLE_PERMISSIONS: RolePermissions = {
     'qc_checks:read',   // Can read QC results
     'qc_test_results:read',
     
-    // Inventory management (limited access)
+    // Inventory management (full access)
     'spare_parts:read',
     'spare_parts:create',
     'spare_parts:update',
     'spare_parts:delete',
+    'stock_adjustments:read',
+    'stock_adjustments:create',
     
-    // Note: suppliers, stock_adjustments not available to ops_manager
+    // Dashboard access
+    'dashboard:read',
+    'production_metrics:read',
+    
+    // Note: suppliers not available to ops_manager
     // Important: No access to /qc page - only initial QC in batch-intake
   ],
 

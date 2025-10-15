@@ -20,6 +20,7 @@ export const ROLE_ROUTES: Record<UserRole, string[]> = {
   ops_manager: [
     '/',
     '/homepage',
+    '/dashboard',
     '/batch-intake',
     '/batch-intake/*',
     '/devices',
@@ -110,8 +111,8 @@ export function hasRouteAccess(userRole: UserRole, pathname: string): boolean {
  * Check if a user role has access to dashboard
  */
 export function hasDashboardAccess(userRole: UserRole): boolean {
-  // Only general_manager and admin have dashboard access
-  return userRole === 'general_manager' || userRole === 'admin'
+  // general_manager, ops_manager, and admin have dashboard access
+  return userRole === 'general_manager' || userRole === 'ops_manager' || userRole === 'admin'
 }
 
 /**
@@ -120,12 +121,12 @@ export function hasDashboardAccess(userRole: UserRole): boolean {
 export function getFirstAvailableModule(userRole: UserRole): string {
   // Define navigation items in order of priority
   const navigationItems = [
-    { href: '/dashboard', roles: ['admin', 'general_manager'] },
+    { href: '/dashboard', roles: ['admin', 'general_manager', 'ops_manager'] },
     { href: '/batch-intake', roles: ['admin', 'general_manager', 'ops_manager'] },
     { href: '/devices', roles: ['admin', 'general_manager', 'ops_manager', 'qc_controller', 'technician'] },
     { href: '/repair-jobs', roles: ['admin', 'general_manager', 'ops_manager', 'technician'] },
     { href: '/qc', roles: ['admin', 'general_manager', 'qc_controller'] },
-    { href: '/inventory', roles: ['admin', 'general_manager'] },
+    { href: '/inventory', roles: ['admin', 'general_manager', 'ops_manager'] },
   ]
 
   // Find the first navigation item that the user has access to
