@@ -563,20 +563,13 @@ CREATE TRIGGER set_device_internal_id BEFORE INSERT ON devices
   FOR EACH ROW EXECUTE FUNCTION set_internal_id();
 
 -- Function to track device status changes
-CREATE OR REPLACE FUNCTION track_device_status_change()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF OLD.status IS DISTINCT FROM NEW.status THEN
-    INSERT INTO device_status_history (device_id, old_status, new_status, changed_by, notes)
-    VALUES (NEW.id, OLD.status, NEW.status, NEW.updated_by, 
-            'Status changed from ' || OLD.status || ' to ' || NEW.status);
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER track_device_status AFTER UPDATE ON devices
-  FOR EACH ROW EXECUTE FUNCTION track_device_status_change();
+-- NOTE: Device status history tracking is now handled in application code
+-- (in /api/qc-checks and other endpoints) with proper notes and user information.
+-- The database trigger was removed to prevent duplicate entries.
+--
+-- Previously there was a trigger here:
+-- CREATE TRIGGER track_device_status AFTER UPDATE ON devices
+-- But it created duplicate entries because the application code also creates history records.
 
 -- Function to update stock levels when parts are used
 CREATE OR REPLACE FUNCTION update_stock_on_parts_usage()

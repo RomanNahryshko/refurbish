@@ -18,6 +18,33 @@ export async function recordDeviceStatusChange(
   data: DeviceStatusHistoryData
 ) {
   try {
+    // Don't record history if status hasn't actually changed
+    // Check both when old_status is provided and when it matches new_status
+    if (data.old_status && data.old_status === data.new_status) {
+      console.log('⏭️ Skipping status history - status unchanged:', {
+        device_id: data.device_id,
+        status: data.new_status
+      })
+      return { success: true, skipped: true }
+    }
+    
+    // If old_status is not provided, fetch current device status to check if it's the same
+    if (!data.old_status) {
+      const { data: currentDevice } = await supabase
+        .from('devices')
+        .select('status')
+        .eq('id', data.device_id)
+        .single()
+      
+      if (currentDevice && currentDevice.status === data.new_status) {
+        console.log('⏭️ Skipping status history - status unchanged (checked from DB):', {
+          device_id: data.device_id,
+          status: data.new_status
+        })
+        return { success: true, skipped: true }
+      }
+    }
+
     // Get user profile information
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')

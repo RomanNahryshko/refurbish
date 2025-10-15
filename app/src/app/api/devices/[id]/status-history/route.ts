@@ -34,8 +34,37 @@ export async function GET(
       }, { status: 500 })
     }
 
+    // Manually fetch user profiles for each unique changed_by ID
+    // This is necessary because changed_by references auth.users, not user_profiles directly
+    const uniqueUserIds = [...new Set(
+      (statusHistory || [])
+        .map(h => h.changed_by)
+        .filter(Boolean)
+    )]
+
+    let userProfilesMap: Record<string, { id: string; full_name: string; email: string }> = {}
+
+    if (uniqueUserIds.length > 0) {
+      const { data: userProfiles } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, email')
+        .in('id', uniqueUserIds)
+
+      if (userProfiles) {
+        userProfilesMap = Object.fromEntries(
+          userProfiles.map(profile => [profile.id, profile])
+        )
+      }
+    }
+
+    // Attach user profiles to history entries
+    const enrichedHistory = (statusHistory || []).map(history => ({
+      ...history,
+      user_profile: history.changed_by ? userProfilesMap[history.changed_by] || null : null
+    }))
+
     return NextResponse.json({ 
-      data: statusHistory || [],
+      data: enrichedHistory,
       message: 'Device status history fetched successfully'
     })
 
