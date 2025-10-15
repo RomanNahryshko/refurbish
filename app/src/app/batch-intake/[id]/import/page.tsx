@@ -16,9 +16,9 @@ import { LoadingSpinner } from '@/components/common/loading-spinner';
 // Removed: useCreateRepairJob - repair jobs are now created by QC checks API
 import { DrPhoneData, DeviceGrade } from '@/lib/types/business-types';
 import {
-    useFilterDevicesByExisting,
-    useCompletedQCByDevices,
-    useFindExistingDevice
+  useFilterDevicesByExisting,
+  useCompletedQCByDevices,
+  useFindExistingDevice
 } from '@/lib/hooks/use-device-import';
 import { useDeviceImportState } from '@/lib/hooks/use-device-import-state';
 import { useSupabaseClient } from '@/lib/stores/supabase-store';
@@ -90,6 +90,12 @@ export default function ImportDrPhonePage() {
       const serialNumber = row['Serial'] || row['serial'] || row['Serial Number'] || row['serial_number'] || ''
       const faults = row['Fail'] || row['fail'] || row['Faults'] || row['faults'] || row['Issues'] || 'No faults detected'
       
+      // Extract color from Excel data
+      const color = row['Color'] || row['color'] || row['Colour'] || row['colour'] || ''
+      
+      // Extract storage/memory from Excel data
+      const storage = row['Storage'] || row['storage'] || row['Memory'] || row['memory'] || row['Storage Capacity'] || row['storage_capacity'] || ''
+      
       // Extract battery health from Excel data
       const batteryHealthRaw = row['Batteryhealth'] || row['batteryhealth'] || row['Battery Health'] || row['battery_health'] || ''
       let batteryHealth: number | undefined
@@ -105,8 +111,12 @@ export default function ImportDrPhonePage() {
         imei: String(imei),
         device_info: {
           brand: String(brand),
-          model: String(model)
+          model: String(model),
+          color: String(color),
+          storage: String(storage)
         },
+        color: String(color),
+        storage: String(storage),
         diagnostic_results: {
           battery_health: batteryHealth
         },
@@ -162,7 +172,9 @@ export default function ImportDrPhonePage() {
         imei: String(deviceData.imei),
         brand: deviceData.device_info?.brand || '',
         model: deviceData.device_info?.model || '',
-        serial_number: String(deviceData.serialNumber),
+        color: deviceData.color || deviceData.device_info?.color || '',
+        storage_capacity: deviceData.storage || deviceData.memory || deviceData.storage_capacity || deviceData.device_info?.storage || deviceData.device_info?.memory || '',
+        serial_number: String(deviceData.serialNumber || deviceData.serial_number),
         dr_phone_data: {
           faults: String(deviceData.faults),
           original_data: deviceData,

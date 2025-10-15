@@ -93,6 +93,9 @@ export default function LabelGenerationPage() {
               </div>
               <div><strong>IMEI:</strong> {devices.length > 0 ? devices[0].imei : '123456789012345'}</div>
               <div><strong>Model:</strong> {devices.length > 0 ? `${devices[0].brand || ''} ${devices[0].model || ''}`.trim() || 'iPhone 12' : 'iPhone 12'}</div>
+              {devices.length > 0 && (devices[0].color || devices[0].storage_capacity) && (
+                <div><strong>Specs:</strong> {devices[0].color && devices[0].storage_capacity ? `${devices[0].color} • ${devices[0].storage_capacity}` : devices[0].color || devices[0].storage_capacity}</div>
+              )}
               <div><strong>S/N:</strong> {devices.length > 0 ? devices[0].serial_number || 'N/A' : 'SN123456'}</div>
               <div className="border-t mb-[-10px] pt-3 text-center text-xs">{new Date().toLocaleDateString()}</div>
             </div>

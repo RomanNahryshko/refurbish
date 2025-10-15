@@ -263,8 +263,13 @@ export default function BatchDevicesPage() {
                       <td className="p-3">
                         <div>
                           <div className="font-medium">{device.brand} {device.model}</div>
-                          {device.storage_capacity && (
-                            <div className="text-xs text-muted-foreground">{device.storage_capacity}</div>
+                          {(device.color || device.storage_capacity) && (
+                            <div className="text-xs text-muted-foreground">
+                              {device.color && device.storage_capacity 
+                                ? `${device.color} • ${device.storage_capacity}`
+                                : device.color || device.storage_capacity
+                              }
+                            </div>
                           )}
                         </div>
                       </td>

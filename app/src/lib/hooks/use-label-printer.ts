@@ -93,6 +93,7 @@ export function useLabelPrinter(devices: Device[], batch?: Batch) {
             <div><strong>ID:</strong> ${device.internal_id}</div>
             <div><strong>IMEI:</strong> ${device.imei}</div>
             <div><strong>Model:</strong> ${device.brand || ''} ${device.model || ''}</div>
+            ${device.color || device.storage_capacity ? `<div><strong>Specs:</strong> ${device.color && device.storage_capacity ? `${device.color} • ${device.storage_capacity}` : device.color || device.storage_capacity}</div>` : ''}
             <div><strong>S/N:</strong> ${device.serial_number || 'N/A'}</div>
           </div>
           <div>
@@ -154,6 +155,7 @@ export function useLabelPrinter(devices: Device[], batch?: Batch) {
           <div><strong>ID:</strong> ${device.internal_id}</div>
           <div><strong>IMEI:</strong> ${device.imei}</div>
           <div><strong>Model:</strong> ${device.brand || ''} ${device.model || ''}</div>
+          ${device.color || device.storage_capacity ? `<div><strong>Specs:</strong> ${device.color && device.storage_capacity ? `${device.color} • ${device.storage_capacity}` : device.color || device.storage_capacity}</div>` : ''}
           <div><strong>S/N:</strong> ${device.serial_number || 'N/A'}</div>
           <div style="text-align:center; font-size:10px; margin-top:8px;">
             ${new Date().toLocaleDateString()}

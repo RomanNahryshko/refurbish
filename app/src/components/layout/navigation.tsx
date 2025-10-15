@@ -54,15 +54,15 @@ const navigationItems: NavigationItem[] = [
     title: 'Quality Control',
     href: '/qc',
     description: 'Final QC and grading',
-    //super admin + general manager + ops manager
-    showIf: (perms) => perms.canViewQC
+    //super admin + general manager + qc_controller (NOT ops_manager)
+    showIf: (perms) => (perms.isAdmin || perms.isGeneralManager || perms.isQC)
   },
   {
     title: 'Inventory',
     href: '/inventory',
     description: 'Spare parts management',
     //super admin + general manager + ops manager
-    showIf: (perms) => perms.canViewInventory && !perms.isTechnician
+    showIf: (perms) => perms.canViewInventory && !perms.isTechnician && !perms.isQC
   },
 ]
 

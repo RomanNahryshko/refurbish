@@ -8,12 +8,18 @@ export default function DeviceInfo({ device }: { device: DrPhoneData }) {
   const needsBatteryChange = requiresBatteryChange(device);
   const batteryChangeReason = getBatteryChangeReason(device);
   
+  // Get color and storage from various possible locations
+  const color = device.color || device.device_info?.color || 'Unknown';
+  const storage = device.storage || device.memory || device.storage_capacity || device.device_info?.storage || device.device_info?.memory || 'Unknown';
+  
   return (
     <div className="space-y-4">
       <div className="grid md:grid-cols-3 gap-4">
         <InfoRow label="IMEI:" value={device.imei as string} mono />
         <InfoRow label="Model:" value={`${device.device_info?.brand} ${device.device_info?.model}`} />
-        <InfoRow label="Serial:" value={device.serialNumber as string} mono />
+        <InfoRow label="Serial:" value={(device.serialNumber || device.serial_number) as string} mono />
+        <InfoRow label="Color:" value={color} />
+        <InfoRow label="Storage:" value={storage} />
         {batteryHealth !== undefined && (
           <InfoRow 
             label="Battery Health:" 

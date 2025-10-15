@@ -24,7 +24,7 @@ const allModules: HomepageModule[] = [
     description: 'Overview & metrics',
     href: '/dashboard',
     icon: '📈',
-    showIf: (perms) => perms.isAdmin || perms.isGeneralManager
+    showIf: (perms) => perms.isAdmin || perms.isGeneralManager || perms.isOpsManager
   },
   {
     title: 'Batch Intake',
@@ -52,14 +52,14 @@ const allModules: HomepageModule[] = [
     description: 'Final QC & grading',
     href: '/qc',
     icon: '📋',
-    showIf: (perms) => perms.canViewQC
+    showIf: (perms) => perms.isAdmin || perms.isGeneralManager || perms.isQC
   },
   {
     title: 'Inventory',
     description: 'Parts stock levels',
     href: '/inventory',
     icon: '📊',
-    showIf: (perms) => perms.canViewInventory && !perms.isOpsManager && !perms.isTechnician
+    showIf: (perms) => perms.canViewInventory && !perms.isTechnician && !perms.isQC
   },
   {
     title: 'Admin',

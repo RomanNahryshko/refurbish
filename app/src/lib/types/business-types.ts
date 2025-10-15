@@ -1,12 +1,12 @@
 import {
-  USER_ROLES,
-  TECHNICIAN_LEVELS,
-  DEVICE_STATUS,
-  DEVICE_GRADES,
-  REPAIR_TYPES,
-  REPAIR_STATUS,
-  TEST_RESULT,
-  USER_STATUS
+    USER_ROLES,
+    TECHNICIAN_LEVELS,
+    DEVICE_STATUS,
+    DEVICE_GRADES,
+    REPAIR_TYPES,
+    REPAIR_STATUS,
+    TEST_RESULT,
+    USER_STATUS
 } from '../constants'
 
 // Type utilities
@@ -351,13 +351,28 @@ export type PhoneGrade = DeviceGrade
 
 // Dr. Phone data structure
 export interface DrPhoneData {
+  // Device identifiers
+  imei?: string
+  serialNumber?: string
+  serial_number?: string // Alternative naming
+  
+  // Device information
   device_info?: {
     brand?: string
     model?: string
     color?: string
     storage?: string
+    memory?: string // Alternative to storage
     condition?: string
   }
+  
+  // Color and storage at top level (for Excel compatibility)
+  color?: string
+  storage?: string
+  memory?: string
+  storage_capacity?: string
+  
+  // Diagnostic information
   diagnostic_results?: {
     battery_health?: number
     screen_condition?: string
@@ -365,9 +380,16 @@ export interface DrPhoneData {
     speaker_condition?: string
     overall_score?: number
   }
+  
+  // Faults and issues
+  faults?: string
+  
+  // QC data
   qc_data?: {
     selected_grade?: string
   }
+  
+  // Repair information
   required_repairs?: string[]
   other_repair_description?: string
   repair_history?: Array<{
@@ -376,6 +398,7 @@ export interface DrPhoneData {
     description: string
     cost: number
   }>
+  
   notes?: string
   [key: string]: unknown // For any additional fields from Dr. Phone
 }
