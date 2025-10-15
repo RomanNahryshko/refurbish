@@ -124,3 +124,6 @@ export const PART_CATEGORY_LABELS = {
   [PART_CATEGORIES.BUTTON]: 'Button',
   [PART_CATEGORIES.OTHER]: 'Other'
 } as const
+
+// Battery Health Auto-Repair Configuration
+export const BATTERY_HEALTH_THRESHOLD = 92 // Configurable threshold for automatic battery change requirement

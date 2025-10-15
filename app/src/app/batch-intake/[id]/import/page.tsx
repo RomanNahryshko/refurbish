@@ -16,9 +16,9 @@ import { LoadingSpinner } from '@/components/common/loading-spinner';
 // Removed: useCreateRepairJob - repair jobs are now created by QC checks API
 import { DrPhoneData, DeviceGrade } from '@/lib/types/business-types';
 import {
-  useFilterDevicesByExisting,
-  useCompletedQCByDevices,
-  useFindExistingDevice
+    useFilterDevicesByExisting,
+    useCompletedQCByDevices,
+    useFindExistingDevice
 } from '@/lib/hooks/use-device-import';
 import { useDeviceImportState } from '@/lib/hooks/use-device-import-state';
 import { useSupabaseClient } from '@/lib/stores/supabase-store';
@@ -59,6 +59,7 @@ export default function ImportDrPhonePage() {
     markDeviceCompleted: _markDeviceCompleted,
     resetAllStates: _resetAllStates,
     updateCompletedDevices,
+    initializeDeviceStates,
   } = useDeviceImportState()
   const [isDragOver, setIsDragOver] = useState(false)
   const [fileInputKey, setFileInputKey] = useState(0)
@@ -88,13 +89,26 @@ export default function ImportDrPhonePage() {
       const model = row['Model Name'] || row['Model'] || row['model'] || row['Model Name'] || ''
       const serialNumber = row['Serial'] || row['serial'] || row['Serial Number'] || row['serial_number'] || ''
       const faults = row['Fail'] || row['fail'] || row['Faults'] || row['faults'] || row['Issues'] || 'No faults detected'
-    
+      
+      // Extract battery health from Excel data
+      const batteryHealthRaw = row['Batteryhealth'] || row['batteryhealth'] || row['Battery Health'] || row['battery_health'] || ''
+      let batteryHealth: number | undefined
+      
+      if (batteryHealthRaw && batteryHealthRaw !== '') {
+        const parsed = parseFloat(String(batteryHealthRaw))
+        if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
+          batteryHealth = parsed
+        }
+      }
       
       return {
         imei: String(imei),
         device_info: {
           brand: String(brand),
           model: String(model)
+        },
+        diagnostic_results: {
+          battery_health: batteryHealth
         },
         serialNumber: String(serialNumber),
         faults: String(faults),
@@ -121,6 +135,13 @@ export default function ImportDrPhonePage() {
   
   // Use all devices - filtering is handled by individual card isCompleted state
   const filteredDevices = hookFilteredDevices
+
+  // Auto-initialize device states based on battery health when devices are loaded
+  React.useEffect(() => {
+    if (filteredDevices && filteredDevices.length > 0) {
+      initializeDeviceStates(filteredDevices)
+    }
+  }, [filteredDevices, initializeDeviceStates])
 
   
   // Function to create a single device when QC is completed

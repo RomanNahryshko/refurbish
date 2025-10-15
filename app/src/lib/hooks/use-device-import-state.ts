@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { DrPhoneData } from '../types/business-types'
+import { getInitialQcApproach, getInitialRepairSelections } from '../helpers/battery-health-utils'
 
 export interface DeviceImportState {
   // Per-device repair task selection state
@@ -88,6 +90,30 @@ export function useDeviceImportState() {
     setCompletedDevices(newCompletedSet)
   }, [])
 
+  // Initialize device states based on battery health auto-repair logic
+  const initializeDeviceStates = useCallback((devices: DrPhoneData[]) => {
+    const newQcApproaches: Record<number, 'repairs' | 'grade' | ''> = {}
+    const newRepairs: Record<number, string[]> = {}
+    const newExpandedSections: Record<number, boolean> = {}
+    
+    devices.forEach((device, index) => {
+      const qcApproach = getInitialQcApproach(device)
+      const initialRepairs = getInitialRepairSelections(device)
+      
+      newQcApproaches[index] = qcApproach
+      newRepairs[index] = initialRepairs
+      
+      // Auto-expand repair section if battery change is pre-selected
+      if (qcApproach === 'repairs' && initialRepairs.length > 0) {
+        newExpandedSections[index] = true
+      }
+    })
+    
+    setDeviceQcApproaches(prev => ({ ...prev, ...newQcApproaches }))
+    setDeviceRepairs(prev => ({ ...prev, ...newRepairs }))
+    setExpandedRepairSections(prev => ({ ...prev, ...newExpandedSections }))
+  }, [])
+
   return {
     // State
     deviceRepairs,
@@ -106,5 +132,6 @@ export function useDeviceImportState() {
     markDeviceCompleted,
     resetAllStates,
     updateCompletedDevices,
+    initializeDeviceStates,
   }
 }
