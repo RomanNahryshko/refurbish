@@ -9,6 +9,8 @@ interface Device {
   brand?: string
   model?: string
   serial_number?: string
+  color?: string
+  storage_capacity?: string
 }
 
 interface Batch {
