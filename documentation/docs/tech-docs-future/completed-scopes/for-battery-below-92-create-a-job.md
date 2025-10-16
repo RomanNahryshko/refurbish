@@ -1,8 +1,8 @@
 ---
-title: Battery Health Auto-Repair (Import)
+title: For battery < 92%, create a job
 ---
 
-# Battery Health Auto-Repair (Import)
+# For battery < 92%, create a job
 
 This document describes the business flow for using the Battery Health value from supplier Excel imports to automatically create Battery Change repair jobs.
 
