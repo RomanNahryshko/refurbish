@@ -35,7 +35,7 @@ https://workflow.remobile.eu/repair-jobs - here you can monitor the status of al
 - ✅ **Technicians choose their own jobs** based on their level
 - ✅ **L1 sees** housing repairs only
 - ✅ **L2 sees** glass repairs only  
-- ✅ **L3 sees** battery, software, and other repairs
+- ✅ **L3 sees all repair types** (battery, glass, housing, software, other)
 - ✅ **All levels see** software updates
 - ✅ **One checkbox = One repair job** during batch intake
 - ✅ **Cancelled jobs return to Pending** for someone else to claim

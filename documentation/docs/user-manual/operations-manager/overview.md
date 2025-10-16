@@ -15,6 +15,10 @@ As an Operations Manager, you're the person who gets new phones into our system 
 
 **Manage Repairs** - Move repair jobs between technicians if needed.
 
+**Dashboard** - View company KPIs and daily production metrics.
+
+**Inventory** - View spare parts stock and details.
+
 **View Everything** - You can see all devices, batches, and repair jobs to keep track of progress.
 
 ## Your typical day
