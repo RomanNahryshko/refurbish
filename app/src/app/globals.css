@@ -141,6 +141,12 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Force light color-scheme for form elements */
+  input[type='checkbox'],
+  input[type='radio'] {
+    color-scheme: light;
+  }
 }
 
 /* Calendar styles for two-month layout */

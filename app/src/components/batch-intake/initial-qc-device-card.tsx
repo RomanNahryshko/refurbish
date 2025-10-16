@@ -170,8 +170,10 @@ export function InitialQCDeviceCard(props: InitialQCDeviceCardProps) {
 
   return (
     <Card className="p-4 space-y-4">
+      <div className='flex flex-col gap-4'>
       <DeviceInfo device={device} />
-      <DeviceFaults faults={device.faults as string || ''} />
+        <DeviceFaults faults={device.faults as string || ''} />
+      </div>
       <QcApproachSelector
         qcApproach={qcApproach}
         onQcApproachChange={onQcApproachChange}
