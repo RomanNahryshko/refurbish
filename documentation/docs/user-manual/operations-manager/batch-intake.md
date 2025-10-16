@@ -63,6 +63,10 @@ Every time new phones arrive from a supplier.
 
 <img src="/user-manual-images/batch-create-import-data-review.jpg" alt="Initial QC review screen" width="600" />
 
+:::info Battery Health
+If the imported Battery Health is below 92%, the system pre-selects Battery Change for that device. You can remove it if you believe the battery is fine.
+:::
+
 ## Step 4: Print labels
 
 1. Click "Generate Labels":

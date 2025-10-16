@@ -70,3 +70,5 @@ Use this checklist for every phone you test. Don't skip any steps!
 
 ## If anything fails
 Mark as "Fail", select needed repairs, and write clear notes. The system will automatically create repair jobs.
+
+Note: If imported Battery Health is below 92%, Battery Change may already be pre-selected for you. You can remove it if not needed.
