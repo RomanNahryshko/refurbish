@@ -15,12 +15,13 @@ interface DeviceStatusHistoryData {
  */
 export async function recordDeviceStatusChange(
   supabase: SupabaseClient,
-  data: DeviceStatusHistoryData
+  data: DeviceStatusHistoryData,
+  options: { forceRecord?: boolean } = {}
 ) {
   try {
-    // Don't record history if status hasn't actually changed
+    // Don't record history if status hasn't actually changed (unless forced)
     // Check both when old_status is provided and when it matches new_status
-    if (data.old_status && data.old_status === data.new_status) {
+    if (!options.forceRecord && data.old_status && data.old_status === data.new_status) {
       console.log('⏭️ Skipping status history - status unchanged:', {
         device_id: data.device_id,
         status: data.new_status
@@ -29,7 +30,7 @@ export async function recordDeviceStatusChange(
     }
     
     // If old_status is not provided, fetch current device status to check if it's the same
-    if (!data.old_status) {
+    if (!options.forceRecord && !data.old_status) {
       const { data: currentDevice } = await supabase
         .from('devices')
         .select('status')

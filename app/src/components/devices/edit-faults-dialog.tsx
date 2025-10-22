@@ -42,13 +42,19 @@ export function EditFaultsDialog({
     repairType: string
   }>({ open: false, jobId: '', repairType: '' })
 
-  // Fetch current faults when dialog opens
+  /**
+   * Fetch current faults when dialog opens
+   */
   useEffect(() => {
     if (open && deviceId) {
       fetchCurrentFaults()
     }
   }, [open, deviceId])
 
+  /**
+   * Fetch existing repair jobs for the device
+   * Pre-selects all jobs (including completed) and fills "other" description if exists
+   */
   async function fetchCurrentFaults() {
     setFetchingData(true)
     setError(null)
@@ -65,10 +71,15 @@ export function EditFaultsDialog({
       setExistingJobs(jobs)
 
       // Pre-select ALL existing faults (including completed ones)
-      // Completed jobs will be disabled in UI, but still shown as checked
+      // Completed jobs will be disabled in UI but still shown as checked
       const currentFaults = jobs.map((job: RepairJob) => job.repair_type)
-      
       setSelectedFaults(currentFaults)
+      
+      // Pre-fill "other" description if exists
+      const otherJob = jobs.find((job: RepairJob) => job.repair_type === 'other')
+      if (otherJob?.description) {
+        setOtherDescription(otherJob.description)
+      }
     } catch (err) {
       console.error('Error fetching faults:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch current faults')
@@ -77,21 +88,26 @@ export function EditFaultsDialog({
     }
   }
 
+  /**
+   * Handle toggling of repair task checkbox
+   * - Completed jobs cannot be removed
+   * - In-progress jobs require confirmation
+   * - Pending jobs can be removed immediately
+   * - New faults can be added freely
+   */
   function handleFaultToggle(faultId: string) {
     const existingJob = existingJobs.find(job => job.repair_type === faultId)
+    const isDeselecting = selectedFaults.includes(faultId)
     
-    // If fault is being deselected
-    if (selectedFaults.includes(faultId)) {
-      // Check if this is the last selected fault
-      if (selectedFaults.length === 1) {
-        toast.error('At least one repair task must be selected')
-        setError('At least one repair task must be selected')
-        return
-      }
-
-      // If it's an existing job
+    if (isDeselecting) {
       if (existingJob) {
-        // Check if it's in_progress - need confirmation
+        // Completed jobs cannot be removed
+        if (existingJob.status === REPAIR_STATUS.completed) {
+          toast.error('Cannot remove completed repair jobs')
+          return
+        }
+        
+        // In-progress jobs require confirmation
         if (existingJob.status === REPAIR_STATUS.in_progress) {
           setConfirmDialog({
             open: true,
@@ -100,37 +116,25 @@ export function EditFaultsDialog({
           })
           return
         }
-        
-        // Check if it's completed - don't allow removal
-        if (existingJob.status === REPAIR_STATUS.completed) {
-          toast.error('Cannot remove completed repair jobs')
-          return
-        }
 
-        // Pending job - can remove without confirmation
+        // Pending jobs can be removed immediately
         setRemovedJobs(prev => [...prev, existingJob.id])
       }
 
-      // Remove from selected
       setSelectedFaults(prev => prev.filter(id => id !== faultId))
-      setError(null) // Clear error when successfully toggling
+      setError(null)
     } else {
-      // Adding a fault - always allowed
+      // Adding a fault is always allowed
       setSelectedFaults(prev => [...prev, faultId])
-      setError(null) // Clear error when adding
+      setError(null)
     }
   }
 
+  /**
+   * Handle confirmation of in-progress job removal
+   */
   function handleConfirmRemoval() {
     const { jobId, repairType } = confirmDialog
-    
-    // Check if this would be the last selected fault
-    if (selectedFaults.length === 1) {
-      toast.error('At least one repair task must be selected')
-      setError('At least one repair task must be selected')
-      setConfirmDialog({ open: false, jobId: '', repairType: '' })
-      return
-    }
     
     setRemovedJobs(prev => [...prev, jobId])
     setSelectedFaults(prev => prev.filter(id => id !== repairType))
@@ -139,39 +143,44 @@ export function EditFaultsDialog({
     toast.info('In-progress job will be cancelled')
   }
 
+  /**
+   * Submit fault changes to the API
+   * - Validates 'other' description if selected
+   * - Checks if there are any changes before submitting
+   * - Handles adding new jobs, updating descriptions, and removing jobs
+   */
   async function handleSubmit() {
     setLoading(true)
     setError(null)
 
     try {
-      // Determine faults to add (selected but not existing)
-      const faultsToAdd = selectedFaults
-        .filter(fault => {
-          const existingJob = existingJobs.find(job => job.repair_type === fault)
-          return !existingJob || existingJob.status === REPAIR_STATUS.completed
-        })
-        .map(fault => ({
-          repair_type: fault,
-          description: fault === 'other' ? otherDescription : undefined
-        }))
-
-      // Validate 'other' description
+      // Validate 'other' description if 'other' is selected
       if (selectedFaults.includes('other') && !otherDescription.trim()) {
         setError('Description is required for "Other" repair type')
         setLoading(false)
         return
       }
 
-      // Validate that at least one fault is selected
-      if (selectedFaults.length === 0) {
-        setError('At least one repair task must be selected')
-        toast.error('At least one repair task must be selected')
-        setLoading(false)
-        return
-      }
+      // Determine faults to add (new jobs, completed jobs to recreate, or 'other' for description update)
+      const faultsToAdd = selectedFaults
+        .filter(fault => {
+          const existingJob = existingJobs.find(job => job.repair_type === fault)
+          return !existingJob || existingJob.status === REPAIR_STATUS.completed || fault === 'other'
+        })
+        .map(fault => ({
+          repair_type: fault,
+          description: fault === 'other' ? otherDescription : undefined
+        }))
 
-      // Check if there are any changes
-      if (faultsToAdd.length === 0 && removedJobs.length === 0) {
+      // Check if "other" description has changed
+      const existingOtherJob = existingJobs.find(job => job.repair_type === 'other')
+      const hasDescriptionChange = 
+        selectedFaults.includes('other') && 
+        existingOtherJob && 
+        existingOtherJob.description !== otherDescription.trim()
+
+      // Early return if no changes detected
+      if (faultsToAdd.length === 0 && removedJobs.length === 0 && !hasDescriptionChange) {
         toast.info('No changes to save')
         onOpenChange(false)
         return
@@ -223,6 +232,9 @@ export function EditFaultsDialog({
     }
   }
 
+  /**
+   * Reset all form state to initial values
+   */
   function resetState() {
     setSelectedFaults([])
     setOtherDescription('')
@@ -231,6 +243,10 @@ export function EditFaultsDialog({
     setError(null)
   }
 
+  /**
+   * Handle dialog close
+   * Prevents closing while loading
+   */
   function handleClose() {
     if (!loading) {
       resetState()
@@ -238,19 +254,26 @@ export function EditFaultsDialog({
     }
   }
 
+  /**
+   * Get the status of a repair job by repair type
+   */
   const getJobStatus = (repairType: string): string | null => {
     const job = existingJobs.find(j => j.repair_type === repairType)
     return job?.status || null
   }
 
+  /**
+   * Check if a repair job is completed
+   */
   const isJobCompleted = (repairType: string): boolean => {
-    const status = getJobStatus(repairType)
-    return status === REPAIR_STATUS.completed
+    return getJobStatus(repairType) === REPAIR_STATUS.completed
   }
 
+  /**
+   * Check if a repair job is in progress
+   */
   const isJobInProgress = (repairType: string): boolean => {
-    const status = getJobStatus(repairType)
-    return status === REPAIR_STATUS.in_progress
+    return getJobStatus(repairType) === REPAIR_STATUS.in_progress
   }
 
   return (
@@ -307,9 +330,6 @@ export function EditFaultsDialog({
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-[10px]">
                   <Label className="text-base font-semibold">Select Repair Tasks</Label>
-                  <span className="text-xs text-muted-foreground">
-                    At least one task required
-                  </span>
                 </div>
                 
                 {repairTypes.map((repair) => {
@@ -317,7 +337,6 @@ export function EditFaultsDialog({
                   const isCompleted = isJobCompleted(repair.id)
                   const isInProgress = isJobInProgress(repair.id)
                   const isChecked = selectedFaults.includes(repair.id)
-                  const isLastSelected = isChecked && selectedFaults.length === 1
 
                   return (
                     <div key={repair.id}>
@@ -332,8 +351,8 @@ export function EditFaultsDialog({
                           type="checkbox"
                           id={repair.id}
                           checked={isChecked}
-                          onChange={() => !isCompleted && !isLastSelected && handleFaultToggle(repair.id)}
-                          disabled={isCompleted || loading || isLastSelected}
+                          onChange={() => !isCompleted && handleFaultToggle(repair.id)}
+                          disabled={isCompleted || loading}
                           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed"
                         />
                         <Label 

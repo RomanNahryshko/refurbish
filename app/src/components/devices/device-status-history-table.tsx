@@ -7,6 +7,37 @@ import { statusConfig } from '@/components/common/device-list-table'
 import { DeviceStatusHistory } from '@/lib/types/business-types'
 import { Clock, User, FileText } from 'lucide-react'
 
+/**
+ * Format technical notes into user-friendly text
+ * - Replaces underscores with spaces
+ * - Capitalizes repair type names (battery_change → Battery Change)
+ * - Capitalizes status names (awaiting_repair → Awaiting Repair)
+ * 
+ * @param notes - Raw notes from database
+ * @returns Formatted, user-friendly text
+ */
+function formatNotes(notes: string): string {
+  if (!notes) return notes
+  
+  let formatted = notes.replace(/_/g, ' ')
+  
+  const repairTypes = ['battery change', 'glass change', 'housing change', 'software update', 'other']
+  const statusNames = ['awaiting repair', 'in repair', 'final qc', 'graded', 'pending', 'in progress', 'completed']
+  const termsToCapitalize = [...repairTypes, ...statusNames]
+  
+  termsToCapitalize.forEach(term => {
+    const regex = new RegExp(term, 'gi')
+    formatted = formatted.replace(regex, (match) => {
+      return match
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')
+    })
+  })
+  
+  return formatted
+}
+
 interface DeviceStatusHistoryTableProps {
   deviceId: string
   statusHistory: DeviceStatusHistory[]
@@ -78,10 +109,10 @@ export function DeviceStatusHistoryTable({
           <table className="w-full">
             <thead>
               <tr className="border-b text-left">
-                <th className="pb-2 font-medium">Date & Time</th>
-                <th className="pb-2 font-medium">Status Change</th>
-                <th className="pb-2 font-medium">Changed By</th>
-                <th className="pb-2 font-medium">Notes</th>
+                <th className="pb-3 pr-6 font-medium">Date & Time</th>
+                <th className="pb-3 px-6 font-medium">Status Change</th>
+                <th className="pb-3 px-6 font-medium">Changed By</th>
+                <th className="pb-3 pl-6 font-medium">Notes</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -93,7 +124,7 @@ export function DeviceStatusHistoryTable({
 
                 return (
                   <tr key={history.id} className="hover:bg-gray-50">
-                    <td className="py-3">
+                    <td className="py-4 pr-6">
                       <div className="text-sm">
                         <div className="font-medium">
                           {new Date(history.created_at).toLocaleDateString()}
@@ -103,7 +134,7 @@ export function DeviceStatusHistoryTable({
                         </div>
                       </div>
                     </td>
-                    <td className="py-3">
+                    <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         {oldStatus && (
                           <>
@@ -120,7 +151,7 @@ export function DeviceStatusHistoryTable({
                         </Badge>
                       </div>
                     </td>
-                    <td className="py-3">
+                    <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-500" />
                         <div className="text-sm">
@@ -146,11 +177,11 @@ export function DeviceStatusHistoryTable({
                         </div>
                       </div>
                     </td>
-                    <td className="py-3">
+                    <td className="py-4 pl-6">
                       {history.notes ? (
                         <div className="flex items-start gap-2">
                           <FileText className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm text-gray-700">{history.notes}</span>
+                          <span className="text-sm text-gray-700">{formatNotes(history.notes)}</span>
                         </div>
                       ) : (
                         <span className="text-gray-400 text-sm">No notes</span>
