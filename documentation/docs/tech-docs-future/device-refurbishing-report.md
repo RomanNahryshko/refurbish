@@ -27,7 +27,7 @@ A simple report to see accountability of repaired devices: who did the work, on 
 - Counting method: We’ll count completed repair jobs (not unique devices). Rationale: one device may have multiple different repairs by different technicians; jobs better reflect effort.
 - “Device repaired by technician” means the technician completed at least one repair job on that device within the range.
 - No CSV export in v1; on-screen view only.
-- Role access: Admin, General Manager, Operations Manager.
+- Role access: Admin, General Manager, Operations Manager (not visible to Technicians).
 
 ## Edge Cases
 
@@ -42,6 +42,24 @@ A simple report to see accountability of repaired devices: who did the work, on 
 3) Restrict technicians to view only their own numbers?
 
 ## Visual examples
+
+Filters UI
+
+| Filter | Control | Example |
+|---|---|---|
+| Date Range | From/To date pickers | 2025-02-01 → 2025-02-15 |
+| Technician(s) | Multi-select | Ahmed Khan, Sara Ali |
+| Brand | Select | Apple |
+| Model | Select (dependent on Brand) | iPhone 12 |
+| Repair Type | Multi-select | Battery Change, Glass Change |
+
+Summary cards (top row)
+
+| Metric | Value |
+|---|---:|
+| Devices repaired | 128 |
+| Jobs completed | 162 |
+| Date range | 01–15 Feb 2025 |
 
 Summary cards (top of page)
 
