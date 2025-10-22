@@ -11,12 +11,14 @@ import {
     Clock,
     Wrench,
     Package,
-    AlertCircle
+    AlertCircle,
+    Edit
 } from 'lucide-react'
 import { DeviceListTable, DeviceTableColumn } from '@/components/common/device-list-table'
 import { RepairJob, Batch, Device } from '@/lib/types/business-types'
 import Link from 'next/link'
 import { canTechnicianPerformRepair } from '@/lib/config/permissions'
+import { USER_ROLES } from '@/lib/constants'
 
 // Repair status configuration for badges
 export const repairStatusConfig = {
@@ -64,6 +66,7 @@ interface RepairJobListTableProps {
   onStartRepair: (repair: RepairJobWithDevice) => void
   onCompleteRepair: (repair: RepairJobWithDevice) => void
   onCancelRepair: (repairId: string) => void
+  onEditFaults?: (deviceId: string, deviceInternalId: string) => void
   repairCountByDevice?: Record<string, number> // Count of repairs per device
   isStartingRepair?: boolean | ((repairId: string) => boolean) // Loading state for start repair action
 }
@@ -112,6 +115,7 @@ export function RepairJobListTable({
   onStartRepair,
   onCompleteRepair,
   onCancelRepair,
+  onEditFaults,
   repairCountByDevice,
   isStartingRepair
 }: RepairJobListTableProps) {
@@ -145,6 +149,13 @@ export function RepairJobListTable({
       ? canTechnicianPerformRepair(currentUser.technician_level, repairJob.repair_type)
       : true // Non-technicians or unknown level can see all repairs
 
+    // Check if user can edit faults (Super Admin, GM, Ops Manager)
+    const canEditFaults = currentUser && (
+      currentUser.role === USER_ROLES.admin ||
+      currentUser.role === USER_ROLES.general_manager ||
+      currentUser.role === USER_ROLES.ops_manager
+    )
+
     return (
       <div className="flex items-center gap-2">
         <Link href={`/devices/${repairJob.device_internal_id}`}>
@@ -153,6 +164,27 @@ export function RepairJobListTable({
             View Device
           </Button>
         </Link>
+        
+        {canEditFaults && onEditFaults && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEditFaults(repairJob.device_id, repairJob.device_internal_id || '')}
+                  title="Edit faults for this device"
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit Faults
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Add or remove repair tasks for this device</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         
         {repairJob.status === 'pending' && canPerformRepair && (
           <Button 

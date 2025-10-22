@@ -9,6 +9,7 @@ import { Search, Wrench } from 'lucide-react';
 import { RepairJobListTable, CompleteRepairDialog } from '@/components/repair-jobs';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
+import { EditFaultsDialog } from '@/components/devices/edit-faults-dialog';
 import { useRepairJobs } from '@/lib/hooks/use-repair-jobs';
 import { useBatches } from '@/lib/hooks/use-batches';
 import { useSpareParts } from '@/lib/hooks/use-spare-parts';
@@ -46,6 +47,13 @@ export default function RepairJobsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const user = useUser()
   const [loading, setLoading] = useState(false)
+  
+  // Edit Faults Dialog state
+  const [editFaultsDialog, setEditFaultsDialog] = useState<{
+    open: boolean
+    deviceId: string
+    deviceInternalId: string
+  }>({ open: false, deviceId: '', deviceInternalId: '' })
   // Fetch real data from API
   const { data: repairJobsData, isPending: repairJobsLoading, error: repairJobsError, refetch: refetchRepairJobs, isFetching: repairJobsFetching } = useRepairJobs()
   const { data: batchesData, isPending: batchesLoading, refetch: refetchBatches } = useBatches()
@@ -310,6 +318,20 @@ export default function RepairJobsPage() {
     })
   }
 
+  // Handle edit faults
+  function handleEditFaults(deviceId: string, deviceInternalId: string) {
+    setEditFaultsDialog({
+      open: true,
+      deviceId,
+      deviceInternalId
+    })
+  }
+
+  // Handle edit faults success - refetch repair jobs
+  function handleEditFaultsSuccess() {
+    refetchRepairJobs()
+  }
+
   const submitCompleteRepair = (parts?: Array<{ spare_part_id: string; quantity_used: number; notes?: string }>, notes?: string) => {
     if (!partsRecording.repairId) {
       return
@@ -545,11 +567,21 @@ export default function RepairJobsPage() {
             onStartRepair={handleStartRepair}
             onCompleteRepair={handleCompleteRepair}
             onCancelRepair={handleCancelRepair}
+            onEditFaults={handleEditFaults}
             repairCountByDevice={repairCountByDevice}
             isStartingRepair={(repairId: string) => startingRepairId === repairId}
           />
         </CardContent>
       </Card>
+
+      {/* Edit Faults Dialog */}
+      <EditFaultsDialog
+        open={editFaultsDialog.open}
+        onOpenChange={(open) => setEditFaultsDialog({ ...editFaultsDialog, open })}
+        deviceId={editFaultsDialog.deviceId}
+        deviceInternalId={editFaultsDialog.deviceInternalId}
+        onSuccess={handleEditFaultsSuccess}
+      />
 
       {/* Confirmation Dialog */}
       <ConfirmationDialog

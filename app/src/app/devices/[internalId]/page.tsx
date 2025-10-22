@@ -1,17 +1,19 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
+import { EditFaultsDialog } from '@/components/devices/edit-faults-dialog';
 
 import {
-  ArrowLeft,
-  Smartphone,
-  Hash
+    ArrowLeft,
+    Smartphone,
+    Hash,
+    Edit
 } from 'lucide-react';
 import { useDeviceByInternalId } from '@/lib/hooks/use-devices';
 import { useQuery } from '@tanstack/react-query';
@@ -19,6 +21,9 @@ import { statusConfig } from '@/components/common/device-list-table';
 import { DeviceStatusHistoryTable } from '@/components/devices/device-status-history-table';
 import { useUser } from '@/lib/hooks/use-user';
 import { useProfile } from '@/lib/hooks/use-profile';
+import { USER_ROLES } from '@/lib/constants';
+import { useRepairJobsByDevice } from '@/lib/hooks/use-repair-jobs';
+import { repairTypes } from '@/components/common/repair-task-selector';
 
 
 
@@ -31,8 +36,14 @@ export default function DeviceJobSheetPage() {
   const { user } = useUser()
   const { data: profile } = useProfile(!!user)
   
+  // Edit Faults Dialog state
+  const [editFaultsDialogOpen, setEditFaultsDialogOpen] = useState(false)
+  
   // Fetch device data by internal ID
-  const { data: device, isLoading: deviceLoading, error: deviceError } = useDeviceByInternalId(internalId)
+  const { data: device, isLoading: deviceLoading, error: deviceError, refetch: refetchDevice } = useDeviceByInternalId(internalId)
+  
+  // Fetch repair jobs for this device
+  const { data: repairJobs, refetch: refetchRepairJobs } = useRepairJobsByDevice(device?.id || '')
   
   // Fetch device status history
   const { data: statusHistory, isLoading: statusHistoryLoading, error: statusHistoryError, refetch: refetchStatusHistory, isFetching: statusHistoryFetching } = useQuery({
@@ -54,8 +65,9 @@ export default function DeviceJobSheetPage() {
   useEffect(() => {
     if (device?.id) {
       refetchStatusHistory();
+      refetchRepairJobs();
     }
-  }, [device?.id, refetchStatusHistory]);
+  }, [device?.id, refetchStatusHistory, refetchRepairJobs]);
   
 
   
@@ -137,8 +149,18 @@ export default function DeviceJobSheetPage() {
   const backLink = (!profile) ? '/repair-jobs' : '/devices'
   const backText = (!profile) ? 'Back to Repair Jobs' : 'Back to Devices'
 
+  // Check if user can edit faults (Super Admin, GM, Ops Manager)
+  const canEditFaults = profile && (
+    profile.role === USER_ROLES.admin ||
+    profile.role === USER_ROLES.general_manager ||
+    profile.role === USER_ROLES.ops_manager
+  )
 
-
+  function handleEditFaultsSuccess() {
+    refetchDevice()
+    refetchStatusHistory()
+    refetchRepairJobs()
+  }
 
 
   return (
@@ -161,6 +183,16 @@ export default function DeviceJobSheetPage() {
           </div>
         </div>
         
+        {/* Edit Faults Button */}
+        {canEditFaults && (
+          <Button
+            variant="outline"
+            onClick={() => setEditFaultsDialogOpen(true)}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Faults
+          </Button>
+        )}
       </div>
 
       {/* Status Card */}
@@ -232,21 +264,24 @@ export default function DeviceJobSheetPage() {
                 <span className="text-gray-600">Serial Number</span>
                 <p className="font-mono text-xs">{device.serial_number || 'N/A'}</p>
               </div>
-              {device.dr_phone_data?.required_repairs && device.dr_phone_data.required_repairs.length > 0 && (
+              {repairJobs && repairJobs.length > 0 && (
                 <div className="md:col-span-3">
-                  <span className="text-gray-600">Required Repairs</span>
+                  <span className="text-gray-600">Repair Jobs</span>
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {device.dr_phone_data.required_repairs.map((repairId: string, index: number) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {repairId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </Badge>
-                    ))}
+                    {repairJobs.map((job) => {
+                      const repairType = repairTypes.find(rt => rt.id === job.repair_type)
+                      const statusVariant = 
+                        job.status === 'completed' ? 'default' :
+                        job.status === 'in_progress' ? 'secondary' :
+                        'outline'
+                      
+                      return (
+                        <Badge key={job.id} variant={statusVariant} className="text-xs">
+                          {repairType?.label || job.repair_type} ({job.status})
+                        </Badge>
+                      )
+                    })}
                   </div>
-                  {device.dr_phone_data.other_repair_description && (
-                    <p className="text-xs text-gray-600 mt-1 italic">
-                      &ldquo;{device.dr_phone_data.other_repair_description}&rdquo;
-                    </p>
-                  )}
                 </div>
               )}
             </div>
@@ -288,6 +323,16 @@ export default function DeviceJobSheetPage() {
         error={statusHistoryError}
       />
 
+      {/* Edit Faults Dialog */}
+      {device && (
+        <EditFaultsDialog
+          open={editFaultsDialogOpen}
+          onOpenChange={setEditFaultsDialogOpen}
+          deviceId={device.id}
+          deviceInternalId={device.internal_id}
+          onSuccess={handleEditFaultsSuccess}
+        />
+      )}
 
     </div>
   );

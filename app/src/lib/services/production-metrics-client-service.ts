@@ -153,7 +153,11 @@ export class ProductionMetricsClientService {
         return {}
       }
 
-      const gradeUpdates: any = {}
+      const gradeUpdates: {
+        grade_a_count?: number
+        grade_b_count?: number
+        grade_c_count?: number
+      } = {}
       
       // Add 1 to the appropriate grade count
       switch (grade) {
@@ -193,7 +197,11 @@ export class ProductionMetricsClientService {
         return {}
       }
 
-      const initialGradeUpdates: any = {}
+      const initialGradeUpdates: {
+        initial_grade_a_count?: number
+        initial_grade_b_count?: number
+        initial_grade_c_count?: number
+      } = {}
       
       // Add 1 to the appropriate initial grade count
       switch (grade) {
