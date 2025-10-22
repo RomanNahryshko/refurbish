@@ -7,7 +7,7 @@ sidebar_position: 4
 
 This page explains each type of repair and who can do them.
 
-## Housing Change (L1 Technicians Only)
+## Housing Change (L1 or L3 Technicians)
 
 **What it is:** Replacing the back cover or frame of the phone
 
@@ -21,7 +21,7 @@ This page explains each type of repair and who can do them.
 
 **Tips:** Take your time removing old adhesive. Clean everything before installing new housing.
 
-## Glass Change (L2 Technicians Only)
+## Glass Change (L2 or L3 Technicians)
 
 **What it is:** Replacing the front screen or glass
 
@@ -49,7 +49,7 @@ This page explains each type of repair and who can do them.
 
 **Tips:** Always discharge old battery first. Don't puncture batteries - they can catch fire!
 
-## Software Update (Any Technician)
+## Software Update (L3 Technicians Only)
 
 **What it is:** Updating the phone's operating system
 
@@ -75,8 +75,15 @@ This page explains each type of repair and who can do them.
 
 **Tips:** Always describe exactly what you're fixing in the job notes. These repairs can be tricky!
 
+## Who Can Do What?
+
+- **L1 Technicians**: Housing changes only
+- **L2 Technicians**: Glass changes only
+- **L3 Technicians**: All repairs (housing, glass, battery, software, other)
+
 ## Remember
-- **Stay in your lane** - only do repairs you're qualified for
+- **Stay in your lane** - L1 and L2 only do repairs you're qualified for
+- **L3 versatility** - L3 technicians can handle any repair type
 - **Ask for help** - if you're not sure, ask an experienced technician
 - **Quality matters** - take time to do it right the first time
 - **Test everything** - make sure your repair actually fixed the problem

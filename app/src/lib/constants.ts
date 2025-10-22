@@ -24,7 +24,7 @@ export const USER_ROLES_LABELS = {
 export const TECHNICIAN_LEVELS = {
   'L1': 'L1',  // Housing repairs only
   'L2': 'L2',  // Glass repairs only
-  'L3': 'L3'   // Battery and other repairs
+  'L3': 'L3'   // All repairs (battery, housing, glass, software, other)
 } as const
 
 // Device status enum - matches database schema exactly
@@ -47,11 +47,11 @@ export const DEVICE_STATUS_LABELS = {
 
 // Repair task types enum - matches database schema
 export const REPAIR_TYPES = {
-  'housing_change': 'housing_change',   // L1 technician only
-  'glass_change': 'glass_change',       // L2 technician only
-  'battery_change': 'battery_change',   // L3 technician only
-  'software_update': 'software_update', // Any technician
-  'other': 'other'                      // Other repairs with description
+  'housing_change': 'housing_change',   // L1 or L3 technician
+  'glass_change': 'glass_change',       // L2 or L3 technician
+  'battery_change': 'battery_change',   // L3 technician
+  'software_update': 'software_update', // L3 technician
+  'other': 'other'                      // L3 technician
 } as const
 
 // Legacy repair type mapping for backward compatibility

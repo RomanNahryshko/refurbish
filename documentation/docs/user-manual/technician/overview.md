@@ -12,18 +12,19 @@ As a technician, you fix phones so they work like new again. You pick your own j
 **L1 Technician - Housing Specialist**
 - You only do housing changes (back cover repairs)
 - You can't do glass or battery work
-- You can do software updates
 
 **L2 Technician - Glass Specialist**  
 - You only do glass changes (screen repairs)
 - You can't do housing or battery work
-- You can do software updates
 
-**L3 Technician - Advanced Repairs**
-- You do battery changes
-- You handle "other" repairs (camera, speaker, charging port, etc.)
-- You can do software updates
-- You're the most skilled technician level
+**L3 Technician - Master Technician**
+- You can do ALL types of repairs:
+  - Housing changes (like L1)
+  - Glass changes (like L2)
+  - Battery changes
+  - Software updates
+  - Other repairs (camera, speaker, charging port, etc.)
+- You're the most skilled and versatile technician level
 
 ## Your typical day
 
@@ -44,7 +45,8 @@ As a technician, you fix phones so they work like new again. You pick your own j
 - View device details and repair history
 
 ## What you can't do
-- Take jobs above your skill level
+- L1 and L2: Take jobs above your skill level
+- L3: Can take all repair jobs
 - Create new repair jobs
 - Do final quality control
 - Manage inventory or order parts

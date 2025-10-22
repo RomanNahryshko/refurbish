@@ -146,7 +146,7 @@ export const ROLE_PERMISSIONS: RolePermissions = {
 export const TECHNICIAN_REPAIR_PERMISSIONS: TechnicianLevelPermissions = {
   L1: ['housing_change'], // Housing repairs only
   L2: ['glass_change'],   // Glass repairs only
-  L3: ['battery_change', 'other', 'software_update'] // Battery, other repairs, and software updates
+  L3: ['battery_change', 'other', 'software_update', 'housing_change', 'glass_change'] // L3 sees all repair types
 }
 
 // No universal repairs - all repairs are level-specific
@@ -229,5 +229,5 @@ export const ROLE_DISPLAY_NAMES = {
 export const TECHNICIAN_LEVEL_DISPLAY_NAMES = {
   [TECHNICIAN_LEVELS.L1]: 'Level 1 (Housing)',
   [TECHNICIAN_LEVELS.L2]: 'Level 2 (Glass)',
-  [TECHNICIAN_LEVELS.L3]: 'Level 3 (Battery & Others)'
+  [TECHNICIAN_LEVELS.L3]: 'Level 3 (All Repairs)'
 } as const

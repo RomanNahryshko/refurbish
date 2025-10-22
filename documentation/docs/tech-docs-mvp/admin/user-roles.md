@@ -31,8 +31,9 @@ This document outlines the user roles and their corresponding permissions within
 ### Technicians
 **L1 Technician**: Housing change only
 **L2 Technician**: Glass change only
-**L3 Technician**: Battery and all other repairs only
+**L3 Technician**: All repairs (housing, glass, battery, software, other)
 - Perform physical repairs on devices
 - Pick available repairs from queue (no direct assignment)
 - Log and track repair completion
-- **Cannot perform repairs outside their level** 
+- **L1 and L2 cannot perform repairs outside their level**
+- **L3 can perform all types of repairs** 
