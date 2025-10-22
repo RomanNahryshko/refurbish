@@ -5,7 +5,7 @@ sidebar_position: 3
 
 # Track Repair Jobs
 
-Monitor the status of all repair jobs in the system.
+https://workflow.remobile.eu/repair-jobs - here you can monitor the status of all repair jobs in the system
 
 **Important:** You never manually create repair jobs. The system creates them automatically:
 - **During batch intake** - When you check repair boxes
@@ -17,7 +17,9 @@ Monitor the status of all repair jobs in the system.
 2. You'll see:
    - **Pending** - Waiting for a technician to claim (includes cancelled jobs)
    - **In Progress** - Being worked on
-3. Use filters to find specific jobs by device or technician
+3. Use filters to find specific jobs by device
+
+<img src="/user-manual-images/repair-jobs.jpg" alt="Repair Jobs page" width="600" />
 
 **Note:** Completed jobs disappear from this list (sent to QC)
 
@@ -30,13 +32,13 @@ Monitor the status of all repair jobs in the system.
 
 ## How the system works
 
-✅ **Technicians choose their own jobs** based on their level
-✅ **L1 sees** housing repairs only
-✅ **L2 sees** glass repairs only  
-✅ **L3 sees** battery, software, and other repairs
-✅ **All levels see** software updates
-✅ **One checkbox = One repair job** during batch intake
-✅ **Cancelled jobs return to Pending** for someone else to claim
+- ✅ **Technicians choose their own jobs** based on their level
+- ✅ **L1 sees** housing repairs only
+- ✅ **L2 sees** glass repairs only  
+- ✅ **L3 sees all repair types** (battery, glass, housing, software, other)
+- ✅ **All levels see** software updates
+- ✅ **One checkbox = One repair job** during batch intake
+- ✅ **Cancelled jobs return to Pending** for someone else to claim
 
 ## If jobs are piling up
 

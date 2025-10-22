@@ -7,6 +7,10 @@ sidebar_position: 1
 
 As a technician, you fix phones so they work like new again. You pick your own jobs and work at your own pace.
 
+:::info Multiple Jobs
+You can start several repair jobs at the same time. Just click "Start Repair" on each job you want to work on. Stay realistic: only take as many as you can finish today.
+:::
+
 ## Your technician level
 
 **L1 Technician - Housing Specialist**

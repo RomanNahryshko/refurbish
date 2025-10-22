@@ -19,8 +19,10 @@ After you've fixed the phone and tested that everything works properly.
    - Check that the phone looks good
 
 2. **Go to Repair Jobs page**
-3. **Find your job** in the "In Progress" section
-4. **Click "Complete Repair"**
+3. **Find your job** in the "In Progress" section:
+4. **Click "Complete Repair"**:
+<img src="/user-manual-images/complete-repair.jpg" alt="Complete Repair modal" width="600" />
+
 5. **Record parts used:**
    - Select each part you used from the dropdown
    - Enter how many of each part
@@ -29,7 +31,10 @@ After you've fixed the phone and tested that everything works properly.
    - Describe what you did
    - Mention any problems you found
    - Note if anything else needs attention
-7. **Click "Mark Complete"**
+7. **Click "Mark Complete"**:
+
+<img src="/user-manual-images/complete-repair2.jpg" alt="Complete repair form" width="600" />
+
 
 ## What to include in your notes
 
@@ -65,5 +70,4 @@ After you've fixed the phone and tested that everything works properly.
 
 ## Pro tips
 - **Test everything twice** - it's embarrassing when QC finds obvious problems
-- **Take photos** - if you found extra damage, photos help explain your notes
 - **Be honest** - if you couldn't fix something perfectly, say so in your notes

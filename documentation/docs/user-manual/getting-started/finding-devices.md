@@ -5,7 +5,7 @@ sidebar_position: 4
 
 # Finding Devices
 
-This page shows you how to search for any phone in the system.
+https://workflow.remobile.eu/devices - this page shows you how to search for any phone in the system.
 
 ## When you need this
 - Looking for a specific phone a customer asked about
@@ -21,6 +21,8 @@ This page shows you how to search for any phone in the system.
    - **Internal ID** (8 digits like 00001234)
    - **Phone model** (like "iPhone 12" or "Samsung S21")
 4. Press Enter or click the search button
+
+<img src="/user-manual-images/find-device.gif" alt="Finding device demo" width="480" />
 
 ## What the search finds
 The system looks through:

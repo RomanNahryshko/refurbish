@@ -68,6 +68,8 @@ const config: Config = {
     ],
   ],
 
+  plugins: [require.resolve('docusaurus-plugin-image-zoom')],
+
   themeConfig: {
     // Replace with your project's social card
     image: 'img/remobile-social-card.jpg', // Create this image later
@@ -96,12 +98,7 @@ const config: Config = {
           position: 'left',
           label: 'Tech Docs - Future Scopes',
         },
-        {
-          type: 'docSidebar',
-          sidebarId: 'devSidebar',
-          position: 'left',
-          label: 'For Developers',
-        },
+        // Removed 'For Developers' section from navbar
         // Your GitHub repo
         {
           href: 'https://github.com/vladimirterehoff/remobile-refurbish',
@@ -120,10 +117,7 @@ const config: Config = {
               label: 'MVP Scope',
               to: '/docs/tech-docs-mvp/intro',
             },
-            {
-              label: 'For Developers',
-              to: '/docs/for-developers/intro',
-            },
+            // Removed 'For Developers' footer link
           ],
         },
         {
@@ -155,10 +149,15 @@ const config: Config = {
       ],
       copyright: `Copyright © ${new Date().getFullYear()} ReMobile Refurbish. Internal Use Only.`,
     },
+    zoom: {
+      selector: '.markdown img',
+      background: { light: 'rgb(255, 255, 255)', dark: 'rgb(50, 50, 50)' },
+      config: {},
+    },
     prism: {
       theme: prismThemes.github,
     },
-  } satisfies Preset.ThemeConfig,
+  } satisfies Preset.ThemeConfig & { zoom?: unknown },
 };
 
 export default config;
