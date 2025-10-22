@@ -43,8 +43,24 @@ Note: No Notes column (not required).
 - If a repair is cancelled after parts were recorded, the ledger will still show the prior usage (since stock already moved).
 - Corrections (Adjustment type) appear as-is with positive or exact-set quantities depending on how we store them.
 
-## Open Questions (if any)
+## Open Questions (numbered)
 
-- Do we need a quick link from a ledger row to open the repair job or device page? (Nice-to-have)
+1) Do we need a quick link from a ledger row to open the repair job or device page? (Nice-to-have)
+
+## Visual examples
+
+Parts Used (tab)
+
+| Date/Time | Repair Job | Device ID | Technician | Qty (−) | Balance |
+|---|---|---|---|---:|---:|
+| 2025-02-12 10:14 | RJ-000123 | 00123456 | Ahmed Khan | −1 | 42 |
+| 2025-02-12 09:02 | RJ-000117 | 00123390 | Sara Ali | −2 | 43 |
+
+Stock Adjustments (tab)
+
+| Date/Time | Type | Qty (+/−) | Performed By | Reason/Reference (if any) | Balance |
+|---|---|---:|---|---|---:|
+| 2025-02-11 16:30 | Add | +20 | Ops Manager | Invoice #12345 | 45 |
+| 2025-02-10 11:05 | Correction | +1 | Ops Manager | Count correction | 25 |
 
 

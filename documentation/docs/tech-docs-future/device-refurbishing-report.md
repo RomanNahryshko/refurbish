@@ -37,8 +37,41 @@ A simple report to see accountability of repaired devices: who did the work, on 
 
 ## Open Questions
 
-- Do you prefer counting unique devices per technician instead (instead of jobs)? If yes, we’ll deduplicate devices and add both metrics: Devices and Jobs.
-- Do you want drill-down links (click a row to see underlying jobs/devices)?
-- Any need to restrict technicians to see only their own numbers?
+1) Count unique devices per technician instead of (or in addition to) jobs? If yes, we’ll add both metrics: Devices and Jobs.
+2) Drill-down links from rows to the underlying jobs/devices?
+3) Restrict technicians to view only their own numbers?
+
+## Visual examples
+
+Summary cards (top of page)
+
+- Devices repaired: 128
+- Jobs completed: 162
+- Date range: 01–15 Feb 2025
+
+By Technician (counts)
+
+| Technician | Jobs | Devices |
+|---|---:|---:|
+| Ahmed Khan (L2) | 58 | 51 |
+| Sara Ali (L3) | 66 | 59 |
+| John Doe (L1) | 38 | 33 |
+
+By Model/Brand (counts)
+
+| Brand | Model | Jobs |
+|---|---|---:|
+| Apple | iPhone 12 | 45 |
+| Apple | iPhone 13 | 33 |
+| Samsung | S21 | 24 |
+
+By Repair Type (counts)
+
+| Repair Type | Jobs |
+|---|---:|
+| Glass Change | 64 |
+| Battery Change | 52 |
+| Housing Change | 31 |
+| Software Update | 15 |
 
 
