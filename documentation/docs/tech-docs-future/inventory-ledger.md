@@ -9,18 +9,15 @@ A clear, per-part history of stock movements with filters. Accessible from the I
 ## Scope
 
 - Button "View Ledger" on each part in Inventory opens that part’s ledger.
-- Two tabs in the ledger view:
-  - Parts Used (from repair jobs)
-  - Stock Adjustments (Add/Remove/Correction)
+- Single combined table showing both Parts Used and Stock Adjustments in chronological order (no tabs).
 
-## Columns (per tab)
+## Columns
 
 - Date/Time
-- Quantity (show + / - depending on movement)
-- Reference:
-  - Parts Used: Repair Job ID and Device Internal ID
-  - Stock Adjustments: Adjustment Type (Add/Remove/Correction)
-- Performed By (who used the part or applied the adjustment)
+- Type: Used | Add | Remove | Correction
+- Device ID (for Used; empty for Adjustments)
+- Quantity (show + / − depending on movement)
+- Performed By
 - Running Balance (for that part)
 
 Note: No Notes column (not required).
@@ -28,8 +25,8 @@ Note: No Notes column (not required).
 ## Filters
 
 - Date range
-- Technician (for Parts Used)
-- Transaction type (for Adjustments)
+- Technician (applies to Used rows)
+- Transaction type (Used/Add/Remove/Correction)
 
 ## Assumptions (please confirm)
 
@@ -46,7 +43,6 @@ Note: No Notes column (not required).
 ## Open Questions
 
 1) Do we need a quick link from a ledger row to open the device page? (Nice-to-have)
-2) Should we still show a "Stock Adjustments" tab here if we already have a dedicated stock adjustment popup/modal in Inventory? Or should the ledger focus only on Parts Used history, with a link to the existing adjustment UI?
 
 ## Visual examples
 
@@ -59,18 +55,13 @@ Main Inventory table (/inventory)
 
 Clicking [View Ledger] opens the per-part ledger page.
 
-Parts Used (tab)
+Ledger
 
-| Date/Time | Device ID | Technician | Qty (−) | Balance |
-|---|---|---|---:|---:|
-| 2025-02-12 10:14 | 00123456 | Ahmed Khan | −1 | 42 |
-| 2025-02-12 09:02 | 00123390 | Sara Ali | −2 | 43 |
-
-Stock Adjustments (tab)
-
-| Date/Time | Type | Qty (+/−) | Performed By | Reason/Reference (if any) | Balance |
-|---|---|---:|---|---|---:|
-| 2025-02-11 16:30 | Add | +20 | Ops Manager | Invoice #12345 | 45 |
-| 2025-02-10 11:05 | Correction | +1 | Ops Manager | Count correction | 25 |
+| Date/Time | Type | Device ID | Technician/Performed By | Qty (+/−) | Balance |
+|---|---|---|---|---:|---:|
+| 2025-02-12 10:14 | Used | 00123456 (as link) | Ahmed Khan | −1 | 42 |
+| 2025-02-12 09:02 | Used | 00123390 | Sara Ali | −2 | 43 |
+| 2025-02-11 16:30 | Add |  | Ops Manager | +20 | 45 |
+| 2025-02-10 11:05 | Correction |  | Ops Manager | +1 | 25 |
 
 
