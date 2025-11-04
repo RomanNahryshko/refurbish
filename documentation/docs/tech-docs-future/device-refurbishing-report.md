@@ -24,9 +24,11 @@ A simple report to see accountability of repaired devices: who did the work, on 
 
 ## Assumptions (please approve)
 
-- Counting method: We’ll count completed repair jobs (not unique devices). Rationale: one device may have multiple different repairs by different technicians; jobs better reflect effort.
-- “Device repaired by technician” means the technician completed at least one repair job on that device within the range.
-- No CSV export in v1; on-screen view only.
+- Metrics:
+  - Devices: count unique devices that passed Final QC in the selected date range.
+  - Jobs: count completed repair jobs in the selected date range.
+- “Device repaired by technician” means the technician completed at least one repair job on that device (devices counted only if they subsequently passed Final QC in-range).
+- Exports: PDF report (download button). CSV not required.
 - Role access: Admin, General Manager, Operations Manager (not visible to Technicians).
 
 ## Edge Cases
@@ -35,11 +37,11 @@ A simple report to see accountability of repaired devices: who did the work, on 
 - If a job is completed outside the filter range, it won’t count (even if started earlier).
 - Cancelled/pending jobs are excluded.
 
-## Open Questions
+## Decisions 
 
-1) Count unique devices per technician instead of (or in addition to) jobs? If yes, we’ll add both metrics: Devices and Jobs.
-2) Drill-down links from rows to the underlying jobs/devices?
-3) Restrict technicians to view only their own numbers?
+1) Devices metric: Yes — include unique devices (Final QC pass). Show both Devices and Jobs.
+2) Drill-down: OK — clicking a row opens a filtered list of underlying jobs/devices.
+3) Technician restriction: Not applicable — report is hidden from Technicians.
 
 ## Visual examples
 
@@ -52,6 +54,7 @@ Filters UI
 | Brand | Select | Apple |
 | Model | Select (dependent on Brand) | iPhone 12 |
 | Repair Type | Multi-select | Battery Change, Glass Change |
+| Batch | Select | BATCH-2025-02-03-007 |
 
 Summary cards (top row)
 
@@ -60,6 +63,7 @@ Summary cards (top row)
 | Devices repaired | 128 |
 | Jobs completed | 162 |
 | Date range | 01–15 Feb 2025 |
+| Actions | Download PDF |
 
 Summary cards (top of page)
 
@@ -91,5 +95,12 @@ By Repair Type (counts)
 | Battery Change | 52 |
 | Housing Change | 31 |
 | Software Update | 15 |
+
+By Batch (counts)
+
+| Batch | Devices | Jobs |
+|---|---:|---:|
+| BATCH-2025-02-03-007 | 42 | 53 |
+| BATCH-2025-02-01-004 | 36 | 45 |
 
 

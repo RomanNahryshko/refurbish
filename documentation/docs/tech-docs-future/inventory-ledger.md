@@ -6,6 +6,13 @@ title: Inventory Ledger (Per Part)
 
 A clear, per-part history of stock movements with filters. Accessible from the Inventory list via a "View Ledger" button per spare part.
 
+## Page header (context)
+
+- Title: Item Ledger
+- Part label: e.g., Battery – iPhone 12 (SKU)
+- Period: All time by default. If a date range is selected via filters, show "From <start date> to <end date>".
+- Opening Balance at period start (computed) — shown only when a date range is applied.
+
 ## Scope
 
 - Button "View Ledger" on each part in Inventory opens that part’s ledger.
@@ -14,19 +21,22 @@ A clear, per-part history of stock movements with filters. Accessible from the I
 ## Columns
 
 - Date/Time
-- Type: Used | Add | Remove | Correction
-- Device ID (for Used; empty for Adjustments)
-- Quantity (show + / − depending on movement)
-- Performed By
-- Running Balance (for that part)
+- Ref (e.g., Purchase Inv, Batch# 0001)
+- Technician / Performed By
+- Device ID (hyperlink to device page)
+- Devices (Brand + Model + Storage + Color)
+- Qty+ (incoming)
+- Qty− (used)
+- Balance (running)
 
 Note: No Notes column (not required).
 
 ## Filters
 
-- Date range
+- Date range (optional; if omitted, show All time)
 - Technician (applies to Used rows)
 - Transaction type (Used/Add/Remove/Correction)
+- Batch (optional)
 
 ## Assumptions (please confirm)
 
@@ -42,7 +52,7 @@ Note: No Notes column (not required).
 
 ## Open Questions
 
-1) Do we need a quick link from a ledger row to open the device page? (Nice-to-have)
+None for v1.
 
 ## Visual examples
 
@@ -57,11 +67,19 @@ Clicking [View Ledger] opens the per-part ledger page.
 
 Ledger
 
-| Date/Time | Type | Device ID | Technician/Performed By | Qty (+/−) | Balance |
-|---|---|---|---|---:|---:|
-| 2025-02-12 10:14 | Used | 00123456 (as link) | Ahmed Khan | −1 | 42 |
-| 2025-02-12 09:02 | Used | 00123390 | Sara Ali | −2 | 43 |
-| 2025-02-11 16:30 | Add |  | Ops Manager | +20 | 45 |
-| 2025-02-10 11:05 | Correction |  | Ops Manager | +1 | 25 |
+Header (context): Item Ledger • Battery – iPhone 12 • 01–10 Oct 2025
+Note: Example shows a filtered date range. By default (no filter), header reads "All time" and the Opening Balance row is omitted.
+
+| Date/Time | Ref | Technician / Performed By | Device ID | Devices | Qty+ | Qty− | Balance |
+|---|---|---|---|---|---:|---:|---:|
+| 2025-10-01 09:00 | Purchase Inv | Ops Manager |  |  | 100 |  | 100 |
+| 2025-10-02 10:05 | Batch# 0001 | Ahmed Khan | 00123456 (link) | iPhone 12 128GB Red |  | 1 | 99 |
+| 2025-10-02 13:20 | Batch# 0001 | Sara Ali | 0023456 (link) | iPhone 12 64GB Black |  | 1 | 98 |
+| 2025-10-03 11:18 | Batch# 0002 | Ali | 14142564 (link) | iPhone 12 256GB Green |  | 1 | 97 |
+| … | … | … | … | … | … | … | … |
+
+Closing Balance row (fixed at bottom of the table):
+
+|  |  |  |  | Closing Balance | 100 | 7 | 93 |
 
 
