@@ -10,7 +10,7 @@ A clear, per-part history of stock movements with filters. Accessible from the I
 
 - Title: Item Ledger
 - Part label: e.g., Battery – iPhone 12 (SKU)
-- Period: All time by default. If a date range is selected via filters, show "From <start date> to <end date>".
+- Period: All time by default. If a date range is selected via filters, show "From [start date] to [end date]".
 - Opening Balance at period start (computed) — shown only when a date range is applied.
 
 ## Scope
