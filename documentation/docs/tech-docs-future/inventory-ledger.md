@@ -50,10 +50,6 @@ Note: No Notes column (not required).
 - If a repair is cancelled after parts were recorded, the ledger will still show the prior usage (since stock already moved).
 - Corrections (Adjustment type) appear as-is with positive or exact-set quantities depending on how we store them.
 
-## Open Questions
-
-None for v1.
-
 ## Visual examples
 
 Main Inventory table (/inventory)
@@ -65,9 +61,10 @@ Main Inventory table (/inventory)
 
 Clicking [View Ledger] opens the per-part ledger page.
 
-Ledger
+#### Ledger
 
 Header (context): Item Ledger • Battery – iPhone 12 • 01–10 Oct 2025
+
 Note: Example shows a filtered date range. By default (no filter), header reads "All time" and the Opening Balance row is omitted.
 
 Actions: Download PDF | Download XLSX
@@ -79,9 +76,6 @@ Actions: Download PDF | Download XLSX
 | 2025-10-02 13:20 | Batch# 0001 | Sara Ali | 0023456 (link) | iPhone 12 64GB Black |  | 1 | 98 |
 | 2025-10-03 11:18 | Batch# 0002 | Ali | 14142564 (link) | iPhone 12 256GB Green |  | 1 | 97 |
 | … | … | … | … | … | … | … | … |
-
-Closing Balance row (fixed at bottom of the table):
-
 |  |  |  |  | Closing Balance | 100 | 7 | 93 |
 
 
