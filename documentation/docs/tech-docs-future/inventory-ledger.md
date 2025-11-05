@@ -42,7 +42,7 @@ Note: No Notes column (not required).
 
 - Running Balance is calculated for the selected part within the chosen date range view (we’ll compute sequentially by date/time).
 - Timezone for dates: local warehouse time.
-- No CSV export in v1.
+- Exports: PDF and XLSX for the current item ledger (exports respect applied filters/date range).
 
 ## Edge Cases
 
@@ -69,6 +69,8 @@ Ledger
 
 Header (context): Item Ledger • Battery – iPhone 12 • 01–10 Oct 2025
 Note: Example shows a filtered date range. By default (no filter), header reads "All time" and the Opening Balance row is omitted.
+
+Actions: Download PDF | Download XLSX
 
 | Date/Time | Ref | Technician / Performed By | Device ID | Devices | Qty+ | Qty− | Balance |
 |---|---|---|---|---|---:|---:|---:|

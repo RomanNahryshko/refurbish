@@ -60,8 +60,8 @@ Summary cards (top row)
 
 | Metric | Value |
 |---|---:|
-| Devices repaired | 128 |
-| Jobs completed | 162 |
+| Devices repaired | 128 (clickable) |
+| Jobs completed | 162 (clickable) |
 | Date range | 01–15 Feb 2025 |
 | Actions | Download PDF |
 
@@ -102,5 +102,21 @@ By Batch (counts)
 |---|---:|---:|
 | BATCH-2025-02-03-007 | 42 | 53 |
 | BATCH-2025-02-01-004 | 36 | 45 |
+
+Click actions (from Summary cards)
+
+1) Devices repaired → Devices Detail (filter-respecting list)
+
+| IMEI | Model | Color | Storage |
+|---|---|---|---|
+| 356789012345678 | iPhone 12 | Black | 64GB |
+| 356789012345679 | iPhone 12 | Red | 128GB |
+
+2) Jobs completed → Jobs Detail (filter-respecting list)
+
+| Device ID | IMEI | Model | Repair Type | Technician | Completed At |
+|---|---|---|---|---|---|
+| 00012345 | 356789012345678 | iPhone 12 | Battery Change | Sara Ali | 2025-02-03 14:11 |
+| 00012346 | 356789012345679 | iPhone 12 | Glass Change | Ahmed Khan | 2025-02-03 15:22 |
 
 
