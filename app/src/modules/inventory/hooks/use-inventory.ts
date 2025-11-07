@@ -134,6 +134,8 @@ export function useAddStockMutation() {
     onSuccess: (_, adjustmentData) => {
       // Invalidate parts data to show updated stock levels
       queryClient.invalidateQueries({ queryKey: ['parts'] })
+      // Invalidate ledger data for the specific part
+      queryClient.invalidateQueries({ queryKey: ['part-ledger', adjustmentData.spare_part_id] })
       
       const actionText = adjustmentData.adjustment_type === 'add' 
         ? 'added to' 

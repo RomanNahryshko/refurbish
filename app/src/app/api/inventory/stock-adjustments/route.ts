@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requirePermission } from '@/lib/services/auth-helpers'
+import { requirePermission, getAuthenticatedUser } from '@/lib/services/auth-helpers'
 import { apiFactory } from '@/lib/api/api-factory'
 
 // POST /api/inventory/stock-adjustments - Create stock adjustment (ops_manager/admin only)
@@ -9,6 +9,13 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
+    // Get current user
+    const userResult = await getAuthenticatedUser()
+    if ('error' in userResult) {
+      return userResult.error
+    }
+    const { user } = userResult
+
     const body = await request.json()
     const { spare_part_id, adjustment_type, quantity, reason, reference_number } = body
 
@@ -70,7 +77,8 @@ export async function POST(request: NextRequest) {
       adjustment_type,
       quantity,
       reason,
-      reference_number
+      reference_number,
+      performed_by: user.id
     })
 
     // Note: Stock levels are automatically updated by database triggers

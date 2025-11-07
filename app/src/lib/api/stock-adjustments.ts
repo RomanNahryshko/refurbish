@@ -18,6 +18,7 @@ export interface CreateStockAdjustmentData {
   quantity: number
   reason?: string
   reference_number?: string
+  performed_by?: string
 }
 
 // Additional types for better structure

@@ -17,9 +17,11 @@ import {
   Package,
   Edit,
   Trash2,
-  Settings
+  Settings,
+  FileText
 } from 'lucide-react'
 import { SparePart } from '@/lib/types/business-types'
+import Link from 'next/link'
 
 interface PartsListProps {
   onAddPart?: () => void
@@ -191,7 +193,7 @@ export function PartsList({
                     <TableHead>Unit Cost</TableHead>
                     <TableHead>Supplier</TableHead>
                     <TableHead>Compatible Models</TableHead>
-                    {canModify && <TableHead className="text-right">Actions</TableHead>}
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -242,43 +244,54 @@ export function PartsList({
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      {canModify && (
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {onAdjustStock && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onAdjustStock(part)}
-                                title="Adjust Stock"
-                              >
-                                <Settings className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {onEditPart && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onEditPart(part)}
-                                title="Edit Part"
-                              >
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {onDeletePart && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onDeletePart(part)}
-                                className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                title="Delete Part"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      )}
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Link href={`/inventory/ledger/${part.id}`}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title="View Ledger"
+                            >
+                              <FileText className="h-3 w-3" />
+                            </Button>
+                          </Link>
+                          {canModify && (
+                            <>
+                              {onAdjustStock && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => onAdjustStock(part)}
+                                  title="Adjust Stock"
+                                >
+                                  <Settings className="h-3 w-3" />
+                                </Button>
+                              )}
+                              {onEditPart && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => onEditPart(part)}
+                                  title="Edit Part"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              )}
+                              {onDeletePart && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => onDeletePart(part)}
+                                  className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                  title="Delete Part"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -207,6 +207,40 @@ export interface StockAdjustment {
   created_at: string
 }
 
+// Inventory Ledger types
+export interface LedgerEntry {
+  id: string
+  date_time: string
+  ref: string // e.g., "Purchase Inv", "Batch# 0001"
+  technician_name?: string // Full name from user_profiles
+  device_id?: string
+  device_internal_id?: string
+  device_brand?: string
+  device_model?: string
+  device_storage?: string
+  device_color?: string
+  qty_plus?: number // Incoming quantity
+  qty_minus?: number // Used quantity
+  balance: number // Running balance
+  transaction_type: 'used' | 'add' | 'remove' | 'correction'
+  batch_number?: string
+}
+
+export interface LedgerFilters {
+  start_date?: string
+  end_date?: string
+  technician_id?: string
+  transaction_type?: 'used' | 'add' | 'remove' | 'correction'
+  batch_id?: string
+}
+
+export interface LedgerData {
+  part: SparePart
+  entries: LedgerEntry[]
+  opening_balance?: number
+  period_label: string // e.g., "All time" or "From [date] to [date]"
+}
+
 // Production metrics - matches database schema
 export interface ProductionMetrics {
   id: string
