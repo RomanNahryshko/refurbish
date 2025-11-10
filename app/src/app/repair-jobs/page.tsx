@@ -1,11 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Wrench } from 'lucide-react';
+import { Search, Wrench, ArrowLeft } from 'lucide-react';
 import { RepairJobListTable, CompleteRepairDialog } from '@/components/repair-jobs';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
@@ -18,6 +19,10 @@ import { RepairJob, SparePart } from '@/lib/types/business-types';
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants';
 import { useProfile } from '@/lib/hooks/use-profile-optimized';
 import { canTechnicianPerformRepair, getTechnicianRepairTypes } from '@/lib/config/permissions';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useQuery } from '@tanstack/react-query';
+import dayjs from 'dayjs';
+import Link from 'next/link';
 
 // Import configs from the table component
 import { repairTypeConfig } from '@/components/repair-jobs/repair-job-list-table';
@@ -31,6 +36,10 @@ interface RepairJobWithDevice extends RepairJob {
     model?: string
   }
   assigned_to_name?: string
+  assigned_user?: {
+    full_name: string
+    technician_level: string | null
+  }
 }
 
 // Transformed repair job with additional computed fields
@@ -39,7 +48,22 @@ interface TransformedRepairJob extends RepairJobWithDevice {
   device_model: string
 }
 
-export default function RepairJobsPage() {
+const REPAIR_TYPE_LABELS: Record<string, string> = {
+  housing_change: 'Housing Change',
+  glass_change: 'Glass Change',
+  battery_change: 'Battery Change',
+  software_update: 'Software Update',
+  other: 'Other'
+}
+
+function RepairJobsPageContent() {
+  const searchParams = useSearchParams()
+  const fromReport = searchParams.get('fromReport') === 'true'
+  const dateFrom = searchParams.get('dateFrom')
+  const dateTo = searchParams.get('dateTo')
+  const technicianIds = searchParams.getAll('technicianId')
+  const repairTypes = searchParams.getAll('repairType')
+
   const [searchTerm, setSearchTerm] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -55,10 +79,49 @@ export default function RepairJobsPage() {
     deviceInternalId: string
   }>({ open: false, deviceId: '', deviceInternalId: '' })
   // Fetch real data from API
+  // When fromReport=true, use API endpoint that returns assigned_user
+  // Otherwise, use the hook that uses direct Supabase access
+  const { data: repairJobsFromAPI, isPending: repairJobsFromAPILoading, error: repairJobsFromAPIError } = useQuery({
+    queryKey: ['repair-jobs-from-api', fromReport, dateFrom, dateTo, technicianIds, repairTypes],
+    queryFn: async () => {
+      if (!fromReport) return null
+      try {
+        const params = new URLSearchParams()
+        if (dateFrom && dateTo) {
+          params.set('dateFrom', dateFrom)
+          params.set('dateTo', dateTo)
+        }
+        technicianIds.forEach(id => params.append('technicianId', id))
+        repairTypes.forEach(type => params.append('repairType', type))
+        params.set('status', 'completed')
+        
+        const response = await fetch(`/api/repair-jobs?${params.toString()}`, {
+          credentials: 'include'
+        })
+        if (!response.ok) {
+          console.error('❌ Failed to fetch repair jobs from API:', response.status, response.statusText)
+          return null
+        }
+        const result = await response.json()
+        console.log('📦 Repair jobs from API response:', result)
+        return result.data || []
+      } catch (error) {
+        console.error('❌ Error fetching repair jobs from API:', error)
+        return null
+      }
+    },
+    enabled: fromReport
+  })
+
   const { data: repairJobsData, isPending: repairJobsLoading, error: repairJobsError, refetch: refetchRepairJobs, isFetching: repairJobsFetching } = useRepairJobs()
   const { data: batchesData, isPending: batchesLoading, refetch: refetchBatches } = useBatches()
   const { data: sparePartsData, isPending: sparePartsLoading, refetch: refetchSpareParts, isFetching: sparePartsFetching } = useSpareParts()
   const { data: profile } = useProfile(!!user)
+
+  // Use API data when fromReport, otherwise use hook data
+  const actualRepairJobsData = fromReport && repairJobsFromAPI ? repairJobsFromAPI : repairJobsData
+  const actualRepairJobsLoading = fromReport ? repairJobsFromAPILoading : repairJobsLoading
+  const actualRepairJobsError = fromReport ? repairJobsFromAPIError : repairJobsError
 
   // Refetch data every time the component mounts (page visit)
   useEffect(() => {
@@ -142,8 +205,49 @@ export default function RepairJobsPage() {
     notes: ''
   })
 
+  // Transform API data to match expected format for the table component (before early returns)
+  const repairJobs = (actualRepairJobsData || []) as RepairJobWithDevice[]
+  const transformedRepairJobs = repairJobs.map(repair => ({
+    ...repair,
+    device_internal_id: repair.device?.internal_id || 'N/A',
+    device_model: repair.device?.model || 'Unknown',
+    // Use actual assigned user data from API
+    assigned_to_name: repair.assigned_to_name || undefined
+  })) as TransformedRepairJob[]
+
+  // techniciansMap must be called before any early returns (Rules of Hooks)
+  // When fromReport=true, API endpoint returns assigned_user, so we use that
+  // Otherwise, we'd need to fetch technicians separately
+  const techniciansMap = useMemo(() => {
+    console.log('🔧 Building techniciansMap, fromReport:', fromReport)
+    console.log('📊 transformedRepairJobs count:', transformedRepairJobs.length)
+    
+    const map = new Map<string, { full_name: string; technician_level: string | null }>()
+    
+    // Extract technicians from repair jobs (API endpoint returns assigned_user)
+    transformedRepairJobs.forEach(repair => {
+      if (repair.assigned_to && repair.assigned_user) {
+        if (!map.has(repair.assigned_to)) {
+          console.log('✅ Adding technician from repair job:', repair.assigned_to, repair.assigned_user)
+          map.set(repair.assigned_to, {
+            full_name: repair.assigned_user.full_name,
+            technician_level: repair.assigned_user.technician_level
+          })
+        }
+      } else if (repair.assigned_to) {
+        console.log('⚠️ Repair job has assigned_to but no assigned_user:', repair.assigned_to, repair.id)
+      }
+    })
+    
+    console.log('📋 Final techniciansMap size:', map.size)
+    console.log('📋 Final techniciansMap keys:', Array.from(map.keys()))
+    console.log('📋 All assigned_to from repairs:', transformedRepairJobs.map(r => r.assigned_to).filter(Boolean))
+    
+    return map
+  }, [transformedRepairJobs, fromReport])
+
   // Show loading state while data is being fetched
-  if (repairJobsLoading || batchesLoading || sparePartsLoading || repairJobsFetching || sparePartsFetching) {
+  if (actualRepairJobsLoading || batchesLoading || sparePartsLoading || (!fromReport && repairJobsFetching) || sparePartsFetching) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="flex justify-center items-center py-12">
@@ -154,25 +258,15 @@ export default function RepairJobsPage() {
   }
 
   // Show error state if there's an error
-  if (repairJobsError) {
+  if (actualRepairJobsError) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="text-center py-12">
-          <p className="text-red-600">Error loading repair jobs: {repairJobsError.message}</p>
+          <p className="text-red-600">Error loading repair jobs: {actualRepairJobsError instanceof Error ? actualRepairJobsError.message : 'Unknown error'}</p>
         </div>
       </div>
     )
   }
-
-  // Transform API data to match expected format for the table component
-  const repairJobs = (repairJobsData || []) as RepairJobWithDevice[]
-  const transformedRepairJobs = repairJobs.map(repair => ({
-    ...repair,
-    device_internal_id: repair.device?.internal_id || 'N/A',
-    device_model: repair.device?.model || 'Unknown',
-    // Use actual assigned user data from API
-    assigned_to_name: repair.assigned_to_name || undefined
-  })) as TransformedRepairJob[]
   
   const batches = batchesData || []
   const spareParts = (sparePartsData || []) as SparePart[]
@@ -219,9 +313,32 @@ export default function RepairJobsPage() {
       if (!canPerform) return false
     }
 
-    // Hide completed repairs for all users
-    if (repair.status === 'completed') {
-      return false
+    // If from report, show only completed repairs with filters
+    // Otherwise, hide completed repairs for all users
+    if (fromReport) {
+      if (repair.status !== 'completed') {
+        return false
+      }
+      // Apply date filter
+      if (dateFrom && dateTo && repair.completed_at) {
+        const completedDate = dayjs(repair.completed_at).format('YYYY-MM-DD')
+        if (completedDate < dateFrom || completedDate > dateTo) {
+          return false
+        }
+      }
+      // Apply technician filter
+      if (technicianIds.length > 0 && !technicianIds.includes(repair.assigned_to || '')) {
+        return false
+      }
+      // Apply repair type filter
+      if (repairTypes.length > 0 && !repairTypes.includes(repair.repair_type)) {
+        return false
+      }
+    } else {
+      // Hide completed repairs for normal view
+      if (repair.status === 'completed') {
+        return false
+      }
     }
 
     return true
@@ -234,9 +351,17 @@ export default function RepairJobsPage() {
     repairCountByDevice[deviceId] = (repairCountByDevice[deviceId] || 0) + 1
   })
 
-  // Sort repairs by creation date (newest first)
+  // Sort repairs - by completion date if from report, otherwise by creation date
   const sortedRepairs = [...filteredRepairs].sort((a, b) => {
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    if (fromReport) {
+      // Sort by completion date (newest first)
+      const aDate = a.completed_at ? new Date(a.completed_at).getTime() : 0
+      const bDate = b.completed_at ? new Date(b.completed_at).getTime() : 0
+      return bDate - aDate
+    } else {
+      // Sort by creation date (newest first)
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    }
   })
 
   // Find current user's active repairs for banner - technicians can now have multiple active repairs
@@ -483,6 +608,129 @@ export default function RepairJobsPage() {
     )
   }
 
+  // Render report view with simplified table
+  if (fromReport) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/reports/device-refurbishing">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Report
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold">Completed Repair Jobs</h1>
+              <p className="text-gray-600">
+                {dateFrom && dateTo && `Date Range: ${dayjs(dateFrom).format('DD MMM YYYY')} - ${dayjs(dateTo).format('DD MMM YYYY')}`}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Jobs Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Jobs Detail</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Device ID</TableHead>
+                  <TableHead>IMEI</TableHead>
+                  <TableHead>Model</TableHead>
+                  <TableHead>Repair Type</TableHead>
+                  <TableHead>Technician</TableHead>
+                  <TableHead>Completed At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedRepairs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      No completed jobs found for the selected filters
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedRepairs.map((repair) => {
+                    const technician = repair.assigned_to ? techniciansMap.get(repair.assigned_to) : null
+                    if (!technician && repair.assigned_to) {
+                      console.log('⚠️ Technician not found for assigned_to:', repair.assigned_to, 'Map keys:', Array.from(techniciansMap.keys()))
+                    }
+                    return (
+                      <TableRow key={repair.id}>
+                        <TableCell className="font-mono">{repair.device_internal_id}</TableCell>
+                        <TableCell className="font-mono text-sm">{repair.device?.imei || '-'}</TableCell>
+                        <TableCell>{repair.device?.model || 'Unknown'}</TableCell>
+                        <TableCell>
+                          {REPAIR_TYPE_LABELS[repair.repair_type] || repair.repair_type}
+                        </TableCell>
+                        <TableCell>
+                          {technician ? (
+                            <span>
+                              {technician.full_name}
+                              {technician.technician_level && (
+                                <Badge variant="outline" className="ml-2">
+                                  {technician.technician_level}
+                                </Badge>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              Unknown {repair.assigned_to ? `(ID: ${repair.assigned_to})` : '(No ID)'}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {repair.completed_at
+                            ? dayjs(repair.completed_at).format('YYYY-MM-DD HH:mm')
+                            : '-'}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1} to {Math.min(endIndex, totalResults)} of {totalResults} jobs
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <div className="text-sm">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -608,5 +856,19 @@ export default function RepairJobsPage() {
         isLoading={completeRepairJob.isPending || loading}
       />
     </div>
+  )
+}
+
+export default function RepairJobsPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="flex justify-center items-center py-12">
+          <LoadingSpinner />
+        </div>
+      </div>
+    }>
+      <RepairJobsPageContent />
+    </Suspense>
   )
 } 

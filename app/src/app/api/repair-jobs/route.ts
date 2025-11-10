@@ -119,8 +119,7 @@ export async function GET(request: NextRequest) {
       .from('repair_jobs')
       .select(`
         *,
-        device:devices(internal_id, imei, brand, model),
-        assigned_user:user_profiles(full_name, technician_level)
+        device:devices(internal_id, imei, brand, model)
       `)
       .is('deleted_at', null)
 
@@ -144,8 +143,35 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
 
+    // Get technician profiles separately
+    const technicianIds = [...new Set((repairJobs || []).map(job => job.assigned_to).filter(Boolean))]
+    const techniciansMap = new Map<string, { full_name: string; technician_level: string | null }>()
+    
+    if (technicianIds.length > 0) {
+      const { data: technicians, error: techError } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, technician_level')
+        .in('id', technicianIds)
+        .is('deleted_at', null)
+
+      if (!techError && technicians) {
+        technicians.forEach(tech => {
+          techniciansMap.set(tech.id, {
+            full_name: tech.full_name,
+            technician_level: tech.technician_level
+          })
+        })
+      }
+    }
+
+    // Enrich repair jobs with technician data
+    const enrichedRepairJobs = (repairJobs || []).map(job => ({
+      ...job,
+      assigned_user: job.assigned_to ? techniciansMap.get(job.assigned_to) || null : null
+    }))
+
     return NextResponse.json({ 
-      data: repairJobs,
+      data: enrichedRepairJobs,
       message: 'Repair jobs fetched successfully' 
     })
 

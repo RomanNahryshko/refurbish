@@ -12,7 +12,8 @@ import {
   Calendar,
   FileText,
   DollarSign,
-  Package
+  Package,
+  ArrowLeft
 } from 'lucide-react';
 import { useBatches } from '@/lib/hooks/use-batches';
 import { DeviceListTable } from '@/components/common/device-list-table';
@@ -21,10 +22,21 @@ import { useBatch } from '@/lib/hooks/use-batches';
 import { useDevices, useDevicesByBatch } from '@/lib/hooks/use-devices';
 import { LoadingSpinner } from '@/components/common/loading-spinner';
 import { Device } from '@/lib/types/business-types';
+import { useQuery } from '@tanstack/react-query';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import dayjs from 'dayjs';
 
 function DevicesPageContent() {
   const searchParams = useSearchParams();
   const batchFromUrl = searchParams.get('batch');
+  const fromReport = searchParams.get('fromReport') === 'true';
+  const dateFrom = searchParams.get('dateFrom');
+  const dateTo = searchParams.get('dateTo');
+  const brand = searchParams.get('brand');
+  const model = searchParams.get('model');
+  const batchId = searchParams.get('batchId');
+  const technicianIds = searchParams.getAll('technicianId');
+  const repairTypes = searchParams.getAll('repairType');
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -42,6 +54,42 @@ function DevicesPageContent() {
   
   // Fetch all devices if no batch parameter is present
   const { data: allDevicesData, isPending: allDevicesLoading, error: allDevicesError, refetch: refetchAllDevices } = useDevices();
+  
+  // Fetch devices for report view (devices that passed Final QC in date range)
+  const { data: reportDevicesData, isPending: reportDevicesLoading, error: reportDevicesError } = useQuery({
+    queryKey: ['devices-from-report', fromReport, dateFrom, dateTo, brand, model, batchId, technicianIds, repairTypes],
+    queryFn: async () => {
+      if (!fromReport || !dateFrom || !dateTo) return null
+      try {
+        const params = new URLSearchParams()
+        params.set('dateFrom', dateFrom)
+        params.set('dateTo', dateTo)
+        if (brand) params.set('brand', brand)
+        if (model) params.set('model', model)
+        if (batchId) params.set('batchId', batchId)
+        if (technicianIds.length > 0) {
+          params.set('technicianIds', technicianIds.join(','))
+        }
+        if (repairTypes.length > 0) {
+          params.set('repairTypes', repairTypes.join(','))
+        }
+        
+        const response = await fetch(`/api/devices/final-qc?${params.toString()}`, {
+          credentials: 'include'
+        })
+        if (!response.ok) {
+          console.error('Failed to fetch devices from report:', response.status, response.statusText)
+          return null
+        }
+        const result = await response.json()
+        return result.data || []
+      } catch (error) {
+        console.error('Error fetching devices from report:', error)
+        return null
+      }
+    },
+    enabled: fromReport && !!dateFrom && !!dateTo
+  })
   
   // Fetch all batches for filter options
   const { data: batches } = useBatches();
@@ -65,9 +113,20 @@ function DevicesPageContent() {
   
   const itemsPerPage = DEFAULT_ITEMS_PER_PAGE;
 
-  // Use real devices from batch if available, otherwise use all devices from API
-  // Convert API devices to mock device format for compatibility
-  const allDevices = batchFromUrl && batchDevices 
+  // Use report devices when fromReport=true, otherwise use normal devices
+  const allDevices = fromReport && reportDevicesData
+    ? reportDevicesData.map((device: any) => ({
+        id: device.id,
+        internal_id: device.internal_id,
+        imei: device.imei,
+        brand: device.brand,
+        model: device.model,
+        color: device.color,
+        storage_capacity: device.storage_capacity,
+        status: device.status,
+        grade: device.grade || 'ungraded'
+      }))
+    : batchFromUrl && batchDevices 
     ? batchDevices.map((device: Device) => ({
         ...device,
         status: device.status,
@@ -80,7 +139,7 @@ function DevicesPageContent() {
       }));
 
   // Filter devices based on search and filters
-  const filteredDevices = allDevices.filter(device => {
+  const filteredDevices = allDevices.filter((device: Device) => {
     const matchesSearch = 
       device.internal_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       device.imei?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -106,23 +165,35 @@ function DevicesPageContent() {
   const paginatedDevices = filteredDevices.slice(startIndex, startIndex + itemsPerPage);
 
   // Get unique values for filters
-  const uniqueBrands = [...new Set(allDevices.map(d => d.brand))];
-  const uniqueGrades = [...new Set(allDevices.map(d => d.grade).filter(Boolean))];
+  const uniqueBrands = [...new Set(allDevices.map((d: Device) => d.brand))];
+  const uniqueGrades = [...new Set(allDevices.map((d: Device) => d.grade).filter(Boolean))];
 
   // KPI counts - use real data when available
   const totalCount = allDevices.length;
-  const readyCount = allDevices.filter(d => d.status === DEVICE_STATUS.graded).length;
+  const readyCount = allDevices.filter((d: Device) => d.status === DEVICE_STATUS.graded).length;
   
   // Additional KPI counts for QC data
-  const repairsRequiredCount = allDevices.filter(d => d.dr_phone_data?.required_repairs && d.dr_phone_data.required_repairs.length > 0 && d.status !== DEVICE_STATUS.graded).length;
-  const gradeAssignedCount = allDevices.filter(d => d?.grade && d.grade !== DEVICE_GRADES.ungraded).length;
+  const repairsRequiredCount = allDevices.filter((d: Device) => d.dr_phone_data?.required_repairs && d.dr_phone_data.required_repairs.length > 0 && d.status !== DEVICE_STATUS.graded).length;
+  const gradeAssignedCount = allDevices.filter((d: Device) => d?.grade && d.grade !== DEVICE_GRADES.ungraded).length;
 
   // Loading state for devices
-  const isLoading = batchFromUrl ? (batchLoading || devicesLoading) : allDevicesLoading;
-  const hasError = batchFromUrl ? (batchError || devicesError) : allDevicesError;
+  const isLoading = fromReport 
+    ? reportDevicesLoading 
+    : batchFromUrl 
+    ? (batchLoading || devicesLoading) 
+    : allDevicesLoading;
+  const hasError = fromReport 
+    ? reportDevicesError 
+    : batchFromUrl 
+    ? (batchError || devicesError) 
+    : allDevicesError;
   
   // Check if any data is being refetched (for showing loading state)
-  const isRefetching = batchFromUrl ? (batchFetching || devicesFetching) : allDevicesLoading;
+  const isRefetching = fromReport 
+    ? reportDevicesLoading 
+    : batchFromUrl 
+    ? (batchFetching || devicesFetching) 
+    : allDevicesLoading;
 
   // Show loading state (like on batch-intake page)
   if (isLoading || isRefetching) {
@@ -156,6 +227,104 @@ function DevicesPageContent() {
         <Card>
           <CardContent className="text-center py-12">
             <p className="text-red-600">Error loading devices: {String(hasError) || 'Unknown error'}</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Render report view with simplified table
+  if (fromReport) {
+    const totalResults = filteredDevices.length
+    const totalPages = Math.ceil(totalResults / itemsPerPage)
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    const paginatedDevices = filteredDevices.slice(startIndex, endIndex)
+
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/reports/device-refurbishing">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Report
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold">Repaired Devices</h1>
+              <p className="text-gray-600">
+                {dateFrom && dateTo && `Date Range: ${dayjs(dateFrom).format('DD MMM YYYY')} - ${dayjs(dateTo).format('DD MMM YYYY')}`}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Devices Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Devices Detail</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>IMEI</TableHead>
+                  <TableHead>Model</TableHead>
+                  <TableHead>Color</TableHead>
+                  <TableHead>Storage</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedDevices.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      No devices found for the selected filters
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedDevices.map((device: Device) => (
+                    <TableRow key={device.id}>
+                      <TableCell className="font-mono text-sm">{device.imei || '-'}</TableCell>
+                      <TableCell>{device.model || 'Unknown'}</TableCell>
+                      <TableCell>{device.color || '-'}</TableCell>
+                      <TableCell>{device.storage_capacity || '-'}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1} to {Math.min(endIndex, totalResults)} of {totalResults} devices
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <div className="text-sm">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -369,7 +538,7 @@ function DevicesPageContent() {
                       <SelectContent>
                         <SelectItem value="all">All Brands</SelectItem>
                         {uniqueBrands.filter(Boolean).map(brand => (
-                          <SelectItem key={brand} value={brand!}>{brand}</SelectItem>
+                          <SelectItem key={brand as string} value={brand as string}>{brand as string}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -382,7 +551,7 @@ function DevicesPageContent() {
                       <SelectItem value="all">All Grades</SelectItem>
                       <SelectItem value="ungraded">Ungraded</SelectItem>
                       {uniqueGrades.filter(g => g !== 'ungraded').map(grade => (
-                        <SelectItem key={grade} value={grade!}>{grade}</SelectItem>
+                        <SelectItem key={grade as string} value={grade as string}>{grade as string}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

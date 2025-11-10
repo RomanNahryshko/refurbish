@@ -3,21 +3,15 @@ import { requirePermission } from '@/lib/services/auth-helpers'
 import { apiFactory } from '@/lib/api/api-factory'
 import { LedgerFilters } from '@/lib/types/business-types'
 
-interface RouteParams {
-  params: {
-    id: string
-  }
-}
-
 export async function GET(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = await requirePermission('spare_parts', 'read')
   if (authError) return authError
 
   try {
-    const { id } = params
+    const { id } = await params
     const { searchParams } = new URL(request.url)
     
     const filters: LedgerFilters = {
@@ -39,5 +33,6 @@ export async function GET(
     )
   }
 }
+
 
 

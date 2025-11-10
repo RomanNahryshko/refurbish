@@ -64,6 +64,13 @@ const navigationItems: NavigationItem[] = [
     //super admin + general manager + ops manager
     showIf: (perms) => perms.canViewInventory && !perms.isTechnician && !perms.isQC
   },
+  {
+    title: 'Reports',
+    href: '/reports/device-refurbishing',
+    description: 'Device refurbishing reports',
+    // Admin, General Manager, Operations Manager (not visible to Technicians)
+    showIf: (perms) => (perms.isAdmin || perms.isGeneralManager || perms.isOpsManager) && !perms.isTechnician
+  },
 ]
 
 interface NavigationProps {
@@ -108,7 +115,7 @@ export function Navigation({ userProfile }: NavigationProps) {
                 href={item.href}
                 className={cn(
                   navigationMenuTriggerStyle(),
-                  pathname === item.href && 'bg-accent text-accent-foreground'
+                  (pathname === item.href || pathname?.startsWith(item.href + '/')) && 'bg-accent text-accent-foreground'
                 )}
               >
                 {item.title}
