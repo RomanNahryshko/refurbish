@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/common/loading-spinner'
 import { usePartsQuery } from '@/modules/inventory/hooks/use-inventory'
 import { StockLevelBadge, getStockStatus } from '@/modules/inventory/components/stock-level-badge'
 import { PART_CATEGORY_LABELS } from '@/lib/constants'
+import { useDebounce } from '@/lib/hooks/use-debounce'
 import {
   Plus,
   Search,
@@ -39,17 +40,18 @@ export function PartsList({
   canModify = false 
 }: PartsListProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 700)
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [stockFilter, setStockFilter] = useState<string>('all')
 
   // Build filters object
   const filters = {
-    ...(searchTerm && { search: searchTerm }),
+    ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
     ...(categoryFilter && categoryFilter !== 'all' && { category: categoryFilter }),
     ...(stockFilter === 'low' && { low_stock: true }),
   }
 
-  const { data: parts, isLoading, error, refetch } = usePartsQuery(
+  const { data: parts, isLoading, isFetching, error, refetch } = usePartsQuery(
     Object.keys(filters).length > 0 ? filters : undefined
   )
 
@@ -71,7 +73,8 @@ export function PartsList({
     setStockFilter('all')
   }
 
-  if (isLoading) {
+  // Show full loader only on initial load (when no data exists)
+  if (isLoading && !parts) {
     return (
       <div className="flex items-center justify-center p-8">
         <LoadingSpinner size="md" />
@@ -163,6 +166,9 @@ export function PartsList({
             <div className="flex items-center gap-2 mb-2">
               <Package className="h-5 w-5" />
               <h3 className="text-lg font-semibold">Parts ({filteredParts.length})</h3>
+              {isFetching && parts && (
+                <LoadingSpinner size="sm" />
+              )}
             </div>
             <p className="text-sm text-muted-foreground">
               Current inventory levels and part details
