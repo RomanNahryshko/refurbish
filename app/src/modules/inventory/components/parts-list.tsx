@@ -166,9 +166,6 @@ export function PartsList({
             <div className="flex items-center gap-2 mb-2">
               <Package className="h-5 w-5" />
               <h3 className="text-lg font-semibold">Parts ({filteredParts.length})</h3>
-              {isFetching && parts && (
-                <LoadingSpinner size="sm" />
-              )}
             </div>
             <p className="text-sm text-muted-foreground">
               Current inventory levels and part details
@@ -188,7 +185,12 @@ export function PartsList({
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
+              {isFetching && parts && (
+                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center">
+                  <LoadingSpinner size="md" />
+                </div>
+              )}
               <Table>
                 <TableHeader>
                   <TableRow>
