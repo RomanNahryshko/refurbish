@@ -496,7 +496,6 @@ export default function DeviceRefurbishingReportPage() {
                 <div className="space-y-3">
                   {/* Brand */}
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Brand</Label>
                     <Select value={selectedBrand} onValueChange={(value) => {
                       setSelectedBrand(value)
                       setSelectedModel('all')
@@ -517,7 +516,6 @@ export default function DeviceRefurbishingReportPage() {
 
                   {/* Model */}
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Model</Label>
                     <Select value={selectedModel} onValueChange={setSelectedModel} disabled={selectedBrand === 'all'}>
                       <SelectTrigger className="h-9 w-full">
                         <SelectValue placeholder="All Models" />
