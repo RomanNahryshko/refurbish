@@ -127,3 +127,24 @@ export const PART_CATEGORY_LABELS = {
 
 // Battery Health Auto-Repair Configuration
 export const BATTERY_HEALTH_THRESHOLD = 92 // Configurable threshold for automatic battery change requirement
+
+// Repair Type Labels for Reports
+export const REPAIR_TYPE_LABELS: Record<string, string> = {
+  housing_change: 'Housing Change',
+  glass_change: 'Glass Change',
+  battery_change: 'Battery Change',
+  software_update: 'Software Update',
+  other: 'Other'
+} as const
+
+// PDF Export Configuration
+export const PDF_CONFIG = {
+  leftMargin: 14,
+  rightMargin: 14,
+  pageWidth: 210,
+  columnWidths: {
+    large: 0.5,
+    medium: 0.25,
+    small: 0.25
+  }
+} as const
