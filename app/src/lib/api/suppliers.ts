@@ -160,14 +160,42 @@ export class SuppliersAPI {
    * Delete a supplier (soft delete)
    */
   delete = async (id: string) => {
+    // First check if supplier exists and is not already deleted
+    const { data: existing, error: fetchError } = await this.supabase
+      .from('suppliers')
+      .select('id')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single()
 
+    if (fetchError) {
+      if (fetchError.code === 'PGRST116') {
+        throw new Error('Supplier not found or already deleted')
+      }
+      throw fetchError
+    }
 
-    const { error } = await this.supabase
+    if (!existing) {
+      throw new Error('Supplier not found or already deleted')
+    }
+
+    // Perform soft delete
+    const { data, error } = await this.supabase
       .from('suppliers')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
+      .is('deleted_at', null)
+      .select()
+      .single()
 
-    if (error) throw error
+    if (error) {
+      throw error
+    }
+
+    if (!data) {
+      throw new Error('Supplier not found or already deleted')
+    }
+
     return true
   }
 }

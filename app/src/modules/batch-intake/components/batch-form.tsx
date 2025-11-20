@@ -7,11 +7,22 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { AddSupplierDialog } from '@/modules/suppliers/components/add-supplier-dialog'
 import { toast } from 'sonner'
 import { useSuppliers } from '@/lib/hooks/use-suppliers'
+import { useDeleteSupplierMutation } from '@/modules/suppliers/hooks/use-suppliers'
 import { Supplier } from '@/lib/api/suppliers-client'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface BatchFormData {
   supplier_id: string
@@ -49,14 +60,40 @@ export function BatchForm({
   })
   
   const [isAddSupplierOpen, setIsAddSupplierOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null)
 
   // Get device suppliers from API
   const { data: suppliers = [], isLoading: suppliersLoading } = useSuppliers()
+  const deleteSupplierMutation = useDeleteSupplierMutation()
 
   const handleSupplierAdded = (newSupplier: Supplier) => {
     // Auto-select the newly added supplier if it's a device supplier
     if (newSupplier.supplier_type === 'devices' || newSupplier.supplier_type === 'both') {
       setFormData(prev => ({...prev, supplier_id: newSupplier.id}))
+    }
+  }
+
+  const handleDeleteClick = (e: React.MouseEvent, supplier: Supplier) => {
+    e.stopPropagation()
+    e.preventDefault()
+    setSupplierToDelete(supplier)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDeleteSupplier = async () => {
+    if (!supplierToDelete) return
+
+    try {
+      await deleteSupplierMutation.mutateAsync(supplierToDelete.id)
+      // Clear selection if the deleted supplier was selected
+      if (formData.supplier_id === supplierToDelete.id) {
+        setFormData(prev => ({...prev, supplier_id: ''}))
+      }
+      setIsDeleteDialogOpen(false)
+      setSupplierToDelete(null)
+    } catch {
+      // Error is already handled by the hook
     }
   }
 
@@ -98,6 +135,7 @@ export function BatchForm({
                     setFormData({...formData, supplier_id: value})
                   }
                 }}
+                open={true}
                 disabled={suppliersLoading}
               >
                 <SelectTrigger id="supplier">
@@ -119,8 +157,34 @@ export function BatchForm({
                   
                   {/* Existing Suppliers */}
                   {suppliers.map((supplier) => (
-                    <SelectItem key={supplier.id} value={supplier.id}>
-                      {supplier.name}
+                    <SelectItem 
+                      key={supplier.id} 
+                      value={supplier.id}
+                      className="pr-10"
+                      onPointerDown={(e) => {
+                        // Allow delete button clicks to work
+                        const target = e.target as HTMLElement
+                        if (target.closest('button')) {
+                          e.preventDefault()
+                        }
+                      }}
+                    >
+                      <span className="flex-1 truncate">{supplier.name}</span>
+                      <button
+                        type="button"
+                        className="absolute right-8 h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          handleDeleteClick(e, supplier)
+                        }}
+                        disabled={deleteSupplierMutation.isPending}
+                        onPointerDown={(e) => {
+                          e.stopPropagation()
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </button>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -222,6 +286,28 @@ export function BatchForm({
         onOpenChange={setIsAddSupplierOpen}
         onSupplierAdded={handleSupplierAdded}
       />
+
+      {/* Delete Supplier Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Supplier</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{supplierToDelete?.name}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSupplierToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSupplier}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteSupplierMutation.isPending}
+            >
+              {deleteSupplierMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

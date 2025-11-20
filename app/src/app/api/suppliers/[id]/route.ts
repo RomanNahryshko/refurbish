@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { suppliersApi } from '@/lib/api/suppliers'
+import { createSuppliersAPI } from '@/lib/api/suppliers'
 import { requirePermission } from '@/lib/services/auth-helpers'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 // GET /api/suppliers/[id] - Get supplier by ID
 export async function GET(
@@ -13,13 +14,22 @@ export async function GET(
 
   try {
     const { id } = await params
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      )
+    }
+    
+    const suppliersApi = createSuppliersAPI(supabase)
     const supplier = await suppliersApi.getById(id)
     
     return NextResponse.json(supplier)
   } catch (error) {
     console.error('Error fetching supplier:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch supplier' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch supplier' },
       { status: 500 }
     )
   }
@@ -39,6 +49,15 @@ export async function PUT(
     const body = await request.json()
     const supplierData = body
 
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      )
+    }
+    
+    const suppliersApi = createSuppliersAPI(supabase)
     const result = await suppliersApi.update(id, supplierData)
     
     return NextResponse.json(result)
@@ -63,6 +82,15 @@ export async function DELETE(
   try {
     const { id } = await params
     
+    const supabase = await createSupabaseServerClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      )
+    }
+    
+    const suppliersApi = createSuppliersAPI(supabase)
     await suppliersApi.delete(id)
     
     return NextResponse.json({ success: true })
