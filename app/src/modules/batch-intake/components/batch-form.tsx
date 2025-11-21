@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import * as SelectPrimitive from '@radix-ui/react-select'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Trash2 } from 'lucide-react'
+import { CheckIcon, Plus, Trash2 } from 'lucide-react'
 import { AddSupplierDialog } from '@/modules/suppliers/components/add-supplier-dialog'
 import { toast } from 'sonner'
 import { useSuppliers } from '@/lib/hooks/use-suppliers'
@@ -74,7 +75,7 @@ export function BatchForm({
     }
   }
 
-  const handleDeleteClick = (e: React.MouseEvent, supplier: Supplier) => {
+  const handleDeleteClick = (e: React.MouseEvent | React.PointerEvent, supplier: Supplier) => {
     e.stopPropagation()
     e.preventDefault()
     setSupplierToDelete(supplier)
@@ -132,10 +133,10 @@ export function BatchForm({
                   if (value === 'add-new-supplier') {
                     setIsAddSupplierOpen(true)
                   } else {
+                    setIsAddSupplierOpen(false)
                     setFormData({...formData, supplier_id: value})
                   }
                 }}
-                open={true}
                 disabled={suppliersLoading}
               >
                 <SelectTrigger id="supplier">
@@ -157,10 +158,10 @@ export function BatchForm({
                   
                   {/* Existing Suppliers */}
                   {suppliers.map((supplier) => (
-                    <SelectItem 
+                    <SelectPrimitive.Item 
                       key={supplier.id} 
                       value={supplier.id}
-                      className="pr-10"
+                      className="focus:bg-accent focus:text-accent-foreground relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
                       onPointerDown={(e) => {
                         // Allow delete button clicks to work
                         const target = e.target as HTMLElement
@@ -169,23 +170,32 @@ export function BatchForm({
                         }
                       }}
                     >
-                      <span className="flex-1 truncate">{supplier.name}</span>
+                      <span className="absolute right-2 flex size-3.5 items-center justify-center">
+                        <SelectPrimitive.ItemIndicator>
+                          <CheckIcon className="size-4" />
+                        </SelectPrimitive.ItemIndicator>
+                      </span>
+                      <SelectPrimitive.ItemText>
+                        <span className="flex-1 truncate">{supplier.name}</span>
+                      </SelectPrimitive.ItemText>
                       <button
                         type="button"
-                        className="absolute right-8 h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 shrink-0"
+                        className="absolute right-8 h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 shrink-0 z-10"
+                        onPointerDown={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          handleDeleteClick(e, supplier)
+                        }}
                         onClick={(e) => {
                           e.stopPropagation()
                           e.preventDefault()
                           handleDeleteClick(e, supplier)
                         }}
                         disabled={deleteSupplierMutation.isPending}
-                        onPointerDown={(e) => {
-                          e.stopPropagation()
-                        }}
                       >
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </button>
-                    </SelectItem>
+                    </SelectPrimitive.Item>
                   ))}
                 </SelectContent>
               </Select>
