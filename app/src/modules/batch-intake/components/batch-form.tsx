@@ -161,7 +161,7 @@ export function BatchForm({
                     <SelectPrimitive.Item 
                       key={supplier.id} 
                       value={supplier.id}
-                      className="focus:bg-accent focus:text-accent-foreground relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                      className="focus:bg-accent focus:text-accent-foreground relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-10 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
                       onPointerDown={(e) => {
                         // Allow delete button clicks to work
                         const target = e.target as HTMLElement
@@ -170,17 +170,12 @@ export function BatchForm({
                         }
                       }}
                     >
-                      <span className="absolute right-2 flex size-3.5 items-center justify-center">
-                        <SelectPrimitive.ItemIndicator>
-                          <CheckIcon className="size-4" />
-                        </SelectPrimitive.ItemIndicator>
-                      </span>
                       <SelectPrimitive.ItemText>
                         <span className="flex-1 truncate">{supplier.name}</span>
                       </SelectPrimitive.ItemText>
                       <button
                         type="button"
-                        className="absolute right-8 h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 shrink-0 z-10"
+                        className="absolute right-2 h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 shrink-0 z-10"
                         onPointerDown={(e) => {
                           e.stopPropagation()
                           e.preventDefault()
@@ -195,6 +190,11 @@ export function BatchForm({
                       >
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </button>
+                      <span className="absolute right-8 flex size-3.5 items-center justify-center">
+                        <SelectPrimitive.ItemIndicator>
+                          <CheckIcon className="size-4" />
+                        </SelectPrimitive.ItemIndicator>
+                      </span>
                     </SelectPrimitive.Item>
                   ))}
                 </SelectContent>
