@@ -168,13 +168,13 @@ function DevicesPageContent() {
   const uniqueBrands = [...new Set(allDevices.map((d: Device) => d.brand))];
   const uniqueGrades = [...new Set(allDevices.map((d: Device) => d.grade).filter(Boolean))];
 
-  // KPI counts - use real data when available
-  const totalCount = allDevices.length;
-  const readyCount = allDevices.filter((d: Device) => d.status === DEVICE_STATUS.graded).length;
+  // KPI counts - use filtered devices to reflect current filter state
+  const totalCount = filteredDevices.length;
+  const readyCount = filteredDevices.filter((d: Device) => d.status === DEVICE_STATUS.graded).length;
   
   // Additional KPI counts for QC data
-  const repairsRequiredCount = allDevices.filter((d: Device) => d.dr_phone_data?.required_repairs && d.dr_phone_data.required_repairs.length > 0 && d.status !== DEVICE_STATUS.graded).length;
-  const gradeAssignedCount = allDevices.filter((d: Device) => d?.grade && d.grade !== DEVICE_GRADES.ungraded).length;
+  const repairsRequiredCount = filteredDevices.filter((d: Device) => d.dr_phone_data?.required_repairs && d.dr_phone_data.required_repairs.length > 0 && d.status !== DEVICE_STATUS.graded).length;
+  const gradeAssignedCount = filteredDevices.filter((d: Device) => d?.grade && d.grade !== DEVICE_GRADES.ungraded).length;
 
   // Loading state for devices
   const isLoading = fromReport 
